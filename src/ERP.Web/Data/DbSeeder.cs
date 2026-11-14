@@ -19,7 +19,76 @@ public static class DbSeeder
         var sp = scope.ServiceProvider;
         var db = sp.GetRequiredService<ErpDbContext>();
         await db.Database.EnsureCreatedAsync();
-        if (await db.Users.AnyAsync()) return;
+        await EnsureNewTablesAsync(db);
+        if (await db.Users.AnyAsync()) { await SeedCatalogsAsync(db); return; }
+        await SeedCoreAsync(sp, db);
+        await SeedCatalogsAsync(db);
+    }
+
+    /// <summary>
+    /// Dự án dùng EnsureCreated (không có migration) nên database đã tạo từ phiên bản trước sẽ không tự có bảng mới.
+    /// Tạo bổ sung các bảng thêm sau nếu chưa có.
+    /// </summary>
+    private static async Task EnsureNewTablesAsync(ErpDbContext db)
+    {
+        await db.Database.ExecuteSqlRawAsync("""
+            IF OBJECT_ID(N'dbo.CatalogItems', N'U') IS NULL
+            BEGIN
+                CREATE TABLE dbo.CatalogItems (
+                    Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_CatalogItems PRIMARY KEY,
+                    [Type] int NOT NULL,
+                    Code nvarchar(20) NOT NULL,
+                    Name nvarchar(100) NOT NULL,
+                    SortOrder int NOT NULL,
+                    Note nvarchar(300) NULL,
+                    IsActive bit NOT NULL);
+                CREATE UNIQUE INDEX IX_CatalogItems_Type_Code ON dbo.CatalogItems([Type], Code);
+            END
+            IF OBJECT_ID(N'dbo.UserPreferences', N'U') IS NULL
+            BEGIN
+                CREATE TABLE dbo.UserPreferences (
+                    Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_UserPreferences PRIMARY KEY,
+                    UserId int NOT NULL,
+                    [Key] nvarchar(200) NOT NULL,
+                    Value nvarchar(max) NOT NULL,
+                    UpdatedAt datetime2 NOT NULL);
+                CREATE UNIQUE INDEX IX_UserPreferences_UserId_Key ON dbo.UserPreferences(UserId, [Key]);
+            END
+            """);
+    }
+
+    /// <summary>Danh mục mặc định + mọi giá trị đang dùng trong dữ liệu (chạy lại nhiều lần không trùng)</summary>
+    private static async Task SeedCatalogsAsync(ErpDbContext db)
+    {
+        var existing = await db.CatalogItems.ToListAsync();
+        var units = new[] { "Cái", "Bộ", "Chiếc", "Tấm", "Thanh", "Cuộn", "Hộp", "Thùng", "Kg", "Tấn", "Lít", "Mét", "m²", "m³", "Lần", "Chuyến", "Tháng", "Giờ" }
+            .Concat(await db.Items.Select(i => i.Unit).Distinct().ToListAsync())
+            .Concat(await db.InvoiceLines.Where(l => l.Unit != null).Select(l => l.Unit!).Distinct().ToListAsync());
+        var depts = new[] { "Ban Giám đốc", "Phòng Kế toán", "Phòng Kinh doanh", "Phòng Mua hàng", "Phòng CNTT", "Phòng Hành chính – Nhân sự", "Kho vận", "Xưởng sản xuất" }
+            .Concat(await db.Users.Select(u => u.Department).Distinct().ToListAsync())
+            .Concat(await db.FixedAssets.Where(a => a.Department != null).Select(a => a.Department!).Distinct().ToListAsync());
+
+        void Add(CatalogType type, IEnumerable<string> names, string prefix)
+        {
+            var list = existing.Where(c => c.Type == type).ToList();
+            var order = list.Count == 0 ? 0 : list.Max(c => c.SortOrder);
+            foreach (var n in names.Select(x => x.Trim()).Where(x => x.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                if (list.Any(c => string.Equals(c.Name, n, StringComparison.OrdinalIgnoreCase))) continue;
+                var no = list.Count + 1;
+                string code;
+                do code = $"{prefix}{no++:00}"; while (list.Any(c => c.Code == code));
+                var c = new CatalogItem { Type = type, Code = code, Name = n, SortOrder = order += 10 };
+                list.Add(c); db.CatalogItems.Add(c);
+            }
+        }
+        Add(CatalogType.Unit, units, "DVT");
+        Add(CatalogType.Department, depts, "PB");
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task SeedCoreAsync(IServiceProvider sp, ErpDbContext db)
+    {
 
         var hasher = sp.GetRequiredService<IPasswordHasher<AppUser>>();
         var acc = sp.GetRequiredService<AccountingService>();

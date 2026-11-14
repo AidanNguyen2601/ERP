@@ -127,3 +127,10 @@ public enum ProductionStatus
     [Display(Name = "Hoàn thành")] Completed = 4,
     [Display(Name = "Đã hủy")] Cancelled = 5
 }
+
+/// <summary>Các loại danh mục dùng chung (bảng CatalogItems)</summary>
+public enum CatalogType
+{
+    [Display(Name = "Đơn vị tính")] Unit = 1,
+    [Display(Name = "Phòng ban / bộ phận")] Department = 2
+}

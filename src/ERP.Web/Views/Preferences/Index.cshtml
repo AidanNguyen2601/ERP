@@ -1,0 +1,134 @@
+@model UiSettings
+@{
+    ViewData["Title"] = "Cấu hình giao diện";
+    var favs = (List<FavoriteLink>)ViewBag.Favorites;
+    var gridCount = (int)ViewBag.GridCount;
+    var customColor = UiSettings.Colors.All(c => c.Hex != Model.PrimaryColor);
+}
+<div class="row g-3">
+    <div class="col-xl-8">
+        <form asp-action="Save" method="post" id="uiForm">
+            <div class="card mb-3"><div class="card-header"><i class="bi bi-layout-wtf me-2"></i>Vị trí menu</div><div class="card-body">
+                <div class="choice-cards">
+                    @foreach (var p in UiSettings.MenuPositions)
+                    {
+                        <label class="choice-card"><input type="radio" name="MenuPosition" value="@p.Key" checked="@(Model.MenuPosition == p.Key)" />
+                            <span class="cc"><i class="bi @p.Icon"></i>@p.Name</span></label>
+                    }
+                </div>
+                <div class="form-text mt-2">Menu trái / phải có thể thu gọn thành thanh biểu tượng bằng nút <i class="bi bi-chevron-double-left"></i> ở đầu menu; từng nhóm chức năng bấm vào tiêu đề để mở / đóng.</div>
+                <div class="mt-3"><label class="form-label">Kiểu menu</label>
+                    <div class="d-flex flex-wrap gap-3">
+                        @foreach (var s in UiSettings.Sidebars)
+                        {
+                            <div class="form-check"><input class="form-check-input" type="radio" name="SidebarStyle" id="sb-@s.Key" value="@s.Key" checked="@(Model.SidebarStyle == s.Key)" />
+                                <label class="form-check-label" for="sb-@s.Key">@s.Name</label></div>
+                        }
+                    </div>
+                </div>
+            </div></div>
+
+            <div class="card mb-3"><div class="card-header"><i class="bi bi-droplet-half me-2"></i>Màu chủ đạo</div><div class="card-body">
+                <div class="swatches">
+                    @foreach (var c in UiSettings.Colors)
+                    {
+                        <label class="swatch" title="@c.Name"><input type="radio" name="PrimaryColor" value="@c.Hex" checked="@(Model.PrimaryColor == c.Hex)" aria-label="@c.Name" /><span style="background:@c.Hex"></span></label>
+                    }
+                    <label class="swatch" title="Màu tùy chọn"><input type="radio" name="PrimaryColor" value="@Model.PrimaryColor" id="customColorRadio" checked="@customColor" aria-label="Màu tùy chọn" />
+                        <span id="customSwatch" style="background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)"></span></label>
+                    <input type="color" id="customColor" class="form-control form-control-color ms-1" value="@Model.PrimaryColor" title="Chọn màu bất kỳ" />
+                </div>
+            </div></div>
+
+            <div class="card mb-3"><div class="card-header"><i class="bi bi-fonts me-2"></i>Phông chữ</div><div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-7"><label class="form-label" for="Font">Kiểu chữ</label>
+                        <select name="Font" id="Font" class="form-select">
+                            @foreach (var f in UiSettings.Fonts) { <option value="@f.Key" data-css="@f.Css" selected="@(Model.Font == f.Key)" style="font-family:@f.Css">@f.Name</option> }
+                        </select></div>
+                    <div class="col-md-5"><label class="form-label" for="FontSize">Cỡ chữ: <b id="fsVal">@Model.FontSize</b>px</label>
+                        <input type="range" class="form-range" min="12" max="18" step="1" name="FontSize" id="FontSize" value="@Model.FontSize" /></div>
+                    <div class="col-12"><div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" name="CompactTables" id="CompactTables" value="true" checked="@Model.CompactTables" />
+                        <input type="hidden" name="CompactTables" value="false" />
+                        <label class="form-check-label" for="CompactTables">Bảng dữ liệu dạng gọn (giảm khoảng cách dòng)</label></div></div>
+                </div>
+            </div></div>
+
+            <div class="d-flex gap-2 mb-3">
+                <button class="btn btn-primary"><i class="bi bi-check2 me-1"></i>Lưu cấu hình</button>
+                <a asp-action="Index" class="btn btn-light">Hủy thay đổi</a>
+            </div>
+        </form>
+        <form asp-action="Reset" method="post" data-confirm="Khôi phục toàn bộ giao diện về mặc định?" class="mb-3">
+            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-arrow-counterclockwise me-1"></i>Khôi phục giao diện mặc định</button>
+        </form>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="card mb-3"><div class="card-header d-flex justify-content-between align-items-center"><span><i class="bi bi-star-fill fav-color me-2"></i>Trang yêu thích</span><span class="badge text-bg-light">@favs.Count / @PreferenceService.MaxFavorites</span></div>
+            <div class="card-body p-0">
+                <ul class="fav-manage" id="favManage">
+                    @for (var i = 0; i < favs.Count; i++)
+                    {
+                        var f = favs[i];
+                        <li data-idx="@i"><i class="bi @f.Icon text-secondary"></i><a class="flex-grow-1 text-truncate" href="@f.Url">@f.Title</a>
+                            <button type="button" class="btn btn-sm btn-light" data-move="-1" title="Lên" disabled="@(i == 0)"><i class="bi bi-arrow-up"></i></button>
+                            <button type="button" class="btn btn-sm btn-light" data-move="1" title="Xuống" disabled="@(i == favs.Count - 1)"><i class="bi bi-arrow-down"></i></button>
+                            <button type="button" class="btn btn-sm btn-light text-danger" data-remove title="Bỏ yêu thích"><i class="bi bi-x-lg"></i></button></li>
+                    }
+                </ul>
+                @if (favs.Count == 0)
+                {
+                    <div class="p-3 small text-muted">Chưa có trang yêu thích. Bấm <i class="bi bi-star"></i> cạnh tiêu đề trang hoặc cạnh từng chức năng trong menu để thêm.</div>
+                }
+            </div></div>
+
+        <div class="card"><div class="card-header"><i class="bi bi-table me-2"></i>Bố cục bảng dữ liệu</div><div class="card-body">
+            <p class="small text-muted mb-2">Trên mọi bảng danh sách bạn có thể: bấm <b><i class="bi bi-layout-three-columns"></i> Cột</b> để ẩn / hiện cột, kéo tiêu đề cột để đổi thứ tự, kéo mép phải tiêu đề để chỉnh độ rộng (nhấp đúp để tự động). Bố cục được lưu theo tài khoản.</p>
+            <p class="small mb-2">Đang lưu bố cục riêng cho <b>@gridCount</b> bảng.</p>
+            <form asp-action="ResetGrids" method="post" data-confirm="Khôi phục bố cục mặc định cho tất cả bảng?">
+                <button class="btn btn-sm btn-outline-secondary" disabled="@(gridCount == 0)"><i class="bi bi-arrow-counterclockwise me-1"></i>Khôi phục mọi bảng</button>
+            </form>
+        </div></div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    // Xem trước ngay khi chọn (chưa lưu)
+    const root = document.documentElement, form = document.getElementById('uiForm');
+    const custom = document.getElementById('customColor'), customRadio = document.getElementById('customColorRadio');
+    function shade(hex, f) { const n = parseInt(hex.slice(1), 16); const c = s => Math.floor(((n >> s) & 255) * f).toString(16).padStart(2, '0'); return '#' + c(16) + c(8) + c(0); }
+    function soft(hex, a) { const n = parseInt(hex.slice(1), 16); const c = s => Math.round(255 - (255 - ((n >> s) & 255)) * a).toString(16).padStart(2, '0'); return '#' + c(16) + c(8) + c(0); }
+    function preview() {
+        const color = form.querySelector('[name=PrimaryColor]:checked')?.value;
+        if (/^#[0-9a-f]{6}$/i.test(color || '')) {
+            root.style.setProperty('--accent', color); root.style.setProperty('--accent-dark', shade(color, .82)); root.style.setProperty('--accent-soft', soft(color, .14));
+        }
+        const font = document.getElementById('Font').selectedOptions[0];
+        root.style.setProperty('--app-font', font.getAttribute('data-css'));
+        const fs = document.getElementById('FontSize').value;
+        root.style.fontSize = fs + 'px'; document.getElementById('fsVal').textContent = fs;
+        const sb = form.querySelector('[name=SidebarStyle]:checked')?.value;
+        document.body.classList.remove('sidebar-dark', 'sidebar-light', 'sidebar-accent'); document.body.classList.add('sidebar-' + sb);
+        document.body.classList.toggle('grid-compact', document.getElementById('CompactTables').checked);
+    }
+    custom.addEventListener('input', () => { customRadio.value = custom.value; customRadio.checked = true; preview(); });
+    form.addEventListener('change', preview);
+    form.addEventListener('input', preview);
+
+    // Quản lý danh sách yêu thích: sắp xếp, xóa
+    const ul = document.getElementById('favManage');
+    ul?.addEventListener('click', async e => {
+        const btn = e.target.closest('button'); if (!btn) return;
+        const li = btn.closest('li'), idx = +li.dataset.idx, list = (window.ERP.favorites || []).slice();
+        if (btn.hasAttribute('data-remove')) list.splice(idx, 1);
+        else { const to = idx + (+btn.dataset.move); if (to < 0 || to >= list.length) return; const [m] = list.splice(idx, 1); list.splice(to, 0, m); }
+        await window.ERP.saveFavorites(list);
+        location.reload();
+    });
+})();
+</script>
+}

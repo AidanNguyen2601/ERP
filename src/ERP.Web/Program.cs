@@ -56,6 +56,10 @@ builder.Services.AddScoped<ERP.Web.Services.AssetService>();
 builder.Services.AddScoped<ERP.Web.Services.ProductionService>();
 builder.Services.AddScoped<ERP.Web.Services.PeriodService>();
 builder.Services.AddScoped<ERP.Web.Services.ReportService>();
+builder.Services.AddScoped<ERP.Web.Services.PreferenceService>();
+builder.Services.AddScoped<ERP.Web.Services.CatalogService>();
+// Lời gọi fetch() từ JavaScript gửi token chống giả mạo qua header
+builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 
 var app = builder.Build();

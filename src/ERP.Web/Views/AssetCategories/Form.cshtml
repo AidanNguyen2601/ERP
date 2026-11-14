@@ -1,0 +1,18 @@
+@model AssetCategory
+@{ ViewData["Title"] = Model.Id == 0 ? "Thêm nhóm tài sản" : $"Sửa nhóm {Model.Code}"; }
+<div class="card" style="max-width:860px"><div class="card-body">
+<form asp-action="Save" method="post">
+    <input type="hidden" asp-for="Id" />
+    <div class="row g-3">
+        <div class="col-md-3"><label asp-for="Code" class="form-label"></label><input asp-for="Code" class="form-control" /><span asp-validation-for="Code" class="text-danger small"></span></div>
+        <div class="col-md-6"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+        <div class="col-md-3"><label asp-for="DefaultLifeMonths" class="form-label"></label><input asp-for="DefaultLifeMonths" type="number" class="form-control" /><span asp-validation-for="DefaultLifeMonths" class="text-danger small"></span></div>
+        <div class="col-md-4"><label asp-for="AssetAccountId" class="form-label"></label><select asp-for="AssetAccountId" asp-items="ViewBag.AssetAccounts" class="form-select"><option value="">-- Chọn --</option></select><span asp-validation-for="AssetAccountId" class="text-danger small"></span></div>
+        <div class="col-md-4"><label asp-for="DepreciationAccountId" class="form-label"></label><select asp-for="DepreciationAccountId" asp-items="ViewBag.DepAccounts" class="form-select"><option value="">-- Chọn --</option></select><span asp-validation-for="DepreciationAccountId" class="text-danger small"></span></div>
+        <div class="col-md-4"><label asp-for="ExpenseAccountId" class="form-label"></label><select asp-for="ExpenseAccountId" asp-items="ViewBag.ExpAccounts" class="form-select"><option value="">-- Chọn --</option></select><span asp-validation-for="ExpenseAccountId" class="text-danger small"></span></div>
+    </div>
+    <div class="form-text mt-2">Khi ghi tăng tài sản thuộc nhóm, hệ thống dùng các tài khoản trên để hạch toán nguyên giá và khấu hao hằng tháng.</div>
+    <div class="mt-4"><button class="btn btn-primary">Lưu</button> <a asp-action="Index" class="btn btn-light">Hủy</a></div>
+</form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

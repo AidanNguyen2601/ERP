@@ -2,32 +2,23 @@
 @{
     ViewData["Title"] = "Trang chủ";
     var fin = User.SeesFinance();
-    var tiles = new List<(string Icon, string Name, string Url, string Bg)>();
-    if (fin)
-    {
-        tiles.Add(("📊", "Quản lý kế toán tổng hợp", Url.Action("Index", "Journals")!, "#eef4ff"));
-        tiles.Add(("📥", "Quản lý kế toán phải thu", Url.Action("Index", "Debts", new { kind = "ar" })!, "#ecfdf5"));
-        tiles.Add(("📤", "Quản lý kế toán phải trả", Url.Action("Index", "Debts", new { kind = "ap" })!, "#fff7ed"));
-        tiles.Add(("🏢", "Quản lý kế toán tài sản", Url.Action("Index", "Assets")!, "#f5f3ff"));
-        tiles.Add(("💰", "Quản lý dòng tiền", Url.Action("Index", "Cash")!, "#fefce8"));
-        tiles.Add(("🧾", "Quản lý hóa đơn", Url.Action("Index", "Invoices", new { direction = "Sales" })!, "#fdf2f8"));
-    }
-    tiles.Add(("📦", "Quản lý Kho", Url.Action("Index", "Inventory")!, "#f0f9ff"));
-    tiles.Add(("🛒", "Quản lý Mua hàng", Url.Action("Index", "PurchaseOrders")!, "#fff1f2"));
-    tiles.Add(("🏷️", "Quản lý Bán hàng", Url.Action("Index", "SalesOrders")!, "#f0fdf4"));
-    tiles.Add(("⚙️", "Quản lý sản xuất", Url.Action("Index", "Production")!, "#f8fafc"));
+    var modules = Menu.VisibleGroups(User).ToList();
     var maxBar = Model.Monthly.Any() ? Math.Max(1, Model.Monthly.Max(m => Math.Max(m.Revenue, m.Cost))) : 1;
 }
 <div class="card mb-3"><div class="card-body">
-    <div class="section-title">🗂️ Quản lý nguồn lực doanh nghiệp</div>
+    <div class="section-title"><i class="bi bi-star-fill fav-color me-1"></i> Yêu thích</div>
+    <div class="tiles" data-fav-list data-fav-mode="tiles"></div>
+    <div class="small text-muted" data-fav-empty>Chưa có trang yêu thích. Bấm <i class="bi bi-star"></i> cạnh tiêu đề trang hoặc cạnh chức năng trong menu để ghim vào đây; kéo thả để sắp xếp.</div>
+</div></div>
+<div class="card mb-3"><div class="card-body">
+    <div class="section-title"><i class="bi bi-grid-3x3-gap me-1"></i> Quản lý nguồn lực doanh nghiệp</div>
     <div class="tiles">
-        @foreach (var t in tiles)
+        @foreach (var (g, items) in modules)
         {
-            <a class="tile" href="@t.Url"><span class="ico" style="background:@t.Bg">@t.Icon</span>@t.Name</a>
+            <a class="tile" href="@items[0].Url(Url)" title="@string.Join(" · ", items.Select(i => i.Title))"><span class="ico" style="background:@g.Tint"><i class="bi @g.Icon"></i></span>@g.Title</a>
         }
     </div>
 </div></div>
-
 @if (fin)
 {
     <div class="row g-3 mb-3">

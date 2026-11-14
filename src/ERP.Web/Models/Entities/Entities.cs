@@ -573,3 +573,28 @@ public class ProductionOrderLine
     public decimal IssuedQty { get; set; }
     public decimal Cost { get; set; }
 }
+
+// =====================================================================
+//  DANH MỤC DÙNG CHUNG & TÙY CHỌN NGƯỜI DÙNG
+// =====================================================================
+/// <summary>Danh mục dùng chung: đơn vị tính, phòng ban, ngân hàng... (chứng từ lưu theo tên để giữ lịch sử)</summary>
+public class CatalogItem
+{
+    public int Id { get; set; }
+    [Display(Name = "Loại danh mục")] public CatalogType Type { get; set; }
+    [Required(ErrorMessage = "Nhập mã"), StringLength(20)][Display(Name = "Mã")] public string Code { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Nhập tên"), StringLength(100)][Display(Name = "Tên")] public string Name { get; set; } = string.Empty;
+    [Range(0, 9999)][Display(Name = "Thứ tự")] public int SortOrder { get; set; }
+    [StringLength(300)][Display(Name = "Ghi chú")] public string? Note { get; set; }
+    [Display(Name = "Đang sử dụng")] public bool IsActive { get; set; } = true;
+}
+
+/// <summary>Tùy chọn theo người dùng (giao diện, yêu thích, bố cục bảng) – Value là JSON</summary>
+public class UserPreference
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    [Required, StringLength(200)] public string Key { get; set; } = string.Empty;
+    public string Value { get; set; } = string.Empty;
+    public DateTime UpdatedAt { get; set; } = DateTime.Now;
+}

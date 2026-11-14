@@ -1,0 +1,26 @@
+@model List<AssetCategory>
+@{
+    ViewData["Title"] = "Nhóm tài sản cố định";
+    var counts = (Dictionary<int, int>)ViewBag.Counts;
+    var canEdit = User.CanAccounting();
+}
+<div class="toolbar">
+    <a class="btn btn-sm btn-light" asp-controller="Assets" asp-action="Index"><i class="bi bi-building"></i> Sổ tài sản cố định</a>
+    @if (canEdit) { <a class="btn btn-sm btn-primary ms-auto" asp-action="Create"><i class="bi bi-plus-lg"></i> Thêm nhóm</a> }
+</div>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Mã nhóm</th><th>Tên nhóm</th><th>TK nguyên giá</th><th>TK hao mòn</th><th>TK chi phí KH</th><th class="num">Thời gian KH (tháng)</th><th class="num">Số tài sản</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var c in Model)
+    {
+        <tr><td><b>@c.Code</b></td><td>@c.Name</td>
+            <td class="small">@c.AssetAccount?.Code – @c.AssetAccount?.Name</td>
+            <td class="small">@c.DepreciationAccount?.Code – @c.DepreciationAccount?.Name</td>
+            <td class="small">@c.ExpenseAccount?.Code – @c.ExpenseAccount?.Name</td>
+            <td class="num">@c.DefaultLifeMonths</td>
+            <td class="num">@counts.GetValueOrDefault(c.Id)</td>
+            <td class="text-end">@if (canEdit) { <a class="btn btn-sm btn-light" asp-action="Edit" asp-route-id="@c.Id"><i class="bi bi-pencil"></i> Sửa</a> }</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="8" class="text-center text-muted py-3">Chưa có nhóm tài sản.</td></tr> }
+    </tbody>
+</table></div></div></div>

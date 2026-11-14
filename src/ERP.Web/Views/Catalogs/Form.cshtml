@@ -1,0 +1,18 @@
+@model CatalogItem
+@{ ViewData["Title"] = (Model.Id == 0 ? "Thêm " : "Sửa ") + Model.Type.GetDisplayName().ToLowerInvariant(); }
+<div class="card" style="max-width:720px"><div class="card-body">
+<form asp-action="Save" method="post">
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="Type" />
+    <div asp-validation-summary="ModelOnly" class="text-danger small"></div>
+    <div class="row g-3">
+        <div class="col-md-4"><label asp-for="Code" class="form-label"></label><input asp-for="Code" class="form-control" /><span asp-validation-for="Code" class="text-danger small"></span></div>
+        <div class="col-md-8"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+        <div class="col-md-4"><label asp-for="SortOrder" class="form-label"></label><input asp-for="SortOrder" type="number" class="form-control" /></div>
+        <div class="col-md-8"><label asp-for="Note" class="form-label"></label><input asp-for="Note" class="form-control" /></div>
+        <div class="col-12"><div class="form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div></div>
+    </div>
+    <div class="mt-4"><button class="btn btn-primary">Lưu</button> <a asp-action="Index" asp-route-type="@Model.Type" class="btn btn-light">Hủy</a></div>
+</form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

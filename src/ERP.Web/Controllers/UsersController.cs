@@ -83,6 +83,5 @@ public class UsersController : Controller
     private void LoadRoles()
     {
         ViewBag.Roles = new SelectList(AppRoles.All.Select(r => new { Value = r, Text = AppRoles.DisplayName(r) }), "Value", "Text");
-        ViewBag.Departments = _db.Users.Select(u => u.Department).Distinct().OrderBy(d => d).ToList();
     }
 }

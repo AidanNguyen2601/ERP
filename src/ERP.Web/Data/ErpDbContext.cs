@@ -43,6 +43,9 @@ public class ErpDbContext : DbContext
     public DbSet<BomLine> BomLines => Set<BomLine>();
     public DbSet<ProductionOrder> ProductionOrders => Set<ProductionOrder>();
     public DbSet<ProductionOrderLine> ProductionOrderLines => Set<ProductionOrderLine>();
+    // Danh mục dùng chung & tùy chọn người dùng
+    public DbSet<CatalogItem> CatalogItems => Set<CatalogItem>();
+    public DbSet<UserPreference> UserPreferences => Set<UserPreference>();
 
     /// <summary>Mọi cột tiền / số lượng: decimal(18,2)</summary>
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
@@ -76,6 +79,8 @@ public class ErpDbContext : DbContext
         modelBuilder.Entity<DepreciationRun>().HasIndex(x => new { x.Year, x.Month }).IsUnique();
         modelBuilder.Entity<Bom>().HasIndex(x => x.Code).IsUnique();
         modelBuilder.Entity<ProductionOrder>().HasIndex(x => x.Number).IsUnique();
+        modelBuilder.Entity<CatalogItem>().HasIndex(x => new { x.Type, x.Code }).IsUnique();
+        modelBuilder.Entity<UserPreference>().HasIndex(x => new { x.UserId, x.Key }).IsUnique();
 
         // Chứng từ đã phát sinh không xóa dây chuyền
         foreach (var fk in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))
