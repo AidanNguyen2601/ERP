@@ -40,19 +40,18 @@
 else
 {
     var up = Model == "bottom";
-    var popper = "{\"strategy\":\"fixed\"}";
     <nav class="hnav hnav-@Model">
         <a class="hbrand" href="@homeUrl"><i class="bi bi-grid-3x3-gap-fill"></i> ERP<span>Suite</span></a>
         <div class="hnav-scroll">
             <a class="hlink @(Menu.Home.Active(ctx) ? "active" : "")" href="@homeUrl"><i class="bi @Menu.Home.Icon"></i><span>@Menu.Home.Title</span></a>
             <div class="@(up ? "dropup" : "dropdown") fav-sec" hidden>
-                <button type="button" class="hlink dropdown-toggle" data-bs-toggle="dropdown" data-bs-popper-config="@popper"><i class="bi bi-star-fill fav-color"></i><span>Yêu thích</span></button>
+                <button type="button" class="hlink dropdown-toggle" data-bs-toggle="dropdown" data-fixed-dropdown><i class="bi bi-star-fill fav-color"></i><span>Yêu thích</span></button>
                 <div class="dropdown-menu shadow" data-fav-list data-fav-mode="dropdown"></div>
             </div>
             @foreach (var (g, items) in groups)
             {
                 <div class="@(up ? "dropup" : "dropdown")">
-                    <button type="button" class="hlink dropdown-toggle @(items.Any(i => i.Active(ctx)) ? "active" : "")" data-bs-toggle="dropdown" data-bs-popper-config="@popper">
+                    <button type="button" class="hlink dropdown-toggle @(items.Any(i => i.Active(ctx)) ? "active" : "")" data-bs-toggle="dropdown" data-fixed-dropdown>
                         <i class="bi @g.Icon"></i><span>@g.Title</span></button>
                     <div class="dropdown-menu shadow">
                         @foreach (var i in items)

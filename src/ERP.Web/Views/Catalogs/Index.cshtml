@@ -26,7 +26,7 @@
         <tr class="@(c.IsActive ? "" : "text-muted")">
             <td class="num">@c.SortOrder</td><td><b>@c.Code</b></td><td>@c.Name</td><td class="small">@c.Note</td>
             <td class="num">@(used > 0 ? used.ToString() : "")</td>
-            <td>@if (c.IsActive) { <span class="badge text-bg-success">Đang dùng</span> } else { <span class="badge text-bg-secondary">Ngưng</span> }</td>
+            <td>@if (c.IsActive) { <span class="badge bg-success">Đang dùng</span> } else { <span class="badge bg-secondary">Ngưng</span> }</td>
             <td class="text-end text-nowrap">
                 @if (canEdit)
                 {

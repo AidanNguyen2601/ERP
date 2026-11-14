@@ -29,7 +29,8 @@
     ERP.toast = function (msg, kind) {
         const box = document.getElementById('toasts'); if (!box || !window.bootstrap) return;
         const el = document.createElement('div');
-        el.className = 'toast align-items-center border-0 text-bg-' + (kind || 'dark');
+        const k = kind || 'dark';
+        el.className = 'toast align-items-center border-0 bg-' + k + (k === 'warning' || k === 'light' ? ' text-dark' : ' text-white');
         el.setAttribute('role', 'status');
         el.innerHTML = '<div class="d-flex"><div class="toast-body"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>';
         el.querySelector('.toast-body').textContent = msg;
@@ -37,6 +38,15 @@
         el.addEventListener('hidden.bs.toast', () => el.remove());
         new bootstrap.Toast(el, { delay: 2500 }).show();
     };
+
+    // Dropdown đặt trong vùng cuộn (menu ngang, thanh công cụ bảng) dùng định vị "fixed" để không bị cắt.
+    // Bootstrap 5.1 không đọc được popperConfig từ thuộc tính data-* nên khởi tạo bằng JS.
+    ERP.initFixedDropdowns = function (root) {
+        if (!window.bootstrap) return;
+        (root || document).querySelectorAll('[data-fixed-dropdown]').forEach(el =>
+            bootstrap.Dropdown.getOrCreateInstance(el, { popperConfig: { strategy: 'fixed' } }));
+    };
+    ERP.initFixedDropdowns();
 
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const safeIcon = i => /^bi-[a-z0-9-]+$/.test(i || '') ? i : 'bi-star';

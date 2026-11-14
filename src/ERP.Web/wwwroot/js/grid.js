@@ -42,8 +42,8 @@
         tools.innerHTML = `
             <span class="grid-hint d-none d-md-inline"><i class="bi bi-arrows-move"></i> Kéo tiêu đề để đổi thứ tự · kéo mép cột để chỉnh độ rộng</span>
             <div class="dropdown">
-                <button type="button" class="btn btn-sm btn-light grid-cols-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside" data-bs-popper-config='{"strategy":"fixed"}'>
-                    <i class="bi bi-layout-three-columns"></i> Cột <span class="badge text-bg-secondary grid-hidden-count"></span></button>
+                <button type="button" class="btn btn-sm btn-light grid-cols-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside" data-fixed-dropdown>
+                    <i class="bi bi-layout-three-columns"></i> Cột <span class="badge bg-secondary grid-hidden-count"></span></button>
                 <div class="dropdown-menu dropdown-menu-end shadow grid-menu">
                     <div class="px-3 pb-1 small text-muted">Chọn cột hiển thị</div>
                     <div class="grid-col-list"></div>
@@ -55,6 +55,7 @@
                 </div>
             </div>`;
         wrap.parentNode.insertBefore(tools, wrap);
+        ERP.initFixedDropdowns?.(tools);
         const list = tools.querySelector('.grid-col-list');
 
         function renderChooser() {
