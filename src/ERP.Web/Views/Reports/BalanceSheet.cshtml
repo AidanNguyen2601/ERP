@@ -1,0 +1,27 @@
+@model List<ReportLine>
+@{
+    ViewData["Title"] = "Bảng cân đối kế toán";
+    var sources = (List<ReportLine>)ViewBag.Sources;
+    var ta = Model.Last().Amount; var ts = sources.Last().Amount;
+}
+<partial name="_GlNav" />
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Tại ngày</label><input type="date" name="at" value="@(((DateTime)ViewBag.At).Iso())" class="form-control form-control-sm" /></div>
+    <button class="btn btn-sm btn-outline-primary">Xem</button>
+    <button type="button" class="btn btn-sm btn-light border ms-auto" onclick="window.print()">In</button>
+</form>
+<div class="row g-3">
+    @foreach (var (title, list) in new[] { ("TÀI SẢN", Model), ("NGUỒN VỐN", sources) })
+    {
+        <div class="col-lg-6"><div class="card"><div class="card-header">@title</div><div class="card-body p-0"><table class="table table-sm mb-0 report-table">
+            <thead><tr><th>Mã số</th><th>Chỉ tiêu</th><th class="num">Số cuối kỳ</th></tr></thead>
+            <tbody>
+            @foreach (var r in list)
+            {
+                <tr class="@(r.Code is "270" or "440" ? "total" : r.Bold ? "group" : "")"><td>@r.Code</td><td class="@(r.Indent > 0 ? "ind-1" : "")">@r.Name</td><td class="num @(r.Amount < 0 ? "text-danger" : "")">@r.Amount.ToMoney()</td></tr>
+            }
+            </tbody>
+        </table></div></div></div>
+    }
+</div>
+<div class="small mt-2 @(ta == ts ? "good" : "bad")">@(ta == ts ? "✓ Tổng tài sản = Tổng nguồn vốn" : $"⚠ Chênh lệch {(ta - ts).ToMoney()}")</div>

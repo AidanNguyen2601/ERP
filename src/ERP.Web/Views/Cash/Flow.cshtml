@@ -1,0 +1,32 @@
+@{
+    ViewData["Title"] = "Báo cáo & dự báo dòng tiền";
+    var months = (List<DateTime>)ViewBag.Months;
+    var rows = (List<(CashVoucherType Type, string Cat, List<decimal> Values)>)ViewBag.Rows;
+    var weeks = (List<(DateTime From, DateTime To, decimal In, decimal Out, decimal Balance)>)ViewBag.Weeks;
+    decimal Net(int i) => rows.Sum(r => r.Type == CashVoucherType.Receipt ? r.Values[i] : -r.Values[i]);
+    var minBal = weeks.Min(w => w.Balance);
+}
+<div class="subnav"><a asp-action="Index">Quỹ & phiếu thu chi</a><a class="active" asp-action="Flow">Báo cáo & dự báo dòng tiền</a>
+    @foreach (var m in new[] { 3, 6, 12 }) { <a asp-action="Flow" asp-route-months="@m" class="@((int)ViewBag.MonthsCount == m ? "active" : "")">@m tháng</a> }</div>
+<div class="card mb-3"><div class="card-header">Dòng tiền thực tế theo tháng (theo phiếu thu / chi, không gồm chuyển nội bộ)</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0 report-table">
+    <thead><tr><th>Khoản mục</th>@foreach (var m in months) { <th class="num">@m.ToString("MM/yyyy")</th> }<th class="num">Cộng</th></tr></thead>
+    <tbody>
+        <tr class="group"><td colspan="@(months.Count + 2)">Dòng tiền vào</td></tr>
+        @foreach (var r in rows.Where(r => r.Type == CashVoucherType.Receipt)) { <tr><td class="ind-1">@r.Cat</td>@foreach (var v in r.Values) { <td class="num good">@(v == 0 ? "" : v.ToMoney())</td> }<td class="num fw-semibold">@r.Values.Sum().ToMoney()</td></tr> }
+        <tr class="group"><td colspan="@(months.Count + 2)">Dòng tiền ra</td></tr>
+        @foreach (var r in rows.Where(r => r.Type == CashVoucherType.Payment)) { <tr><td class="ind-1">@r.Cat</td>@foreach (var v in r.Values) { <td class="num bad">@(v == 0 ? "" : v.ToMoney())</td> }<td class="num fw-semibold">@r.Values.Sum().ToMoney()</td></tr> }
+    </tbody>
+    <tfoot><tr class="total"><td>Lưu chuyển tiền thuần</td>@for (var i = 0; i < months.Count; i++) { <td class="num @(Net(i) < 0 ? "bad" : "good")">@Net(i).ToMoney()</td> }<td class="num">@Enumerable.Range(0, months.Count).Sum(Net).ToMoney()</td></tr></tfoot>
+</table></div></div></div>
+<div class="card"><div class="card-header">Dự báo 8 tuần tới (tiền hiện có @(((decimal)ViewBag.CashNow).ToMoney()) + thu theo hạn HĐ bán − chi theo hạn HĐ mua)</div><div class="card-body p-0"><table class="table table-sm mb-0 report-table">
+    <thead><tr><th>Tuần</th><th class="num">Dự kiến thu</th><th class="num">Dự kiến chi</th><th class="num">Số dư dự kiến</th><th style="width:30%"></th></tr></thead>
+    <tbody>
+    @{ var max = Math.Max(1, weeks.Max(w => Math.Abs(w.Balance))); }
+    @foreach (var w in weeks)
+    {
+        <tr><td>@w.From.ToShortDate() – @w.To.ToShortDate()</td><td class="num good">@w.In.ToMoney()</td><td class="num bad">@w.Out.ToMoney()</td><td class="num fw-semibold @(w.Balance < 0 ? "bad" : "")">@w.Balance.ToMoney()</td>
+            <td><div class="progress" style="height:10px"><div class="progress-bar @(w.Balance < 0 ? "bg-danger" : "")" style="width:@((int)(Math.Abs(w.Balance) * 100 / max))%"></div></div></td></tr>
+    }
+    </tbody>
+</table></div></div>
+<div class="small text-muted mt-2">Tuần đầu bao gồm cả khoản quá hạn: phải thu quá hạn @(((decimal)ViewBag.OverdueIn).ToMoney()), phải trả quá hạn @(((decimal)ViewBag.OverdueOut).ToMoney()). @(minBal < 0 ? "⚠ Dự báo thiếu hụt tiền, cần kế hoạch vay hoặc đôn đốc thu nợ." : "")</div>

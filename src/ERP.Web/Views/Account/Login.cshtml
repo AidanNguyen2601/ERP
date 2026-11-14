@@ -1,0 +1,32 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Đăng nhập";
+    Layout = "_AuthLayout";
+}
+<div class="auth-card">
+    <h3 class="mb-1 fw-bold">ERP Suite</h3>
+    <p class="text-muted mb-4">Đăng nhập để tiếp tục</p>
+    <form asp-action="Login" method="post">
+        <input type="hidden" asp-for="ReturnUrl" />
+        <div asp-validation-summary="ModelOnly" class="text-danger small mb-2"></div>
+        <div class="mb-3">
+            <label asp-for="Username" class="form-label"></label>
+            <input asp-for="Username" class="form-control" autofocus />
+            <span asp-validation-for="Username" class="text-danger small"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Password" class="form-label"></label>
+            <input asp-for="Password" class="form-control" />
+            <span asp-validation-for="Password" class="text-danger small"></span>
+        </div>
+        <div class="form-check mb-3">
+            <input asp-for="RememberMe" class="form-check-input" />
+            <label asp-for="RememberMe" class="form-check-label"></label>
+        </div>
+        <button class="btn btn-primary w-100">Đăng nhập</button>
+    </form>
+    <div class="mt-4 small text-muted">
+        Tài khoản demo (mật khẩu <b>Abc@123</b>): <b>admin</b> · <b>director</b> · <b>ketoan</b> · <b>kinhdoanh</b> · <b>muahang</b> · <b>thukho</b> · <b>sanxuat</b>
+    </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

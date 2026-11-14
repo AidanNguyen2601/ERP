@@ -1,0 +1,19 @@
+@model List<Warehouse>
+@{ ViewData["Title"] = "Danh mục kho"; var can = User.InAny(AppRoles.WarehouseTeam); }
+<div class="row g-3">
+    <div class="col-lg-8"><div class="card"><div class="card-body p-0"><table class="table mb-0">
+        <thead><tr><th>Mã</th><th>Tên kho</th><th>Địa chỉ</th><th>Trạng thái</th></tr></thead>
+        <tbody>@foreach (var w in Model) { <tr><td><b>@w.Code</b></td><td>@w.Name</td><td>@w.Address</td><td>@(w.IsActive ? "Đang dùng" : "Ngưng")</td></tr> }</tbody>
+    </table></div></div></div>
+    @if (can)
+    {
+        <div class="col-lg-4"><div class="card"><div class="card-header">Thêm kho</div><div class="card-body">
+            <form asp-action="SaveWarehouse" method="post">
+                <input type="hidden" name="IsActive" value="true" />
+                <div class="mb-2"><label class="form-label small">Mã kho</label><input name="Code" class="form-control form-control-sm" required /></div>
+                <div class="mb-2"><label class="form-label small">Tên kho</label><input name="Name" class="form-control form-control-sm" required /></div>
+                <div class="mb-2"><label class="form-label small">Địa chỉ</label><input name="Address" class="form-control form-control-sm" /></div>
+                <button class="btn btn-sm btn-primary">Thêm</button>
+            </form></div></div></div>
+    }
+</div>

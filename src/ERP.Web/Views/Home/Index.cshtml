@@ -1,0 +1,81 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Trang chủ";
+    var fin = User.SeesFinance();
+    var tiles = new List<(string Icon, string Name, string Url, string Bg)>();
+    if (fin)
+    {
+        tiles.Add(("📊", "Quản lý kế toán tổng hợp", Url.Action("Index", "Journals")!, "#eef4ff"));
+        tiles.Add(("📥", "Quản lý kế toán phải thu", Url.Action("Index", "Debts", new { kind = "ar" })!, "#ecfdf5"));
+        tiles.Add(("📤", "Quản lý kế toán phải trả", Url.Action("Index", "Debts", new { kind = "ap" })!, "#fff7ed"));
+        tiles.Add(("🏢", "Quản lý kế toán tài sản", Url.Action("Index", "Assets")!, "#f5f3ff"));
+        tiles.Add(("💰", "Quản lý dòng tiền", Url.Action("Index", "Cash")!, "#fefce8"));
+        tiles.Add(("🧾", "Quản lý hóa đơn", Url.Action("Index", "Invoices", new { direction = "Sales" })!, "#fdf2f8"));
+    }
+    tiles.Add(("📦", "Quản lý Kho", Url.Action("Index", "Inventory")!, "#f0f9ff"));
+    tiles.Add(("🛒", "Quản lý Mua hàng", Url.Action("Index", "PurchaseOrders")!, "#fff1f2"));
+    tiles.Add(("🏷️", "Quản lý Bán hàng", Url.Action("Index", "SalesOrders")!, "#f0fdf4"));
+    tiles.Add(("⚙️", "Quản lý sản xuất", Url.Action("Index", "Production")!, "#f8fafc"));
+    var maxBar = Model.Monthly.Any() ? Math.Max(1, Model.Monthly.Max(m => Math.Max(m.Revenue, m.Cost))) : 1;
+}
+<div class="card mb-3"><div class="card-body">
+    <div class="section-title">🗂️ Quản lý nguồn lực doanh nghiệp</div>
+    <div class="tiles">
+        @foreach (var t in tiles)
+        {
+            <a class="tile" href="@t.Url"><span class="ico" style="background:@t.Bg">@t.Icon</span>@t.Name</a>
+        }
+    </div>
+</div></div>
+
+@if (fin)
+{
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-xl-3"><div class="card kpi"><div class="label">Doanh thu tháng này</div><div class="value">@Model.RevenueMonth.ToShortMoney()</div><div class="sub">Lãi gộp @Model.GrossProfitMonth.ToShortMoney()</div></div></div>
+        <div class="col-6 col-xl-3"><div class="card kpi"><div class="label">Tiền mặt & tiền gửi</div><div class="value">@Model.CashBalance.ToShortMoney()</div><div class="sub"><a asp-controller="Cash" asp-action="Flow">Dòng tiền →</a></div></div></div>
+        <div class="col-6 col-xl-3"><div class="card kpi"><div class="label">Phải thu khách hàng</div><div class="value">@Model.Receivable.ToShortMoney()</div><div class="sub"><span class="bad">Quá hạn @Model.ReceivableOverdue.ToShortMoney()</span></div></div></div>
+        <div class="col-6 col-xl-3"><div class="card kpi"><div class="label">Phải trả nhà cung cấp</div><div class="value">@Model.Payable.ToShortMoney()</div><div class="sub"><a asp-controller="Debts" asp-action="Index" asp-route-kind="ap">Chi tiết →</a></div></div></div>
+    </div>
+}
+<div class="row g-3 mb-3">
+    <div class="col-6 col-xl-3"><div class="card kpi"><div class="label">Giá trị tồn kho</div><div class="value">@Model.InventoryValue.ToShortMoney()</div><div class="sub"><span class="@(Model.LowStock.Any() ? "warn" : "")">@Model.LowStock.Count mặt hàng dưới tồn tối thiểu</span></div></div></div>
+    <div class="col-6 col-xl-3"><div class="card kpi"><div class="label">Đơn mua chờ duyệt</div><div class="value">@Model.PoPendingApproval</div><div class="sub"><a asp-controller="PurchaseOrders" asp-action="Index" asp-route-status="PendingApproval">Xem →</a></div></div></div>
+    <div class="col-6 col-xl-3"><div class="card kpi"><div class="label">Đơn bán chờ giao</div><div class="value">@Model.SoToDeliver</div><div class="sub"><a asp-controller="SalesOrders" asp-action="Index">Xem →</a></div></div></div>
+    <div class="col-6 col-xl-3"><div class="card kpi"><div class="label">Lệnh sản xuất đang mở</div><div class="value">@Model.ProductionOpen</div><div class="sub">@if (fin) { <span>@Model.DraftInvoices hóa đơn nháp</span> }</div></div></div>
+</div>
+
+<div class="row g-3">
+    @if (fin)
+    {
+        <div class="col-lg-7"><div class="card h-100"><div class="card-header d-flex justify-content-between"><span>Doanh thu & chi phí 6 tháng</span>
+            <span class="legend"><span><i style="background:var(--accent)"></i>Doanh thu</span><span><i style="background:#f59e0b"></i>Giá vốn + CPBH + CPQL</span></span></div>
+            <div class="card-body"><div class="chart-bars">
+                @foreach (var m in Model.Monthly)
+                {
+                    <div class="grp"><div class="pair">
+                        <div class="b rev" style="height:@((int)(m.Revenue * 100 / maxBar))%" title="Doanh thu @m.Revenue.ToMoney()"></div>
+                        <div class="b cost" style="height:@((int)(m.Cost * 100 / maxBar))%" title="Chi phí @m.Cost.ToMoney()"></div>
+                    </div><div class="lbl">@m.Month</div><div class="lbl">@m.Revenue.ToShortMoney()</div></div>
+                }
+            </div></div></div></div>
+        <div class="col-lg-5"><div class="card h-100"><div class="card-header">Hóa đơn bán quá hạn thanh toán</div><div class="card-body p-0">
+            <table class="table table-sm mb-0"><tbody>
+            @foreach (var i in Model.OverdueInvoices)
+            {
+                <tr><td><a asp-controller="Invoices" asp-action="Details" asp-route-id="@i.Id">@i.InvoiceNo</a><div class="small text-muted">@i.Partner?.Name</div></td>
+                    <td class="num">@i.Outstanding.ToMoney()</td><td class="overdue text-nowrap">@((DateTime.Today - i.DueDate).Days) ngày</td></tr>
+            }
+            @if (!Model.OverdueInvoices.Any()) { <tr><td class="text-muted text-center py-3">Không có hóa đơn quá hạn.</td></tr> }
+            </tbody></table></div></div></div>
+    }
+    <div class="col-12"><div class="card"><div class="card-header">Cảnh báo tồn kho tối thiểu</div><div class="card-body p-0">
+        <table class="table table-sm mb-0"><thead><tr><th>Mã</th><th>Tên hàng</th><th>Loại</th><th class="num">Tồn hiện tại</th><th class="num">Tồn tối thiểu</th><th></th></tr></thead><tbody>
+        @foreach (var (it, qty) in Model.LowStock)
+        {
+            <tr><td><a asp-controller="Inventory" asp-action="StockCard" asp-route-itemId="@it.Id">@it.Code</a></td><td>@it.Name</td><td>@it.Type.GetDisplayName()</td>
+                <td class="num bad">@qty.ToQty() @it.Unit</td><td class="num">@it.MinStock.ToQty()</td>
+                <td class="text-end">@if (it.Type == ItemType.FinishedGood) { <a class="btn btn-sm btn-outline-primary" asp-controller="Production" asp-action="Create">Lập lệnh SX</a> } else { <a class="btn btn-sm btn-outline-primary" asp-controller="PurchaseOrders" asp-action="Create" asp-route-itemId="@it.Id">Đặt mua</a> }</td></tr>
+        }
+        @if (!Model.LowStock.Any()) { <tr><td colspan="6" class="text-muted text-center py-3">Tất cả mặt hàng đều đủ tồn tối thiểu.</td></tr> }
+        </tbody></table></div></div></div>
+</div>

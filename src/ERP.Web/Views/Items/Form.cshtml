@@ -1,0 +1,21 @@
+@model Item
+@{ ViewData["Title"] = Model.Id == 0 ? "Thêm hàng hóa" : $"Sửa {Model.Code}"; }
+<div class="card" style="max-width:860px"><div class="card-body">
+<form asp-action="Save" method="post">
+    <input type="hidden" asp-for="Id" />
+    <div class="row g-3">
+        <div class="col-md-3"><label asp-for="Code" class="form-label"></label><input asp-for="Code" class="form-control" /><span asp-validation-for="Code" class="text-danger small"></span></div>
+        <div class="col-md-6"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+        <div class="col-md-3"><label asp-for="Unit" class="form-label"></label><input asp-for="Unit" class="form-control" list="units" /><datalist id="units"><option>Cái</option><option>Bộ</option><option>Tấm</option><option>Thanh</option><option>Lít</option><option>Kg</option><option>Mét</option><option>Lần</option><option>Chuyến</option></datalist></div>
+        <div class="col-md-4"><label asp-for="Type" class="form-label"></label><select asp-for="Type" class="form-select" asp-items="Html.GetEnumSelectList<ItemType>()"></select><span asp-validation-for="Type" class="text-danger small"></span>
+            <div class="form-text">NVL → TK 152 · Thành phẩm → 155 · Hàng hóa → 1561 · Dịch vụ: không quản lý kho</div></div>
+        <div class="col-md-3"><label asp-for="SalePrice" class="form-label"></label><input asp-for="SalePrice" type="number" step="1000" class="form-control" /></div>
+        <div class="col-md-2"><label asp-for="VatRate" class="form-label"></label><select asp-for="VatRate" class="form-select">@foreach (var v in new[] { 0, 5, 8, 10 }) { <option value="@v">@v%</option> }</select></div>
+        <div class="col-md-3"><label asp-for="MinStock" class="form-label"></label><input asp-for="MinStock" type="number" step="0.001" class="form-control" /></div>
+        <div class="col-md-12"><div class="form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div></div>
+        @if (Model.Id != 0) { <div class="col-12 small text-muted">Giá vốn bình quân hiện tại: @Model.AvgCost.ToMoney() (tự tính khi nhập kho – bình quân gia quyền di động).</div> }
+    </div>
+    <div class="mt-4"><button class="btn btn-primary">Lưu</button> <a asp-action="Index" class="btn btn-light">Hủy</a></div>
+</form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

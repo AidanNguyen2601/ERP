@@ -1,0 +1,45 @@
+@model JournalForm
+@{
+    ViewData["Title"] = Model.Id == 0 ? "Lập chứng từ kế toán" : $"Sửa chứng từ {Model.Number}";
+    var accounts = (List<Account>)ViewBag.Accounts; var partners = (List<Partner>)ViewBag.Partners;
+    var lines = Model.Lines.Any() ? Model.Lines : new List<LineInput> { new(), new() };
+}
+<form asp-action="Save" method="post">
+<input type="hidden" asp-for="Id" />
+<div class="card mb-3"><div class="card-body">
+    <div asp-validation-summary="All" class="alert alert-danger py-2 empty-hide"></div>
+    <div class="row g-3">
+        <div class="col-md-3"><label asp-for="Date" class="form-label"></label><input asp-for="Date" type="date" class="form-control" /></div>
+        <div class="col-md-9"><label asp-for="Description" class="form-label"></label><input asp-for="Description" class="form-control" placeholder="VD: Trích trước chi phí lãi vay tháng…" /></div>
+    </div>
+</div></div>
+<div class="card mb-3"><div class="card-body">
+<table class="table table-sm align-middle line-editor" data-calc="0">
+    <thead><tr><th style="width:36px">#</th><th style="min-width:260px">Tài khoản</th><th style="min-width:220px">Đối tượng (TK công nợ)</th><th>Diễn giải dòng</th><th class="text-end" style="width:150px">Nợ</th><th class="text-end" style="width:150px">Có</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var l in lines)
+    {
+        <tr class="line"><td class="idx text-muted"></td>
+            <td><input type="hidden" data-f="Id" value="@l.Id" /><select class="form-select form-select-sm" data-f="AccountId"><option value="">-- Chọn TK --</option>
+                @foreach (var a in accounts) { <option value="@a.Id" selected="@(l.AccountId == a.Id)">@a.Code – @a.Name</option> }</select></td>
+            <td><select class="form-select form-select-sm" data-f="PartnerId"><option value=""></option>
+                @foreach (var p in partners) { <option value="@p.Id" selected="@(l.PartnerId == p.Id)">@p.Code – @p.Name</option> }</select></td>
+            <td><input class="form-control form-control-sm" data-f="Description" value="@l.Description" /></td>
+            <td><input type="number" step="1" min="0" class="form-control form-control-sm text-end" data-f="Debit" value="@l.Debit.Raw()" /></td>
+            <td><input type="number" step="1" min="0" class="form-control form-control-sm text-end" data-f="Credit" value="@l.Credit.Raw()" /></td>
+            <td><button type="button" class="btn btn-sm btn-link text-danger remove-line">✕</button></td></tr>
+    }
+    </tbody>
+    <tfoot>
+        <tr><td colspan="7"><button type="button" class="btn btn-sm btn-outline-primary" data-add-line>+ Thêm dòng</button></td></tr>
+        <tr class="fw-semibold"><td colspan="4" class="text-end">Cộng</td><td class="text-end" data-sum="debit">0</td><td class="text-end" data-sum="credit">0</td><td></td></tr>
+        <tr><td colspan="7" class="text-end small diff">Chênh lệch Nợ − Có: <span data-sum="diff">0</span></td></tr>
+    </tfoot>
+</table>
+</div></div>
+<div class="d-flex gap-2">
+    <button class="btn btn-light border" name="post" value="false">Lưu nháp</button>
+    <button class="btn btn-primary" name="post" value="true">Lưu & ghi sổ</button>
+    <a class="btn btn-light" asp-action="Index">Hủy</a>
+</div>
+</form>

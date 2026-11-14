@@ -1,0 +1,37 @@
+@model List<LedgerRow>
+@{
+    var p = (Partner)ViewBag.Partner; var ar = (string)ViewBag.Kind == "ar"; var opening = (decimal)ViewBag.Opening;
+    var sign = ar ? 1 : -1;
+    ViewData["Title"] = $"Sổ chi tiết công nợ – {p.Name}";
+    var invs = (List<Invoice>)ViewBag.Invoices;
+}
+<partial name="_Nav" />
+<div class="doc-head"><div><div class="fs-5 fw-semibold">@p.Code – @p.Name</div><div class="meta">MST @p.TaxCode · @p.Address · Số ngày nợ @p.PaymentTermDays @(ar && p.CreditLimit > 0 ? $"· Hạn mức {p.CreditLimit.ToMoney()}" : "")</div></div>
+    <form class="d-flex gap-2 align-items-end" method="get"><input type="hidden" name="id" value="@p.Id" /><input type="hidden" name="kind" value="@ViewBag.Kind" />
+        <div><label class="form-label small mb-0">Từ</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>
+        <div><label class="form-label small mb-0">Đến</label><input type="date" name="to" value="@(((DateTime)ViewBag.To).Iso())" class="form-control form-control-sm" /></div>
+        <button class="btn btn-sm btn-outline-primary">Xem</button><button type="button" class="btn btn-sm btn-light border" onclick="window.print()">In</button></form></div>
+<div class="card mb-3"><div class="card-body p-0"><table class="table table-sm mb-0 report-table">
+    <thead><tr><th>Ngày</th><th>Số CT</th><th>Diễn giải</th><th>TK đối ứng</th><th class="num">@(ar ? "Phát sinh tăng (Nợ)" : "Đã trả (Nợ)")</th><th class="num">@(ar ? "Đã thu (Có)" : "Phát sinh tăng (Có)")</th><th class="num">Còn nợ</th></tr></thead>
+    <tbody>
+        <tr class="bold"><td colspan="6">Số dư đầu kỳ</td><td class="num">@((opening * sign).ToMoney())</td></tr>
+        @foreach (var r in Model)
+        {
+            <tr><td>@r.Date.ToDate()</td><td><a asp-controller="Journals" asp-action="Details" asp-route-id="@r.EntryId">@r.Number</a></td><td>@r.Description</td><td>@r.CounterAccounts</td>
+                <td class="num">@(r.Debit != 0 ? r.Debit.ToMoney() : "")</td><td class="num">@(r.Credit != 0 ? r.Credit.ToMoney() : "")</td><td class="num">@((r.Balance * sign).ToMoney())</td></tr>
+        }
+    </tbody>
+    <tfoot><tr class="total"><td colspan="4">Cộng / số dư cuối kỳ</td><td class="num">@Model.Sum(r => r.Debit).ToMoney()</td><td class="num">@Model.Sum(r => r.Credit).ToMoney()</td><td class="num">@(((Model.Any() ? Model.Last().Balance : opening) * sign).ToMoney())</td></tr></tfoot>
+</table></div></div>
+<div class="card"><div class="card-header d-flex justify-content-between"><span>Hóa đơn của đối tượng</span>
+    <a class="btn btn-sm btn-outline-primary" asp-controller="Cash" asp-action="Create" asp-route-type="@(ar ? "Receipt" : "Payment")" asp-route-partnerId="@p.Id">@(ar ? "+ Thu tiền" : "+ Trả tiền")</a></div>
+<div class="card-body p-0"><table class="table table-sm mb-0">
+    <thead><tr><th>Số HĐ</th><th>Ngày</th><th>Hạn TT</th><th class="num">Tổng tiền</th><th class="num">Đã thanh toán</th><th class="num">Còn nợ</th></tr></thead>
+    <tbody>
+    @foreach (var i in invs)
+    {
+        <tr><td><a asp-controller="Invoices" asp-action="Details" asp-route-id="@i.Id">@i.Series @i.InvoiceNo</a></td><td>@i.Date.ToDate()</td><td class="@(i.IsOverdue ? "overdue" : "")">@i.DueDate.ToDate()</td>
+            <td class="num">@i.Total.ToMoney()</td><td class="num">@i.PaidAmount.ToMoney()</td><td class="num fw-semibold">@(i.Outstanding > 0 ? i.Outstanding.ToMoney() : "✓")</td></tr>
+    }
+    </tbody>
+</table></div></div>

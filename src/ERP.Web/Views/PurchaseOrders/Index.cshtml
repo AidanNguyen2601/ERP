@@ -1,0 +1,23 @@
+@model List<PurchaseOrder>
+@{ ViewData["Title"] = "Đơn mua hàng"; var counts = (Dictionary<PoStatus, int>)ViewBag.Counts; var st = ViewBag.Status as PoStatus?; }
+<div class="subnav">
+    <a class="@(st == null ? "active" : "")" asp-action="Index">Tất cả</a>
+    @foreach (PoStatus s in Enum.GetValues<PoStatus>()) { if (counts.ContainsKey(s)) { <a class="@(st == s ? "active" : "")" asp-action="Index" asp-route-status="@s">@s.GetDisplayName() (@counts[s])</a> } }
+</div>
+<form class="toolbar" method="get"><input type="hidden" name="status" value="@st" />
+    <input name="q" value="@ViewBag.Q" class="form-control form-control-sm" style="width:260px" placeholder="Số đơn, nhà cung cấp" /><button class="btn btn-sm btn-outline-primary">Tìm</button>
+    <span class="small text-muted">Đơn từ @(((decimal)ViewBag.Threshold).ToMoney()) đ cần Ban Giám đốc duyệt</span>
+    @if ((bool)ViewBag.CanEdit) { <a class="btn btn-sm btn-primary ms-auto" asp-action="Create">+ Đơn mua hàng</a> }
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0">
+    <thead><tr><th>Số đơn</th><th>Ngày</th><th>Nhà cung cấp</th><th>Kho nhận</th><th>Giao dự kiến</th><th class="num">Tổng tiền</th><th>Trạng thái</th></tr></thead>
+    <tbody>
+    @foreach (var p in Model)
+    {
+        <tr><td><a asp-action="Details" asp-route-id="@p.Id">@p.Number</a></td><td>@p.Date.ToDate()</td><td>@p.Vendor?.Name</td><td>@p.Warehouse?.Code</td>
+            <td class="@(p.ExpectedDate < DateTime.Today && p.Status is PoStatus.Approved or PoStatus.PartiallyReceived ? "overdue" : "")">@p.ExpectedDate.ToDate()</td>
+            <td class="num">@p.Total.ToMoney()</td><td><partial name="_Badge" model="p.Status" /></td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="7" class="text-center text-muted py-4">Không có đơn.</td></tr> }
+    </tbody>
+</table></div></div></div>

@@ -1,0 +1,26 @@
+@model PagedList<JournalEntry>
+@{ ViewData["Title"] = "Chứng từ kế toán"; }
+<partial name="_GlNav" />
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@(((DateTime)ViewBag.To).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Nguồn</label><select name="source" class="form-select form-select-sm"><option value="">-- Tất cả --</option>
+        @foreach (JournalSource s in Enum.GetValues<JournalSource>()) { <option value="@s" selected="@(ViewBag.Source is JournalSource x && x == s)">@s.GetDisplayName()</option> }</select></div>
+    <div><label class="form-label small mb-0">Trạng thái</label><select name="status" class="form-select form-select-sm"><option value="">-- Tất cả --</option>
+        <option value="Draft" selected="@(ViewBag.Status is DocStatus d1 && d1 == DocStatus.Draft)">Nháp</option><option value="Posted" selected="@(ViewBag.Status is DocStatus d2 && d2 == DocStatus.Posted)">Đã ghi sổ</option></select></div>
+    <div><label class="form-label small mb-0">Tìm</label><input name="q" value="@ViewBag.Q" class="form-control form-control-sm" placeholder="Số CT, diễn giải" /></div>
+    <button class="btn btn-sm btn-outline-primary">Lọc</button>
+    @if (User.CanAccounting()) { <a class="btn btn-sm btn-primary ms-auto" asp-action="Create">+ Chứng từ kế toán</a> }
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Ngày</th><th>Số CT</th><th>Diễn giải</th><th>Nguồn</th><th>CT gốc</th><th class="num">Số tiền</th><th>Trạng thái</th></tr></thead>
+    <tbody>
+    @foreach (var j in Model.Items)
+    {
+        <tr><td>@j.Date.ToDate()</td><td><a asp-action="Details" asp-route-id="@j.Id">@j.Number</a></td><td>@j.Description</td>
+            <td class="small">@j.Source.GetDisplayName()</td><td class="small">@j.SourceRef</td><td class="num">@j.TotalDebit.ToMoney()</td><td><partial name="_Badge" model="j.Status" /></td></tr>
+    }
+    @if (!Model.Items.Any()) { <tr><td colspan="7" class="text-center text-muted py-4">Không có chứng từ.</td></tr> }
+    </tbody>
+</table></div></div></div>
+<partial name="_Pager" model="(Model.Page, Model.TotalPages)" />

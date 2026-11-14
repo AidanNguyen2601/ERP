@@ -1,0 +1,13 @@
+@{
+    var c = ViewContext.RouteData.Values["controller"]?.ToString(); var a = ViewContext.RouteData.Values["action"]?.ToString();
+    string On(string ctrl, string? act = null) => c == ctrl && (act == null || a == act) ? "active" : "";
+}
+<div class="subnav">
+    <a class="@On("Journals")" asp-controller="Journals" asp-action="Index">Chứng từ kế toán</a>
+    <a class="@On("Reports", "TrialBalance")" asp-controller="Reports" asp-action="TrialBalance">Cân đối số phát sinh</a>
+    <a class="@On("Reports", "Ledger")" asp-controller="Reports" asp-action="Ledger">Sổ cái / sổ chi tiết</a>
+    <a class="@On("Reports", "IncomeStatement")" asp-controller="Reports" asp-action="IncomeStatement">Kết quả kinh doanh</a>
+    <a class="@On("Reports", "BalanceSheet")" asp-controller="Reports" asp-action="BalanceSheet">Cân đối kế toán</a>
+    <a class="@On("Reports", "Periods")" asp-controller="Reports" asp-action="Periods">Khóa sổ</a>
+    <a class="@On("Accounts")" asp-controller="Accounts" asp-action="Index">Hệ thống tài khoản</a>
+</div>

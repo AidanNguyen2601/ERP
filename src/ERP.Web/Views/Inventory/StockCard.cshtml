@@ -1,0 +1,26 @@
+@model List<StockMove>
+@{
+    var item = (Item)ViewBag.Item; var docs = (Dictionary<string, int>)ViewBag.Docs;
+    ViewData["Title"] = $"Thẻ kho – {item.Code} {item.Name}";
+    decimal qty = ViewBag.OpenQty, val = ViewBag.OpenValue;
+}
+<partial name="_Nav" />
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Mặt hàng</label><select name="itemId" class="form-select form-select-sm" style="min-width:260px">@foreach (var i in (List<Item>)ViewBag.Items) { <option value="@i.Id" selected="@(i.Id == item.Id)">@i.Code – @i.Name</option> }</select></div>
+    <div><label class="form-label small mb-0">Kho</label><select name="warehouseId" class="form-select form-select-sm" asp-items="ViewBag.Whs"><option value="">-- Tất cả --</option></select></div>
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@(((DateTime)ViewBag.To).Iso())" class="form-control form-control-sm" /></div>
+    <button class="btn btn-sm btn-outline-primary">Xem</button>
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0 report-table">
+    <thead><tr><th>Ngày</th><th>Số phiếu</th><th>Kho</th><th>Diễn giải</th><th class="num">Nhập</th><th class="num">Xuất</th><th class="num">Đơn giá</th><th class="num">Tồn SL</th><th class="num">Giá trị tồn</th></tr></thead>
+    <tbody><tr class="bold"><td colspan="7">Tồn đầu kỳ</td><td class="num">@qty.ToQty()</td><td class="num">@val.ToMoney()</td></tr>
+    @foreach (var m in Model)
+    {
+        qty += m.Quantity; val += m.Amount;
+        <tr><td>@m.Date.ToDate()</td><td>@if (docs.TryGetValue(m.DocNumber, out var did)) { <a asp-action="Details" asp-route-id="@did">@m.DocNumber</a> } else { @m.DocNumber }</td><td>@m.Warehouse?.Code</td><td class="small">@m.Description</td>
+            <td class="num good">@(m.Quantity > 0 ? m.Quantity.ToQty() : "")</td><td class="num bad">@(m.Quantity < 0 ? (-m.Quantity).ToQty() : "")</td><td class="num">@m.UnitCost.ToMoney()</td><td class="num fw-semibold">@qty.ToQty()</td><td class="num">@val.ToMoney()</td></tr>
+    }</tbody>
+    <tfoot><tr class="total"><td colspan="4">Cộng / tồn cuối kỳ</td><td class="num">@Model.Where(m => m.Quantity > 0).Sum(m => m.Quantity).ToQty()</td><td class="num">@Model.Where(m => m.Quantity < 0).Sum(m => -m.Quantity).ToQty()</td><td></td><td class="num">@qty.ToQty() @item.Unit</td><td class="num">@val.ToMoney()</td></tr></tfoot>
+</table></div></div></div>
+<div class="small text-muted mt-2">Giá vốn bình quân hiện tại: @item.AvgCost.ToMoney() đ/@item.Unit.</div>

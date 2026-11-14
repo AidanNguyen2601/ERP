@@ -1,0 +1,34 @@
+@model List<LedgerRow>
+@{
+    var acc = (Account)ViewBag.Account; var opening = (decimal)ViewBag.Opening;
+    ViewData["Title"] = $"Sổ cái TK {acc.Code} – {acc.Name}";
+    var closing = Model.Any() ? Model.Last().Balance : opening;
+    string Side(decimal v) => v == 0 ? "0" : v > 0 ? $"Nợ {v.ToMoney()}" : $"Có {(-v).ToMoney()}";
+}
+<partial name="_GlNav" />
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Tài khoản</label><select name="account" class="form-select form-select-sm" style="min-width:280px">
+        @foreach (var a in (List<Account>)ViewBag.Accounts) { <option value="@a.Code" selected="@(a.Code == acc.Code)">@a.Code – @a.Name</option> }</select></div>
+    @if (acc.TrackPartner || acc.Code.StartsWith("13") || acc.Code.StartsWith("33"))
+    {
+        <div><label class="form-label small mb-0">Đối tượng</label><select name="partnerId" class="form-select form-select-sm" asp-items="ViewBag.Partners"><option value="">-- Tất cả --</option></select></div>
+    }
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@(((DateTime)ViewBag.To).Iso())" class="form-control form-control-sm" /></div>
+    <button class="btn btn-sm btn-outline-primary">Xem</button>
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0 report-table">
+    <thead><tr><th>Ngày</th><th>Số CT</th><th>Diễn giải</th><th>TK</th><th>TK đối ứng</th><th>Đối tượng</th><th class="num">Nợ</th><th class="num">Có</th><th class="num">Số dư</th></tr></thead>
+    <tbody>
+        <tr class="bold"><td colspan="8">Số dư đầu kỳ</td><td class="num">@Side(opening)</td></tr>
+        @foreach (var r in Model)
+        {
+            <tr><td>@r.Date.ToDate()</td><td><a asp-controller="Journals" asp-action="Details" asp-route-id="@r.EntryId">@r.Number</a></td><td>@r.Description</td><td>@r.AccountCode</td>
+                <td>@r.CounterAccounts</td><td class="small">@r.PartnerName</td><td class="num">@(r.Debit != 0 ? r.Debit.ToMoney() : "")</td><td class="num">@(r.Credit != 0 ? r.Credit.ToMoney() : "")</td><td class="num">@Side(r.Balance)</td></tr>
+        }
+    </tbody>
+    <tfoot>
+        <tr class="bold"><td colspan="6">Cộng phát sinh</td><td class="num">@Model.Sum(r => r.Debit).ToMoney()</td><td class="num">@Model.Sum(r => r.Credit).ToMoney()</td><td></td></tr>
+        <tr class="total"><td colspan="8">Số dư cuối kỳ</td><td class="num">@Side(closing)</td></tr>
+    </tfoot>
+</table></div></div></div>

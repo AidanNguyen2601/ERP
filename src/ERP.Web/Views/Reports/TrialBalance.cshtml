@@ -1,0 +1,37 @@
+@model List<TrialBalanceRow>
+@{
+    ViewData["Title"] = "Bảng cân đối số phát sinh";
+    var leaf = Model.Where(r => !r.IsGroup).ToList();
+    string M(decimal v) => v == 0 ? "" : v.ToMoney();
+}
+<partial name="_GlNav" />
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@(((DateTime)ViewBag.To).Iso())" class="form-control form-control-sm" /></div>
+    <button class="btn btn-sm btn-outline-primary">Xem</button>
+    <button type="button" class="btn btn-sm btn-light border ms-auto" onclick="window.print()">In</button>
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-bordered mb-0 report-table">
+    <thead>
+        <tr><th rowspan="2">Số hiệu</th><th rowspan="2">Tên tài khoản</th><th colspan="2" class="text-center">Số dư đầu kỳ</th><th colspan="2" class="text-center">Số phát sinh trong kỳ</th><th colspan="2" class="text-center">Số dư cuối kỳ</th></tr>
+        <tr><th class="num">Nợ</th><th class="num">Có</th><th class="num">Nợ</th><th class="num">Có</th><th class="num">Nợ</th><th class="num">Có</th></tr>
+    </thead>
+    <tbody>
+    @foreach (var r in Model)
+    {
+        <tr class="@(r.IsGroup ? "group" : "")">
+            <td class="@(r.IsGroup || r.Account.Code.Length == 3 ? "" : "ind-1")"><a asp-action="Ledger" asp-route-account="@r.Account.Code" asp-route-from="@(((DateTime)ViewBag.From).Iso())" asp-route-to="@(((DateTime)ViewBag.To).Iso())">@r.Account.Code</a></td>
+            <td>@r.Account.Name</td>
+            <td class="num">@M(r.OpenDebit)</td><td class="num">@M(r.OpenCredit)</td><td class="num">@M(r.Debit)</td><td class="num">@M(r.Credit)</td><td class="num">@M(r.CloseDebit)</td><td class="num">@M(r.CloseCredit)</td>
+        </tr>
+    }
+    </tbody>
+    <tfoot><tr class="total">
+        <td colspan="2">Tổng cộng</td>
+        <td class="num">@leaf.Sum(r => r.OpenDebit).ToMoney()</td><td class="num">@leaf.Sum(r => r.OpenCredit).ToMoney()</td>
+        <td class="num">@leaf.Sum(r => r.Debit).ToMoney()</td><td class="num">@leaf.Sum(r => r.Credit).ToMoney()</td>
+        <td class="num">@leaf.Sum(r => r.CloseDebit).ToMoney()</td><td class="num">@leaf.Sum(r => r.CloseCredit).ToMoney()</td>
+    </tr></tfoot>
+</table></div></div></div>
+@{ var ok = leaf.Sum(r => r.Debit) == leaf.Sum(r => r.Credit) && leaf.Sum(r => r.CloseDebit - r.CloseCredit) == 0; }
+<div class="small mt-2 @(ok ? "good" : "bad")">@(ok ? "✓ Cân đối: tổng phát sinh Nợ = Có, tổng dư Nợ = dư Có." : "⚠ Bảng không cân, kiểm tra lại dữ liệu.")</div>

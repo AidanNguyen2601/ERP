@@ -1,0 +1,37 @@
+@model List<Invoice>
+@{
+    int y = ViewBag.Year, m = ViewBag.Month;
+    ViewData["Title"] = $"Bảng kê thuế GTGT tháng {m:00}/{y}";
+    var outInv = Model.Where(i => i.Direction == InvoiceDirection.Sales).ToList(); var inInv = Model.Where(i => i.Direction == InvoiceDirection.Purchase).ToList();
+    var vatOut = outInv.Sum(i => i.VatAmount); var vatIn = inInv.Sum(i => i.VatAmount);
+}
+<div class="subnav"><a asp-action="Index" asp-route-direction="Sales">Hóa đơn bán ra</a><a asp-action="Index" asp-route-direction="Purchase">Hóa đơn mua vào</a><a class="active" asp-action="VatReport">Bảng kê thuế GTGT</a></div>
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Tháng</label><select name="month" class="form-select form-select-sm">@for (var i = 1; i <= 12; i++) { <option value="@i" selected="@(i == m)">@i.ToString("00")</option> }</select></div>
+    <div><label class="form-label small mb-0">Năm</label><input type="number" name="year" value="@y" class="form-control form-control-sm" style="width:100px" /></div>
+    <button class="btn btn-sm btn-outline-primary">Xem</button><button type="button" class="btn btn-sm btn-light border ms-auto" onclick="window.print()">In</button>
+</form>
+<div class="row g-3 mb-3">
+    <div class="col-md-4"><div class="card kpi"><div class="label">Thuế GTGT đầu ra</div><div class="value">@vatOut.ToMoney()</div><div class="sub">@outInv.Count hóa đơn · doanh số @outInv.Sum(i => i.Subtotal).ToMoney()</div></div></div>
+    <div class="col-md-4"><div class="card kpi"><div class="label">Thuế GTGT đầu vào được khấu trừ</div><div class="value">@vatIn.ToMoney()</div><div class="sub">@inInv.Count hóa đơn · giá trị @inInv.Sum(i => i.Subtotal).ToMoney()</div></div></div>
+    <div class="col-md-4"><div class="card kpi"><div class="label">@(vatOut >= vatIn ? "Thuế GTGT phải nộp" : "Thuế GTGT còn được khấu trừ chuyển kỳ sau")</div><div class="value @(vatOut >= vatIn ? "bad" : "good")">@Math.Abs(vatOut - vatIn).ToMoney()</div></div></div>
+</div>
+@foreach (var (title, list) in new[] { ("Bảng kê hóa đơn hàng hóa, dịch vụ bán ra", outInv), ("Bảng kê hóa đơn hàng hóa, dịch vụ mua vào", inInv) })
+{
+    <div class="card mb-3"><div class="card-header">@title</div><div class="card-body p-0"><table class="table table-sm mb-0 report-table">
+        <thead><tr><th>STT</th><th>Ký hiệu</th><th>Số HĐ</th><th>Ngày</th><th>Tên người @(list == outInv ? "mua" : "bán")</th><th>MST</th><th class="num">Doanh số chưa thuế</th><th class="num">Thuế suất</th><th class="num">Thuế GTGT</th></tr></thead>
+        <tbody>
+        @{ var n = 1; }
+        @foreach (var i in list)
+        {
+            foreach (var g in i.Lines.GroupBy(l => l.VatRate))
+            {
+                <tr><td>@(n++)</td><td>@i.Series</td><td><a asp-action="Details" asp-route-id="@i.Id">@i.InvoiceNo</a></td><td>@i.Date.ToDate()</td><td>@i.Partner?.Name</td><td>@i.Partner?.TaxCode</td>
+                    <td class="num">@g.Sum(l => l.Amount).ToMoney()</td><td class="num">@g.Key%</td><td class="num">@g.Sum(l => l.VatAmount).ToMoney()</td></tr>
+            }
+        }
+        @if (!list.Any()) { <tr><td colspan="9" class="text-center text-muted py-3">Không có hóa đơn.</td></tr> }
+        </tbody>
+        <tfoot><tr class="total"><td colspan="6">Tổng cộng</td><td class="num">@list.Sum(i => i.Subtotal).ToMoney()</td><td></td><td class="num">@list.Sum(i => i.VatAmount).ToMoney()</td></tr></tfoot>
+    </table></div></div>
+}

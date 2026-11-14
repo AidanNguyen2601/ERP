@@ -1,0 +1,26 @@
+@model Partner
+@{ ViewData["Title"] = Model.Id == 0 ? "Thêm đối tượng" : $"Sửa {Model.Code}"; var acc = User.CanAccounting(); }
+<div class="card" style="max-width:900px"><div class="card-body">
+<form asp-action="Save" method="post">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="row g-3">
+        <div class="col-md-3"><label asp-for="Code" class="form-label"></label><input asp-for="Code" class="form-control" /><span asp-validation-for="Code" class="text-danger small"></span></div>
+        <div class="col-md-9"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+        <div class="col-md-4"><label asp-for="TaxCode" class="form-label"></label><input asp-for="TaxCode" class="form-control" /><span asp-validation-for="TaxCode" class="text-danger small"></span></div>
+        <div class="col-md-8"><label asp-for="Address" class="form-label"></label><input asp-for="Address" class="form-control" /></div>
+        <div class="col-md-4"><label asp-for="ContactPerson" class="form-label"></label><input asp-for="ContactPerson" class="form-control" /></div>
+        <div class="col-md-4"><label asp-for="Phone" class="form-label"></label><input asp-for="Phone" class="form-control" /></div>
+        <div class="col-md-4"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" /></div>
+        <div class="col-md-4"><label asp-for="PaymentTermDays" class="form-label"></label><input asp-for="PaymentTermDays" type="number" class="form-control" /></div>
+        <div class="col-md-4"><label asp-for="CreditLimit" class="form-label"></label><input asp-for="CreditLimit" type="number" step="1000000" class="form-control" readonly="@(!acc)" /><div class="form-text">0 = không giới hạn@(acc ? "" : " · chỉ Kế toán được sửa")</div></div>
+        <div class="col-md-4 pt-4">
+            <div class="form-check"><input asp-for="IsCustomer" class="form-check-input" /><label asp-for="IsCustomer" class="form-check-label"></label></div>
+            <div class="form-check"><input asp-for="IsVendor" class="form-check-input" /><label asp-for="IsVendor" class="form-check-label"></label></div>
+            <div class="form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div>
+        </div>
+    </div>
+    <div class="mt-4"><button class="btn btn-primary">Lưu</button> <a asp-action="Index" asp-route-type="@(Model.IsCustomer ? "customer" : "vendor")" class="btn btn-light">Hủy</a></div>
+</form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

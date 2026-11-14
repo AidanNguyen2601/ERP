@@ -1,0 +1,48 @@
+=== docker version === 
+Client:
+ Version:           29.9.3
+ API version:       1.56
+ Go version:        go1.26.10
+ Git commit:        5457199
+ Built:             Tue Nov  3 21:46:10 2026
+ OS/Arch:           windows/amd64
+ Context:           desktop-linux
+
+Server: Docker Desktop 4.99.0 (245822)
+ Engine:
+  Version:          29.9.3
+  API version:      1.56 (minimum version 1.40)
+  Go version:       go1.26.10
+  Git commit:       70efc0e
+  Built:            Tue Nov  3 21:41:42 2026
+  OS/Arch:          linux/amd64
+  Experimental:     false
+ containerd:
+  Version:          v2.4.2
+  GitCommit:        b7a25261e029d68978bbf290df0a62fc819b3c51
+ runc:
+  Version:          1.5.2
+  GitCommit:        v1.5.2-0-g29dd3dc2
+ docker-init:
+  Version:          0.19.0
+  GitCommit:        de40ad0
+=== docker context === 
+NAME              DESCRIPTION                               DOCKER ENDPOINT                             ERROR
+default           Current DOCKER_HOST based configuration   npipe:////./pipe/docker_engine              
+desktop-linux *   Docker Desktop                            npipe:////./pipe/dockerDesktopLinuxEngine   
+=== docker ps -a === 
+crm-web | crm-web:latest | Exited (143) 28 minutes ago | 
+hrm-web | hrm-web:latest | Exited (143) 16 hours ago | 
+pm-web | pm-web:latest | Exited (0) 40 hours ago | 
+eproc-web | eproc-web:latest | Exited (0) 40 hours ago | 
+healthtracker-web | healthtracker-web | Up 27 minutes | 127.0.0.1:8080->8080/tcp
+healthtracker-db | cf8f0ab2ebe6 | Up 27 minutes (healthy) | 127.0.0.1:1433->1433/tcp
+romantic_nightingale | cf8f0ab2ebe6 | Exited (255) 7 days ago | 
+=== docker images === 
+crm-web:1.0.0
+crm-web:latest
+hrm-web:latest
+pm-web:latest
+eproc-web:latest
+healthtracker-web:latest
+mcr.microsoft.com/mssql/server:2022-latest

@@ -1,0 +1,17 @@
+@* Model: (trang hiện tại, tổng số trang) – giữ nguyên các tham số lọc trên URL *@
+@model (int Page, int TotalPages)
+@{
+    string Url(int p)
+    {
+        var qs = Context.Request.Query.Where(k => k.Key != "page").Select(k => $"{k.Key}={Uri.EscapeDataString(k.Value.ToString())}").Append($"page={p}");
+        return Context.Request.Path + "?" + string.Join("&", qs);
+    }
+}
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-2"><ul class="pagination pagination-sm mb-0">
+        <li class="page-item @(Model.Page <= 1 ? "disabled" : "")"><a class="page-link" href="@Url(Model.Page - 1)">&laquo;</a></li>
+        @for (var i = 1; i <= Model.TotalPages; i++) { <li class="page-item @(i == Model.Page ? "active" : "")"><a class="page-link" href="@Url(i)">@i</a></li> }
+        <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")"><a class="page-link" href="@Url(Model.Page + 1)">&raquo;</a></li>
+    </ul></nav>
+}

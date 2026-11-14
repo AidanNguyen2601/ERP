@@ -1,0 +1,53 @@
+@model List<CashVoucher>
+@{
+    ViewData["Title"] = "Quỹ & tài khoản ngân hàng";
+    var accounts = (List<CashAccount>)ViewBag.Accounts; var bal = (Dictionary<int, decimal>)ViewBag.Balances; var canAcc = User.CanAccounting();
+}
+<div class="subnav">
+    <a class="active" asp-action="Index">Quỹ & phiếu thu chi</a>
+    <a asp-action="Flow">Báo cáo & dự báo dòng tiền</a>
+    @if (canAcc)
+    {
+        <a asp-action="Create" asp-route-type="Receipt">+ Phiếu thu</a>
+        <a asp-action="Create" asp-route-type="Payment">+ Phiếu chi</a>
+        <a asp-action="Create" asp-route-type="Transfer">+ Chuyển tiền nội bộ</a>
+    }
+</div>
+<div class="row g-3 mb-3">
+    @foreach (var a in accounts)
+    {
+        <div class="col-md-4"><div class="card kpi">
+            <div class="label">@(a.Type == CashAccountType.Cash ? "💵" : "🏦") @a.Name</div>
+            <div class="value">@bal[a.Id].ToMoney() đ</div>
+            <div class="sub">TK @a.Account?.Code @(a.BankAccountNo != null ? $"· STK {a.BankAccountNo}" : "") · <a asp-action="Book" asp-route-id="@a.Id">@(a.Type == CashAccountType.Cash ? "Sổ quỹ" : "Sổ tiền gửi") →</a></div>
+        </div></div>
+    }
+</div>
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@(((DateTime)ViewBag.To).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Loại</label><select name="type" class="form-select form-select-sm"><option value="">-- Tất cả --</option>
+        @foreach (CashVoucherType t in Enum.GetValues<CashVoucherType>()) { <option value="@t" selected="@(ViewBag.Type is CashVoucherType x && x == t)">@t.GetDisplayName()</option> }</select></div>
+    <div><label class="form-label small mb-0">Quỹ / TK</label><select name="cashAccountId" class="form-select form-select-sm" asp-items="ViewBag.CashSelect"><option value="">-- Tất cả --</option></select></div>
+    <div><label class="form-label small mb-0">Tìm</label><input name="q" value="@ViewBag.Q" class="form-control form-control-sm" /></div>
+    <button class="btn btn-sm btn-outline-primary">Lọc</button>
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Ngày</th><th>Số phiếu</th><th>Loại</th><th>Quỹ / TK</th><th>Nội dung</th><th>Đối tượng</th><th>Diễn giải</th><th class="num">Thu</th><th class="num">Chi</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var v in Model)
+    {
+        <tr class="@(v.Status == DocStatus.Cancelled ? "text-decoration-line-through text-muted" : "")">
+            <td>@v.Date.ToDate()</td><td><a asp-action="Details" asp-route-id="@v.Id">@v.Number</a></td><td><partial name="_Badge" model="v.Type" /></td>
+            <td class="small">@v.CashAccount?.Code@(v.ToCashAccount != null ? " → " + v.ToCashAccount.Code : "")</td><td class="small">@v.Purpose.GetDisplayName()</td>
+            <td class="small">@v.Partner?.Name</td><td>@v.Description</td>
+            <td class="num good">@(v.Type == CashVoucherType.Receipt ? v.Amount.ToMoney() : "")</td><td class="num bad">@(v.Type == CashVoucherType.Payment ? v.Amount.ToMoney() : v.Type == CashVoucherType.Transfer ? "⇄ " + v.Amount.ToMoney() : "")</td>
+            <td>@if (v.Status == DocStatus.Cancelled) { <span class="badge bg-dark">Hủy</span> }</td>
+        </tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="10" class="text-center text-muted py-4">Không có phiếu trong kỳ.</td></tr> }
+    </tbody>
+    <tfoot><tr class="fw-bold"><td colspan="7" class="text-end">Cộng</td>
+        <td class="num">@Model.Where(v => v.Status == DocStatus.Posted && v.Type == CashVoucherType.Receipt).Sum(v => v.Amount).ToMoney()</td>
+        <td class="num">@Model.Where(v => v.Status == DocStatus.Posted && v.Type == CashVoucherType.Payment).Sum(v => v.Amount).ToMoney()</td><td></td></tr></tfoot>
+</table></div></div></div>

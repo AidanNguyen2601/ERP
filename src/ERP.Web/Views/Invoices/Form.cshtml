@@ -1,0 +1,43 @@
+@model InvoiceForm
+@{
+    var sales = Model.Direction == InvoiceDirection.Sales;
+    ViewData["Title"] = Model.Id == 0 ? (sales ? "Lập hóa đơn bán dịch vụ" : "Ghi nhận hóa đơn mua dịch vụ / chi phí") : $"Sửa hóa đơn {Model.Number}";
+    var editable = (bool)ViewBag.EditableLines;
+    var opts = (LineEditorOptions)ViewBag.LineOptions;
+    opts.PriceLabel = "Đơn giá chưa thuế";
+}
+<form asp-action="Save" method="post">
+<input type="hidden" asp-for="Id" /><input type="hidden" asp-for="Direction" />
+<div class="card mb-3"><div class="card-body">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 empty-hide"></div>
+    <div class="row g-3">
+        <div class="col-md-5"><label asp-for="PartnerId" class="form-label">@(sales ? "Khách hàng" : "Nhà cung cấp")</label>
+            <select asp-for="PartnerId" class="form-select" asp-items="ViewBag.Partners" disabled="@(!editable)"><option value="">-- Chọn --</option></select>
+            @if (!editable) { <input type="hidden" asp-for="PartnerId" /> }<span asp-validation-for="PartnerId" class="text-danger small"></span></div>
+        <div class="col-md-2"><label asp-for="Series" class="form-label"></label><input asp-for="Series" class="form-control" /></div>
+        <div class="col-md-2"><label asp-for="InvoiceNo" class="form-label"></label><input asp-for="InvoiceNo" class="form-control" placeholder="@(sales ? "Tự cấp khi phát hành" : "Bắt buộc")" readonly="@sales" /></div>
+        <div class="col-md-3"><label asp-for="Date" class="form-label"></label><input asp-for="Date" type="date" class="form-control" /></div>
+        <div class="col-md-3"><label asp-for="DueDate" class="form-label"></label><input asp-for="DueDate" type="date" class="form-control" /><span asp-validation-for="DueDate" class="text-danger small"></span></div>
+        <div class="col-md-9"><label asp-for="Note" class="form-label"></label><input asp-for="Note" class="form-control" /></div>
+    </div>
+</div></div>
+<div class="card mb-3"><div class="card-body">
+    @if (editable)
+    {
+        <partial name="_ItemLines" model="opts" />
+        <div class="small text-muted">@(sales ? "Hóa đơn bán trực tiếp chỉ dùng cho dịch vụ (doanh thu 5113 nếu để TK tự động). Hàng có tồn kho bán qua Đơn bán hàng." : "Hóa đơn mua trực tiếp dùng cho dịch vụ / chi phí: chọn TK chi phí (mặc định 6427). Hàng nhập kho phải qua Đơn mua hàng.")</div>
+    }
+    else
+    {
+        <table class="table table-sm"><thead><tr><th>Hàng hóa</th><th class="num">SL</th><th class="num">Đơn giá</th><th class="num">VAT</th><th class="num">Thành tiền</th></tr></thead><tbody>
+        @foreach (var l in (List<InvoiceLine>)ViewBag.FixedLines) { <tr><td>@l.Item?.Code – @l.Description</td><td class="num">@l.Quantity.ToQty()</td><td class="num">@l.UnitPrice.ToMoney()</td><td class="num">@l.VatRate%</td><td class="num">@l.Amount.ToMoney()</td></tr> }
+        </tbody></table>
+        <div class="small text-muted">Dòng hàng lấy từ đơn hàng (số lượng đã giao / đã nhận), không sửa tại đây. Muốn đổi, xóa hóa đơn nháp và lập lại từ đơn hàng.</div>
+    }
+</div></div>
+<div class="d-flex gap-2">
+    <button class="btn btn-light border" name="issue" value="false">Lưu nháp</button>
+    <button class="btn btn-primary" name="issue" value="true">@(sales ? "Lưu & phát hành" : "Lưu & ghi sổ")</button>
+    <a class="btn btn-light" asp-action="Index" asp-route-direction="@Model.Direction">Hủy</a>
+</div>
+</form>

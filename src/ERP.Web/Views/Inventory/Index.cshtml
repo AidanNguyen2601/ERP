@@ -1,0 +1,32 @@
+@model List<(Item Item, Dictionary<int, decimal> ByWh, decimal Total)>
+@{
+    ViewData["Title"] = "Tồn kho";
+    var whs = (List<Warehouse>)ViewBag.Warehouses; var inc = (Dictionary<int, decimal>)ViewBag.Incoming; var com = (Dictionary<int, decimal>)ViewBag.Committed;
+    var value = Model.Sum(r => r.Total * r.Item.AvgCost);
+}
+<partial name="_Nav" />
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Kho</label><select name="warehouseId" class="form-select form-select-sm"><option value="">-- Tất cả --</option>@foreach (var w in whs) { <option value="@w.Id" selected="@((int?)ViewBag.WarehouseId == w.Id)">@w.Name</option> }</select></div>
+    <div><label class="form-label small mb-0">Loại</label><select name="type" class="form-select form-select-sm"><option value="">-- Tất cả --</option>
+        @foreach (var t in new[] { ItemType.Material, ItemType.FinishedGood, ItemType.Merchandise }) { <option value="@t" selected="@(ViewBag.Type is ItemType x && x == t)">@t.GetDisplayName()</option> }</select></div>
+    <div class="form-check mb-1"><input type="checkbox" name="low" value="true" class="form-check-input" id="low" checked="@((bool)ViewBag.Low)" /><label for="low" class="form-check-label small">Dưới tồn tối thiểu</label></div>
+    <button class="btn btn-sm btn-outline-primary">Lọc</button>
+    <div class="ms-auto fw-semibold">Giá trị tồn: @value.ToMoney() đ</div>
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Mã</th><th>Tên hàng</th><th>ĐVT</th>@foreach (var w in whs) { <th class="num">@w.Code</th> }<th class="num">Tổng tồn</th><th class="num">Đang về</th><th class="num">Đã cam kết giao</th><th class="num">Khả dụng</th><th class="num">Giá vốn BQ</th><th class="num">Giá trị</th></tr></thead>
+    <tbody>
+    @foreach (var r in Model)
+    {
+        var avail = r.Total + inc.GetValueOrDefault(r.Item.Id) - com.GetValueOrDefault(r.Item.Id);
+        <tr><td><a asp-action="StockCard" asp-route-itemId="@r.Item.Id">@r.Item.Code</a></td><td>@r.Item.Name</td><td>@r.Item.Unit</td>
+            @foreach (var w in whs) { <td class="num">@(r.ByWh[w.Id] == 0 ? "" : r.ByWh[w.Id].ToQty())</td> }
+            <td class="num fw-semibold @(r.Item.MinStock > 0 && r.Total < r.Item.MinStock ? "bad" : "")" title="Tối thiểu @r.Item.MinStock.ToQty()">@r.Total.ToQty()</td>
+            <td class="num text-primary">@(inc.GetValueOrDefault(r.Item.Id) > 0 ? "+" + inc[r.Item.Id].ToQty() : "")</td>
+            <td class="num text-danger">@(com.GetValueOrDefault(r.Item.Id) > 0 ? "−" + com[r.Item.Id].ToQty() : "")</td>
+            <td class="num @(avail < 0 ? "bad" : "")">@avail.ToQty()</td>
+            <td class="num">@r.Item.AvgCost.ToMoney()</td><td class="num">@((r.Total * r.Item.AvgCost).ToMoney())</td></tr>
+    }
+    </tbody>
+</table></div></div></div>
+<div class="small text-muted mt-2">Đang về: đơn mua đã duyệt chưa nhận đủ. Đã cam kết: đơn bán đã xác nhận chưa giao. Khả dụng = tồn + đang về − đã cam kết.</div>

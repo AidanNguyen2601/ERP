@@ -1,0 +1,7 @@
+@{ var kind = (string)ViewBag.Kind; var a = ViewContext.RouteData.Values["action"]?.ToString(); }
+<div class="subnav">
+    <a class="@(a == "Index" ? "active" : "")" asp-action="Index" asp-route-kind="@kind">Tổng hợp công nợ</a>
+    <a class="@(a == "Aging" ? "active" : "")" asp-action="Aging" asp-route-kind="@kind">Phân tích tuổi nợ</a>
+    <a asp-controller="Invoices" asp-action="Index" asp-route-direction="@(kind == "ar" ? "Sales" : "Purchase")">Hóa đơn @(kind == "ar" ? "bán ra" : "mua vào")</a>
+    <a asp-controller="Cash" asp-action="Create" asp-route-type="@(kind == "ar" ? "Receipt" : "Payment")">+ @(kind == "ar" ? "Phiếu thu tiền khách hàng" : "Phiếu chi trả nhà cung cấp")</a>
+</div>

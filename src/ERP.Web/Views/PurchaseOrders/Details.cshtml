@@ -1,0 +1,71 @@
+@model PurchaseOrder
+@{
+    ViewData["Title"] = $"Đơn mua {Model.Number}";
+    var receipts = (List<InventoryDoc>)ViewBag.Receipts; var invs = (List<Invoice>)ViewBag.Invoices;
+    var canEdit = (bool)ViewBag.CanEdit; var canRec = (bool)ViewBag.CanReceive; var canAcc = User.CanAccounting();
+    var steps = new[] { PoStatus.Draft, PoStatus.PendingApproval, PoStatus.Approved, PoStatus.PartiallyReceived, PoStatus.Received, PoStatus.Completed };
+    var cur = Array.IndexOf(steps, Model.Status);
+    var toBill = Model.Lines.Sum(l => l.ReceivedQty - l.InvoicedQty);
+}
+<div class="flow mb-3">
+@for (var i = 0; i < steps.Length; i++) { if (i > 0) { <span class="arrow">›</span> } <span class="step @(Model.Status == PoStatus.Cancelled ? "" : i < cur ? "done" : i == cur ? "current" : "")">@steps[i].GetDisplayName()</span> }
+@if (Model.Status == PoStatus.Cancelled) { <span class="badge bg-dark ms-2">Đã hủy</span> }
+</div>
+<div class="card mb-3"><div class="card-body">
+    <div class="doc-head">
+        <div><div class="fs-5 fw-semibold">@Model.Number <partial name="_Badge" model="Model.Status" /></div>
+            <div class="meta">Nhà cung cấp <b>@Model.Vendor?.Name</b> (MST @Model.Vendor?.TaxCode) · Kho nhận @Model.Warehouse?.Name · Ngày đặt @Model.Date.ToDate() · Giao dự kiến @Model.ExpectedDate.ToDate()</div>
+            <div class="meta">Lập bởi @Model.CreatedBy?.FullName @(Model.ApprovedBy != null ? $"· Duyệt: {Model.ApprovedBy.FullName} lúc {Model.ApprovedAt:dd/MM/yyyy HH:mm}" : Model.ApprovedAt != null ? "· Duyệt tự động (dưới ngưỡng)" : "")</div>
+            @if (!string.IsNullOrWhiteSpace(Model.Note)) { <div>@Model.Note</div> }</div>
+        <div class="actions">
+            @if (canEdit && Model.Status == PoStatus.Draft)
+            {
+                <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id">Sửa</a>
+                <form asp-action="Submit" asp-route-id="@Model.Id" method="post"><button class="btn btn-sm btn-primary">Gửi duyệt</button></form>
+            }
+            @if (Model.Status == PoStatus.PendingApproval && User.InAny(AppRoles.Approvers))
+            {
+                <form asp-action="Approve" asp-route-id="@Model.Id" method="post"><input type="hidden" name="approve" value="true" /><button class="btn btn-sm btn-success">Duyệt đơn</button></form>
+                <form asp-action="Approve" asp-route-id="@Model.Id" method="post"><input type="hidden" name="approve" value="false" /><button class="btn btn-sm btn-outline-danger">Trả lại</button></form>
+            }
+            @if (canRec && Model.Status is PoStatus.Approved or PoStatus.PartiallyReceived) { <a class="btn btn-sm btn-primary" asp-action="Receive" asp-route-id="@Model.Id">Nhận hàng / nhập kho</a> }
+            @if (canEdit && Model.Status is PoStatus.Draft or PoStatus.PendingApproval or PoStatus.Approved && Model.Lines.All(l => l.ReceivedQty == 0))
+            { <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" data-confirm="Hủy đơn mua?"><button class="btn btn-sm btn-outline-danger">Hủy đơn</button></form> }
+        </div>
+    </div>
+    <table class="table table-sm">
+        <thead><tr><th>Mã</th><th>Tên hàng</th><th>ĐVT</th><th class="num">SL đặt</th><th class="num">Đã nhận</th><th class="num">Đã có HĐ</th><th class="num">Đơn giá</th><th class="num">VAT</th><th class="num">Thành tiền</th></tr></thead>
+        <tbody>
+        @foreach (var l in Model.Lines)
+        {
+            <tr><td>@l.Item?.Code</td><td>@l.Item?.Name</td><td>@l.Item?.Unit</td><td class="num">@l.Quantity.ToQty()</td>
+                <td class="num @(l.ReceivedQty >= l.Quantity ? "good" : l.ReceivedQty > 0 ? "warn" : "")">@l.ReceivedQty.ToQty()</td><td class="num">@l.InvoicedQty.ToQty()</td>
+                <td class="num">@l.UnitPrice.ToMoney()</td><td class="num">@l.VatRate%</td><td class="num">@l.Amount.ToMoney()</td></tr>
+        }
+        </tbody>
+        <tfoot>
+            <tr><td colspan="8" class="text-end">Tiền hàng</td><td class="num">@Model.Subtotal.ToMoney()</td></tr>
+            <tr><td colspan="8" class="text-end">Thuế GTGT</td><td class="num">@Model.VatAmount.ToMoney()</td></tr>
+            <tr class="fw-bold"><td colspan="8" class="text-end">Tổng cộng</td><td class="num">@Model.Total.ToMoney()</td></tr>
+        </tfoot>
+    </table>
+</div></div>
+<div class="row g-3">
+    <div class="col-lg-6"><div class="card h-100"><div class="card-header">Phiếu nhập kho</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+        @foreach (var d in receipts) { <tr><td>@d.Date.ToDate()</td><td><a asp-controller="Inventory" asp-action="Details" asp-route-id="@d.Id">@d.Number</a></td><td class="num">@d.TotalAmount.ToMoney()</td></tr> }
+        @if (!receipts.Any()) { <tr><td class="text-muted text-center py-3">Chưa nhận hàng.</td></tr> }
+    </tbody></table></div></div></div>
+    <div class="col-lg-6"><div class="card h-100"><div class="card-header">Hóa đơn mua</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+        @foreach (var i in invs) { <tr><td>@i.Date.ToDate()</td><td>@if (User.SeesFinance()) { <a asp-controller="Invoices" asp-action="Details" asp-route-id="@i.Id">@i.Series @(i.InvoiceNo ?? i.Number)</a> } else { @i.InvoiceNo }</td><td class="num">@i.Total.ToMoney()</td><td><partial name="_Badge" model="i.Status" /></td></tr> }
+        @if (!invs.Any()) { <tr><td class="text-muted text-center py-3">Chưa có hóa đơn.</td></tr> }
+    </tbody></table>
+    @if (canAcc && toBill > 0 && Model.Status != PoStatus.Cancelled)
+    {
+        <form asp-action="CreateInvoice" asp-route-id="@Model.Id" method="post" class="row g-2 p-2 border-top">
+            <div class="col-md-3"><input type="date" name="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+            <div class="col-md-3"><input name="series" class="form-control form-control-sm" placeholder="Ký hiệu HĐ" /></div>
+            <div class="col-md-3"><input name="invoiceNo" class="form-control form-control-sm" placeholder="Số hóa đơn NCC" /></div>
+            <div class="col-md-3"><button class="btn btn-sm btn-primary w-100">Lập HĐ mua</button></div>
+        </form>
+    }</div></div>
+</div>

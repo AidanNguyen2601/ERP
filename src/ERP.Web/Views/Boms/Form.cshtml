@@ -1,0 +1,19 @@
+@model BomForm
+@{ ViewData["Title"] = Model.Id == 0 ? "Định mức mới" : $"Sửa định mức {Model.Code}"; }
+<form asp-action="Save" method="post"><input type="hidden" asp-for="Id" />
+<div class="card mb-3"><div class="card-body">
+    <div asp-validation-summary="All" class="alert alert-danger py-2 empty-hide"></div>
+    <div class="row g-3">
+        <div class="col-md-3"><label asp-for="Code" class="form-label"></label><input asp-for="Code" class="form-control" /></div>
+        <div class="col-md-5"><label asp-for="FinishedItemId" class="form-label"></label><select asp-for="FinishedItemId" class="form-select" asp-items="ViewBag.Finished"><option value="">-- Chọn --</option></select></div>
+        <div class="col-md-2"><label asp-for="OutputQuantity" class="form-label"></label><input asp-for="OutputQuantity" type="number" step="0.001" class="form-control" /></div>
+        <div class="col-md-2 pt-4"><div class="form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div></div>
+        <div class="col-md-3"><label asp-for="LaborCostPerUnit" class="form-label"></label><input asp-for="LaborCostPerUnit" type="number" step="1000" class="form-control" /></div>
+        <div class="col-md-3"><label asp-for="OverheadPerUnit" class="form-label"></label><input asp-for="OverheadPerUnit" type="number" step="1000" class="form-control" /></div>
+        <div class="col-md-6"><label asp-for="Note" class="form-label"></label><input asp-for="Note" class="form-control" /></div>
+    </div>
+</div></div>
+<div class="card mb-3"><div class="card-body"><partial name="_ItemLines" model="(LineEditorOptions)ViewBag.LineOptions" />
+    <div class="small text-muted">Định mức tính cho "Sản lượng định mức" thành phẩm. Nhu cầu NVL của lệnh = định mức × SL sản xuất / sản lượng định mức × (1 + hao hụt%).</div></div></div>
+<button class="btn btn-primary">Lưu</button> <a class="btn btn-light" asp-action="Index">Hủy</a>
+</form>

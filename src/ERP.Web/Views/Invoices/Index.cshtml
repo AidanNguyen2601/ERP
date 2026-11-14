@@ -1,0 +1,36 @@
+@model List<Invoice>
+@{
+    var dir = (InvoiceDirection)ViewBag.Direction; var sales = dir == InvoiceDirection.Sales;
+    ViewData["Title"] = sales ? "Hóa đơn bán ra" : "Hóa đơn mua vào";
+}
+<div class="subnav">
+    <a class="@(sales ? "active" : "")" asp-action="Index" asp-route-direction="Sales">Hóa đơn bán ra</a>
+    <a class="@(!sales ? "active" : "")" asp-action="Index" asp-route-direction="Purchase">Hóa đơn mua vào</a>
+    <a asp-action="VatReport">Bảng kê thuế GTGT</a>
+</div>
+<form class="toolbar" method="get"><input type="hidden" name="direction" value="@dir" />
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@(((DateTime)ViewBag.To).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Trạng thái</label><select name="status" class="form-select form-select-sm"><option value="">-- Tất cả --</option>
+        @foreach (InvoiceStatus s in Enum.GetValues<InvoiceStatus>()) { <option value="@s" selected="@(ViewBag.Status is InvoiceStatus x && x == s)">@s.GetDisplayName()</option> }</select></div>
+    <div><label class="form-label small mb-0">Tìm</label><input name="q" value="@ViewBag.Q" class="form-control form-control-sm" placeholder="Số HĐ, đối tượng" /></div>
+    <div class="form-check mb-1"><input type="checkbox" name="unpaid" value="true" class="form-check-input" id="unpaid" checked="@((bool)ViewBag.Unpaid)" /><label class="form-check-label small" for="unpaid">Chỉ HĐ còn nợ</label></div>
+    <button class="btn btn-sm btn-outline-primary">Lọc</button>
+    @if (User.CanAccounting()) { <a class="btn btn-sm btn-primary ms-auto" asp-action="Create" asp-route-direction="@dir">+ @(sales ? "Hóa đơn dịch vụ" : "Hóa đơn chi phí / dịch vụ mua")</a> }
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Ngày</th><th>Ký hiệu – Số HĐ</th><th>Số CT</th><th>@(sales ? "Khách hàng" : "Nhà cung cấp")</th><th class="num">Tiền hàng</th><th class="num">Thuế GTGT</th><th class="num">Tổng tiền</th><th class="num">Còn nợ</th><th>Hạn TT</th><th>Trạng thái</th></tr></thead>
+    <tbody>
+    @foreach (var i in Model)
+    {
+        <tr><td>@i.Date.ToDate()</td><td><a asp-action="Details" asp-route-id="@i.Id">@i.Series @(i.InvoiceNo ?? "(chưa cấp số)")</a></td><td class="small">@i.Number</td><td>@i.Partner?.Name</td>
+            <td class="num">@i.Subtotal.ToMoney()</td><td class="num">@i.VatAmount.ToMoney()</td><td class="num fw-semibold">@i.Total.ToMoney()</td>
+            <td class="num @(i.IsOverdue ? "bad fw-semibold" : "")">@(i.Outstanding > 0 ? i.Outstanding.ToMoney() : i.Status == InvoiceStatus.Issued ? "✓" : "")</td>
+            <td class="@(i.IsOverdue ? "overdue" : "")">@i.DueDate.ToDate()</td><td><partial name="_Badge" model="i.Status" /></td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="10" class="text-center text-muted py-4">Không có hóa đơn.</td></tr> }
+    </tbody>
+    <tfoot><tr class="fw-bold"><td colspan="4" class="text-end">Cộng (không gồm HĐ hủy)</td>
+        @{ var v = Model.Where(i => i.Status != InvoiceStatus.Cancelled).ToList(); }
+        <td class="num">@v.Sum(i => i.Subtotal).ToMoney()</td><td class="num">@v.Sum(i => i.VatAmount).ToMoney()</td><td class="num">@v.Sum(i => i.Total).ToMoney()</td><td class="num">@v.Sum(i => i.Outstanding).ToMoney()</td><td colspan="2"></td></tr></tfoot>
+</table></div></div></div>

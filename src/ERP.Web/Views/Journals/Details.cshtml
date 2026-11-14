@@ -1,0 +1,45 @@
+@model JournalEntry
+@{
+    ViewData["Title"] = $"Chứng từ {Model.Number}";
+    var rev = ViewBag.Reversal as JournalEntry; var origin = ViewBag.Origin as JournalEntry;
+}
+<partial name="_GlNav" />
+<div class="card"><div class="card-body">
+    <div class="doc-head">
+        <div>
+            <div class="fs-5 fw-semibold">@Model.Number <partial name="_Badge" model="Model.Status" /></div>
+            <div class="meta">Ngày hạch toán @Model.Date.ToDate() · Nguồn: @Model.Source.GetDisplayName() @(Model.SourceRef != null ? $"({Model.SourceRef})" : "") · Lập bởi @(Model.CreatedBy?.FullName ?? "Hệ thống") lúc @Model.CreatedAt.ToDateTime()</div>
+            <div class="mt-1">@Model.Description</div>
+            @if (rev != null) { <div class="mt-1 text-danger small">Đã bị đảo bởi <a asp-action="Details" asp-route-id="@rev.Id">@rev.Number</a></div> }
+            @if (origin != null) { <div class="mt-1 text-danger small">Bút toán đảo của <a asp-action="Details" asp-route-id="@origin.Id">@origin.Number</a></div> }
+        </div>
+        @if (User.CanAccounting())
+        {
+            <div class="actions">
+                @if (Model.Status == DocStatus.Draft)
+                {
+                    <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id">Sửa</a>
+                    <form asp-action="Post" asp-route-id="@Model.Id" method="post"><button class="btn btn-sm btn-success">Ghi sổ</button></form>
+                    <form asp-action="Delete" asp-route-id="@Model.Id" method="post" data-confirm="Xóa chứng từ nháp?"><button class="btn btn-sm btn-outline-danger">Xóa</button></form>
+                }
+                else if (rev == null && origin == null && Model.Source is JournalSource.Manual or JournalSource.Opening)
+                {
+                    <form asp-action="Reverse" asp-route-id="@Model.Id" method="post" class="d-flex gap-1" data-confirm="Lập bút toán đảo cho chứng từ này?">
+                        <input name="reason" class="form-control form-control-sm" placeholder="Lý do đảo" required />
+                        <button class="btn btn-sm btn-outline-danger text-nowrap">Đảo bút toán</button></form>
+                }
+            </div>
+        }
+    </div>
+    <table class="table table-sm">
+        <thead><tr><th>TK</th><th>Tên tài khoản</th><th>Đối tượng</th><th>Diễn giải</th><th class="num">Nợ</th><th class="num">Có</th></tr></thead>
+        <tbody>
+        @foreach (var l in Model.Lines.OrderByDescending(x => x.Debit > 0).ThenBy(x => x.Id))
+        {
+            <tr><td><a asp-controller="Reports" asp-action="Ledger" asp-route-account="@l.Account?.Code">@l.Account?.Code</a></td><td>@l.Account?.Name</td><td>@l.Partner?.Name</td><td class="small">@l.Description</td>
+                <td class="num">@(l.Debit != 0 ? l.Debit.ToMoney() : "")</td><td class="num">@(l.Credit != 0 ? l.Credit.ToMoney() : "")</td></tr>
+        }
+        </tbody>
+        <tfoot><tr class="fw-bold"><td colspan="4" class="text-end">Cộng</td><td class="num">@Model.TotalDebit.ToMoney()</td><td class="num">@Model.TotalCredit.ToMoney()</td></tr></tfoot>
+    </table>
+</div></div>

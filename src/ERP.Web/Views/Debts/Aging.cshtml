@@ -1,0 +1,18 @@
+@model List<AgingRow>
+@{ var ar = (string)ViewBag.Kind == "ar"; ViewData["Title"] = $"Tuổi nợ {ViewBag.Title2}"; string M(decimal v) => v == 0 ? "" : v.ToMoney(); }
+<partial name="_Nav" />
+<form class="toolbar" method="get"><input type="hidden" name="kind" value="@ViewBag.Kind" />
+    <div><label class="form-label small mb-0">Tại ngày</label><input type="date" name="at" value="@(((DateTime)ViewBag.At).Iso())" class="form-control form-control-sm" /></div>
+    <button class="btn btn-sm btn-outline-primary">Xem</button></form>
+<div class="card"><div class="card-body p-0"><table class="table table-hover mb-0 report-table">
+    <thead><tr><th>@(ar ? "Khách hàng" : "Nhà cung cấp")</th><th class="num">Chưa đến hạn</th><th class="num">1–30 ngày</th><th class="num">31–60 ngày</th><th class="num">61–90 ngày</th><th class="num">&gt; 90 ngày</th><th class="num">Tổng còn nợ</th></tr></thead>
+    <tbody>
+    @foreach (var r in Model)
+    {
+        <tr><td><a asp-action="Statement" asp-route-id="@r.Partner.Id" asp-route-kind="@ViewBag.Kind">@r.Partner.Code</a> – @r.Partner.Name</td>
+            <td class="num good">@M(r.NotDue)</td><td class="num warn">@M(r.D1_30)</td><td class="num bad">@M(r.D31_60)</td><td class="num bad">@M(r.D61_90)</td><td class="num bad">@M(r.Over90)</td><td class="num fw-bold">@r.Total.ToMoney()</td></tr>
+    }
+    </tbody>
+    <tfoot><tr class="total"><td>Tổng cộng</td><td class="num">@Model.Sum(r => r.NotDue).ToMoney()</td><td class="num">@Model.Sum(r => r.D1_30).ToMoney()</td><td class="num">@Model.Sum(r => r.D31_60).ToMoney()</td><td class="num">@Model.Sum(r => r.D61_90).ToMoney()</td><td class="num">@Model.Sum(r => r.Over90).ToMoney()</td><td class="num">@Model.Sum(r => r.Total).ToMoney()</td></tr></tfoot>
+</table></div></div>
+<div class="small text-muted mt-2">Tính trên số còn nợ của từng hóa đơn theo hạn thanh toán (ngày hóa đơn + số ngày được nợ của đối tượng).</div>

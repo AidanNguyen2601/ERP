@@ -1,0 +1,21 @@
+@model List<ReportLine>
+@{ ViewData["Title"] = "Báo cáo kết quả hoạt động kinh doanh"; }
+<partial name="_GlNav" />
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@(((DateTime)ViewBag.To).Iso())" class="form-control form-control-sm" /></div>
+    <button class="btn btn-sm btn-outline-primary">Xem</button>
+    <button type="button" class="btn btn-sm btn-light border ms-auto" onclick="window.print()">In</button>
+</form>
+<div class="card" style="max-width:980px"><div class="card-body p-0"><table class="table table-sm mb-0 report-table">
+    <thead><tr><th>Mã số</th><th>Chỉ tiêu</th><th class="num">Kỳ này<br /><span class="small fw-normal">@(((DateTime)ViewBag.From).ToDate()) – @(((DateTime)ViewBag.To).ToDate())</span></th>
+        <th class="num">Cùng kỳ năm trước<br /><span class="small fw-normal">@(((DateTime)ViewBag.PrevFrom).ToDate()) – @(((DateTime)ViewBag.PrevTo).ToDate())</span></th></tr></thead>
+    <tbody>
+    @foreach (var r in Model)
+    {
+        <tr class="@(r.Bold ? "bold" : "") @(r.Code == "60" ? "total" : "")"><td>@r.Code</td><td>@r.Name</td>
+            <td class="num @(r.Amount < 0 ? "bad" : "")">@r.Amount.ToMoney()</td><td class="num text-muted">@r.Previous?.ToMoney()</td></tr>
+    }
+    </tbody>
+</table></div></div>
+<div class="small text-muted mt-2">Mẫu B02-DN rút gọn. Số liệu lấy từ phát sinh các TK 511, 521, 632, 515, 635, 641, 642, 711, 811, 821 (không tính bút toán kết chuyển).</div>

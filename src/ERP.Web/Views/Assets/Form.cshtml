@@ -1,0 +1,33 @@
+@model FixedAsset
+@{ ViewData["Title"] = Model.Id == 0 ? "Ghi tăng tài sản cố định" : $"Sửa tài sản {Model.Code}"; }
+<div class="card" style="max-width:960px"><div class="card-body">
+<form asp-action="Save" method="post">
+    <input type="hidden" asp-for="Id" /><input type="hidden" asp-for="Status" />
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 empty-hide"></div>
+    <div class="row g-3">
+        <div class="col-md-3"><label asp-for="Code" class="form-label"></label><input asp-for="Code" class="form-control" readonly="@(Model.Id != 0)" /><span asp-validation-for="Code" class="text-danger small"></span></div>
+        <div class="col-md-9"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+        <div class="col-md-5"><label asp-for="CategoryId" class="form-label"></label><select asp-for="CategoryId" class="form-select" asp-items="ViewBag.Categories"><option value="">-- Chọn --</option></select><span asp-validation-for="CategoryId" class="text-danger small"></span></div>
+        <div class="col-md-4"><label asp-for="Department" class="form-label"></label><input asp-for="Department" class="form-control" /></div>
+        <div class="col-md-3"><label asp-for="SerialNo" class="form-label"></label><input asp-for="SerialNo" class="form-control" /></div>
+        <div class="col-md-3"><label asp-for="AcquisitionDate" class="form-label"></label><input asp-for="AcquisitionDate" type="date" class="form-control" /></div>
+        <div class="col-md-3"><label asp-for="DepreciationStartDate" class="form-label"></label><input asp-for="DepreciationStartDate" type="date" class="form-control" /><span asp-validation-for="DepreciationStartDate" class="text-danger small"></span></div>
+        <div class="col-md-3"><label asp-for="OriginalCost" class="form-label"></label><input asp-for="OriginalCost" type="number" step="1000" class="form-control" /><span asp-validation-for="OriginalCost" class="text-danger small"></span></div>
+        <div class="col-md-3"><label asp-for="UsefulLifeMonths" class="form-label"></label><input asp-for="UsefulLifeMonths" type="number" class="form-control" /></div>
+        <div class="col-md-3"><label asp-for="AccumulatedDepreciation" class="form-label">Hao mòn lũy kế ban đầu</label><input asp-for="AccumulatedDepreciation" type="number" step="1000" class="form-control" /><div class="form-text">Chỉ nhập cho tài sản chuyển từ kỳ trước.</div><span asp-validation-for="AccumulatedDepreciation" class="text-danger small"></span></div>
+        <div class="col-md-9"><label asp-for="Note" class="form-label"></label><input asp-for="Note" class="form-control" /></div>
+    </div>
+    @if (Model.Id == 0)
+    {
+        <hr />
+        <h6>Hạch toán ghi tăng (Nợ TK nguyên giá / Có TK đối ứng)</h6>
+        <div class="row g-3">
+            <div class="col-md-6"><label class="form-label">TK đối ứng</label><select name="counterAccountId" class="form-select" asp-items="ViewBag.Counter"><option value="">-- Không hạch toán (tài sản đầu kỳ) --</option></select>
+                <div class="form-text">331 mua chịu · 11211 trả bằng chuyển khoản · 411 nhận góp vốn bằng tài sản</div></div>
+            <div class="col-md-6"><label class="form-label">Nhà cung cấp (khi chọn 331)</label><select name="partnerId" class="form-select" asp-items="ViewBag.Vendors"><option value="">-- Chọn --</option></select></div>
+        </div>
+    }
+    <div class="mt-4"><button class="btn btn-primary">Lưu</button> <a asp-action="Index" class="btn btn-light">Hủy</a></div>
+</form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

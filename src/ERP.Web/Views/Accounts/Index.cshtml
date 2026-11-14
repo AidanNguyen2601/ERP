@@ -1,0 +1,32 @@
+@model List<Account>
+@{ ViewData["Title"] = "Hệ thống tài khoản"; var bal = (Dictionary<int, decimal>)ViewBag.Balances; }
+<form class="toolbar" method="get">
+    <input name="q" value="@ViewBag.Q" class="form-control form-control-sm" style="width:260px" placeholder="Số hiệu hoặc tên tài khoản" />
+    <button class="btn btn-sm btn-outline-primary">Tìm</button>
+    @if (User.CanAccounting()) { <a class="btn btn-sm btn-primary ms-auto" asp-action="Create">+ Thêm tài khoản</a> }
+</form>
+<div class="card"><div class="card-body p-0"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Số hiệu</th><th>Tên tài khoản</th><th>Loại</th><th>Công nợ</th><th class="num">Dư Nợ</th><th class="num">Dư Có</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var a in Model)
+    {
+        var b = bal.GetValueOrDefault(a.Id);
+        <tr class="@(a.IsPostable ? "" : "fw-semibold") @(a.IsActive ? "" : "text-muted")">
+            <td style="padding-left:@(8 + (a.Level - 1) * 16)px">@a.Code</td>
+            <td>@a.Name @if (!a.IsActive) { <span class="badge bg-secondary">Ngưng</span> }</td>
+            <td class="small">@a.Type.GetDisplayName()</td>
+            <td>@(a.TrackPartner ? "✓" : "")</td>
+            <td class="num">@(b > 0 ? b.ToMoney() : "")</td><td class="num">@(b < 0 ? (-b).ToMoney() : "")</td>
+            <td class="text-end text-nowrap">
+                <a class="btn btn-sm btn-light" asp-controller="Reports" asp-action="Ledger" asp-route-account="@a.Code">Sổ cái</a>
+                @if (User.CanAccounting())
+                {
+                    <a class="btn btn-sm btn-light" asp-action="Edit" asp-route-id="@a.Id">Sửa</a>
+                    <a class="btn btn-sm btn-light" asp-action="Create" asp-route-parent="@a.Code" title="Thêm TK chi tiết">+</a>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table></div></div>
+<div class="small text-muted mt-2">Danh mục theo Thông tư 200/2014/TT-BTC (rút gọn). Chỉ TK chi tiết (không có TK con) được hạch toán; TK in đậm là TK tổng hợp.</div>

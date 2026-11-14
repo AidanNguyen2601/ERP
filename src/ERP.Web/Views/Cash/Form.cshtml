@@ -1,0 +1,52 @@
+@model CashVoucherForm
+@{
+    ViewData["Title"] = Model.Type switch { CashVoucherType.Receipt => "Lập phiếu thu", CashVoucherType.Payment => "Lập phiếu chi", _ => "Chuyển tiền nội bộ" };
+    var invs = (List<Invoice>)ViewBag.OpenInvoices; var bal = (Dictionary<int, decimal>)ViewBag.Balances;
+    var purposes = Model.Type == CashVoucherType.Receipt ? new[] { CashPurpose.CustomerReceipt, CashPurpose.Other }
+        : Model.Type == CashVoucherType.Payment ? new[] { CashPurpose.VendorPayment, CashPurpose.Other } : new[] { CashPurpose.Internal };
+}
+<div class="card" style="max-width:900px"><div class="card-body">
+<form asp-action="Save" method="post">
+    <input type="hidden" asp-for="Type" />
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 empty-hide"></div>
+    <div class="row g-3">
+        <div class="col-md-3"><label asp-for="Date" class="form-label"></label><input asp-for="Date" type="date" class="form-control" /></div>
+        <div class="col-md-5"><label asp-for="CashAccountId" class="form-label">@(Model.Type == CashVoucherType.Receipt ? "Thu vào quỹ / TK" : "Chi từ quỹ / TK")</label>
+            <select asp-for="CashAccountId" class="form-select">
+                @foreach (var o in (SelectList)ViewBag.CashAccounts) { <option value="@o.Value" selected="@o.Selected">@o.Text (dư @bal[int.Parse(o.Value)].ToMoney())</option> }
+            </select></div>
+        <div class="col-md-4"><label asp-for="Purpose" class="form-label"></label>
+            <select asp-for="Purpose" class="form-select">@foreach (var p in purposes) { <option value="@((int)p)" selected="@(Model.Purpose == p)">@p.GetDisplayName()</option> }</select></div>
+        <div class="col-md-6" data-show="4"><label asp-for="ToCashAccountId" class="form-label"></label><select asp-for="ToCashAccountId" class="form-select" asp-items="ViewBag.ToCashAccounts"><option value="">-- Chọn --</option></select></div>
+        <div class="col-md-6" data-show="1,2,3"><label asp-for="PartnerId" class="form-label"></label><select asp-for="PartnerId" class="form-select" asp-items="ViewBag.Partners"><option value="">-- Chọn --</option></select></div>
+        <div class="col-md-6" data-show="1,2"><label asp-for="InvoiceId" class="form-label"></label>
+            <select asp-for="InvoiceId" class="form-select"><option value="">-- Tự động cấn trừ theo hạn thanh toán --</option>
+                @foreach (var i in invs) { <option value="@i.Id" data-partner="@i.PartnerId" data-amount="@i.Outstanding.Raw()" selected="@(Model.InvoiceId == i.Id)">@i.Series @i.InvoiceNo – còn @i.Outstanding.ToMoney() – hạn @i.DueDate.ToDate()</option> }
+            </select></div>
+        <div class="col-md-6" data-show="3"><label asp-for="CounterAccountId" class="form-label"></label><select asp-for="CounterAccountId" class="form-select" asp-items="ViewBag.Counter"><option value="">-- Chọn TK --</option></select>
+            <div class="form-text">VD: 6427 thuê ngoài, 3341 trả lương, 635 lãi vay, 515 lãi tiền gửi, 3411 vay.</div></div>
+        <div class="col-md-4"><label asp-for="Amount" class="form-label"></label><input asp-for="Amount" type="number" step="1000" min="0" class="form-control" /><span asp-validation-for="Amount" class="text-danger small"></span></div>
+        <div class="col-md-8"><label asp-for="PayerPayee" class="form-label"></label><input asp-for="PayerPayee" class="form-control" /></div>
+        <div class="col-12"><label asp-for="Description" class="form-label"></label><input asp-for="Description" class="form-control" /><span asp-validation-for="Description" class="text-danger small"></span></div>
+    </div>
+    <div class="mt-4"><button class="btn btn-primary">Lưu & ghi sổ</button> <a asp-action="Index" class="btn btn-light">Hủy</a></div>
+</form>
+</div></div>
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+<script>
+(function () {
+    const partner = document.getElementById('PartnerId'), inv = document.getElementById('InvoiceId'), amount = document.getElementById('Amount');
+    function filter() {
+        [...inv.options].forEach(o => { if (o.value) o.hidden = partner.value && o.getAttribute('data-partner') !== partner.value; });
+        if (inv.selectedOptions[0] && inv.selectedOptions[0].hidden) inv.value = '';
+    }
+    partner.addEventListener('change', filter);
+    inv.addEventListener('change', () => {
+        const o = inv.selectedOptions[0];
+        if (o && o.value) { partner.value = o.getAttribute('data-partner'); if (!+amount.value) amount.value = o.getAttribute('data-amount'); }
+    });
+    filter();
+})();
+</script>
+}

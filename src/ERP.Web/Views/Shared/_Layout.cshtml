@@ -1,0 +1,102 @@
+@inject Microsoft.Extensions.Options.IOptions<ErpSettings> Cfg
+@{
+    var ctrl = ViewContext.RouteData.Values["controller"]?.ToString();
+    var act = ViewContext.RouteData.Values["action"]?.ToString();
+    var q = Context.Request.Query;
+    bool Is(string c, string? a = null, string? key = null, string? val = null) =>
+        ctrl == c && (a == null || act == a) && (key == null || string.Equals(q[key].ToString(), val, StringComparison.OrdinalIgnoreCase));
+    string On(bool b) => b ? "active" : "";
+    var role = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+    var fin = User.SeesFinance();
+    var module = ViewData["Module"] as string;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ERP</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<div class="app">
+    <aside class="sidebar">
+        <a class="brand" asp-controller="Home" asp-action="Index">ERP<span>Suite</span></a>
+        <nav>
+            <a class="@On(ctrl == "Home")" asp-controller="Home" asp-action="Index">🏠 Trang chủ</a>
+            @if (fin)
+            {
+                <div class="nav-group">📊 Kế toán tổng hợp</div>
+                <a class="@On(ctrl == "Journals")" asp-controller="Journals" asp-action="Index">Chứng từ kế toán</a>
+                <a class="@On(ctrl == "Reports" && act != "Periods")" asp-controller="Reports" asp-action="TrialBalance">Báo cáo tài chính</a>
+                <a class="@On(Is("Reports", "Periods"))" asp-controller="Reports" asp-action="Periods">Khóa sổ & kết chuyển</a>
+                <a class="@On(ctrl == "Accounts")" asp-controller="Accounts" asp-action="Index">Hệ thống tài khoản</a>
+                <div class="nav-group">📥 Phải thu · 📤 Phải trả</div>
+                <a class="@On(Is("Debts", null, "kind", "ar") || (ctrl == "Debts" && string.IsNullOrEmpty(q["kind"])))" asp-controller="Debts" asp-action="Index" asp-route-kind="ar">Công nợ phải thu</a>
+                <a class="@On(Is("Debts", null, "kind", "ap"))" asp-controller="Debts" asp-action="Index" asp-route-kind="ap">Công nợ phải trả</a>
+                <div class="nav-group">🏢 Tài sản · 💰 Dòng tiền</div>
+                <a class="@On(ctrl == "Assets")" asp-controller="Assets" asp-action="Index">Tài sản cố định</a>
+                <a class="@On(ctrl == "Cash" && act != "Flow")" asp-controller="Cash" asp-action="Index">Quỹ & ngân hàng</a>
+                <a class="@On(Is("Cash", "Flow"))" asp-controller="Cash" asp-action="Flow">Báo cáo dòng tiền</a>
+                <div class="nav-group">🧾 Hóa đơn</div>
+                <a class="@On(Is("Invoices", null, "direction", "Sales") || (ctrl == "Invoices" && act == "Index" && string.IsNullOrEmpty(q["direction"])))" asp-controller="Invoices" asp-action="Index" asp-route-direction="Sales">Hóa đơn bán ra</a>
+                <a class="@On(Is("Invoices", null, "direction", "Purchase"))" asp-controller="Invoices" asp-action="Index" asp-route-direction="Purchase">Hóa đơn mua vào</a>
+                <a class="@On(Is("Invoices", "VatReport"))" asp-controller="Invoices" asp-action="VatReport">Bảng kê thuế GTGT</a>
+            }
+            <div class="nav-group">📦 Kho</div>
+            <a class="@On(Is("Inventory", "Index") || Is("Inventory", "StockCard"))" asp-controller="Inventory" asp-action="Index">Tồn kho</a>
+            <a class="@On(ctrl == "Inventory" && act != "Index" && act != "StockCard" && act != "Warehouses")" asp-controller="Inventory" asp-action="Docs">Phiếu nhập / xuất kho</a>
+            <a class="@On(ctrl == "Items")" asp-controller="Items" asp-action="Index">Hàng hóa, vật tư</a>
+            <div class="nav-group">🛒 Mua hàng · 🏷️ Bán hàng</div>
+            <a class="@On(ctrl == "PurchaseOrders")" asp-controller="PurchaseOrders" asp-action="Index">Đơn mua hàng</a>
+            <a class="@On(Is("Partners", null, "type", "vendor"))" asp-controller="Partners" asp-action="Index" asp-route-type="vendor">Nhà cung cấp</a>
+            <a class="@On(ctrl == "SalesOrders")" asp-controller="SalesOrders" asp-action="Index">Đơn bán hàng</a>
+            <a class="@On(Is("Partners", null, "type", "customer") || (ctrl == "Partners" && string.IsNullOrEmpty(q["type"])))" asp-controller="Partners" asp-action="Index" asp-route-type="customer">Khách hàng</a>
+            <div class="nav-group">⚙️ Sản xuất</div>
+            <a class="@On(ctrl == "Production" && act != "Mrp")" asp-controller="Production" asp-action="Index">Lệnh sản xuất</a>
+            <a class="@On(ctrl == "Boms")" asp-controller="Boms" asp-action="Index">Định mức (BOM)</a>
+            <a class="@On(Is("Production", "Mrp"))" asp-controller="Production" asp-action="Mrp">Hoạch định vật tư</a>
+            @if (User.IsAdmin())
+            {
+                <div class="nav-group">Hệ thống</div>
+                <a class="@On(ctrl == "Users")" asp-controller="Users" asp-action="Index">Người dùng & phân quyền</a>
+                <a class="@On(Is("Inventory", "Warehouses"))" asp-controller="Inventory" asp-action="Warehouses">Danh mục kho</a>
+            }
+        </nav>
+    </aside>
+    <div class="main">
+        <header class="topbar">
+            <div>
+                <div class="company">@Cfg.Value.CompanyName</div>
+                <h1 class="page-title">@ViewData["Title"]</h1>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle" data-bs-toggle="dropdown">
+                        <span class="avatar">@(User.GetFullName().Length > 0 ? char.ToUpper(User.GetFullName().Split(' ').Last()[0]) : '?')</span>
+                        @User.GetFullName() <small class="text-muted">(@AppRoles.DisplayName(role))</small>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword">Đổi mật khẩu</a></li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li><form asp-controller="Account" asp-action="Logout" method="post"><button class="dropdown-item text-danger">Đăng xuất</button></form></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+        <main class="content">
+            @if (TempData["Success"] is string ok) { <div class="alert alert-success alert-dismissible fade show">@ok<button class="btn-close" data-bs-dismiss="alert"></button></div> }
+            @if (TempData["Warning"] is string wr) { <div class="alert alert-warning alert-dismissible fade show">@wr<button class="btn-close" data-bs-dismiss="alert"></button></div> }
+            @if (TempData["Error"] is string err) { <div class="alert alert-danger alert-dismissible fade show">@err<button class="btn-close" data-bs-dismiss="alert"></button></div> }
+            @RenderBody()
+        </main>
+        <footer class="footer">&copy; @DateTime.Now.Year ERP — ASP.NET Core 8 MVC + SQL Server</footer>
+    </div>
+</div>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

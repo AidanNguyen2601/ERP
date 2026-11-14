@@ -1,0 +1,33 @@
+@model List<Partner>
+@{
+    var customer = (bool)ViewBag.Customer; var bal = (Dictionary<int, decimal>)ViewBag.Balances;
+    ViewData["Title"] = customer ? "Khách hàng" : "Nhà cung cấp";
+    var fin = User.SeesFinance();
+}
+<form class="toolbar" method="get">
+    <input type="hidden" name="type" value="@(customer ? "customer" : "vendor")" />
+    <input name="q" value="@ViewBag.Q" class="form-control form-control-sm" style="width:280px" placeholder="Mã, tên, mã số thuế" />
+    <button class="btn btn-sm btn-outline-primary">Tìm</button>
+    @if ((bool)ViewBag.CanEdit) { <a class="btn btn-sm btn-primary ms-auto" asp-action="Create" asp-route-type="@(customer ? "customer" : "vendor")">+ Thêm @(customer ? "khách hàng" : "nhà cung cấp")</a> }
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0">
+    <thead><tr><th>Mã</th><th>Tên</th><th>MST</th><th>Liên hệ</th><th class="num">Số ngày nợ</th>
+        @if (customer) { <th class="num">Hạn mức</th> }
+        @if (fin) { <th class="num">@(customer ? "Dư nợ phải thu" : "Dư nợ phải trả")</th> }<th></th></tr></thead>
+    <tbody>
+    @foreach (var p in Model)
+    {
+        var b = bal.GetValueOrDefault(p.Id) * (customer ? 1 : -1);
+        <tr class="@(p.IsActive ? "" : "text-muted")">
+            <td><b>@p.Code</b></td><td>@p.Name<div class="small text-muted">@p.Address</div></td><td>@p.TaxCode</td>
+            <td class="small">@p.ContactPerson<div>@p.Phone</div></td><td class="num">@p.PaymentTermDays</td>
+            @if (customer) { <td class="num">@(p.CreditLimit > 0 ? p.CreditLimit.ToMoney() : "Không giới hạn")</td> }
+            @if (fin) { <td class="num @(customer && p.CreditLimit > 0 && b > p.CreditLimit * 0.8m ? "warn" : "")">@b.ToMoney()</td> }
+            <td class="text-end text-nowrap">
+                @if (fin) { <a class="btn btn-sm btn-light" asp-controller="Debts" asp-action="Statement" asp-route-id="@p.Id" asp-route-kind="@(customer ? "ar" : "ap")">Sổ công nợ</a> }
+                @if ((bool)ViewBag.CanEdit) { <a class="btn btn-sm btn-light" asp-action="Edit" asp-route-id="@p.Id">Sửa</a> }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table></div></div></div>

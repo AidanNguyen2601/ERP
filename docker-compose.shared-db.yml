@@ -1,0 +1,28 @@
+# Phương án B: chỉ chạy web ERP, dùng chung SQL Server đang chạy (của Healthcare).
+# ERP tạo database riêng ERP_DB. Chạy: docker compose -f docker-compose.shared-db.yml up -d --build
+name: erp
+
+services:
+  erp-web:
+    build: { context: ., dockerfile: Dockerfile }
+    image: erp-web:latest
+    container_name: erp-web
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__ErpConnection: "Server=${SHARED_DB_HOST},1433;Database=ERP_DB;User Id=${SHARED_DB_USER};Password=${SHARED_DB_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true"
+      DataProtection__KeysPath: /app/keys
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "${ERP_WEB_PORT:-8130}:8080"
+    volumes:
+      - erp-keys:/app/keys
+    networks: [shared-net]
+    restart: unless-stopped
+
+volumes:
+  erp-keys:
+
+networks:
+  shared-net:
+    external: true
+    name: ${SHARED_NETWORK}

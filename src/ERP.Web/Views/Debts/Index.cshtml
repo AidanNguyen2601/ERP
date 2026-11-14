@@ -1,0 +1,39 @@
+@model List<CashVoucher>
+@{
+    var ar = (string)ViewBag.Kind == "ar";
+    ViewData["Title"] = ar ? "Kế toán phải thu" : "Kế toán phải trả";
+    var rows = (List<(Partner Partner, decimal Balance, List<Invoice> Open)>)ViewBag.Rows;
+    var aging = (List<AgingRow>)ViewBag.Aging;
+    var total = rows.Sum(r => r.Balance); var overdue = aging.Sum(a => a.Total - a.NotDue);
+}
+<partial name="_Nav" />
+<div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="card kpi"><div class="label">Tổng @ViewBag.Title2</div><div class="value">@total.ToMoney()</div><div class="sub">@rows.Count đối tượng còn số dư</div></div></div>
+    <div class="col-md-3"><div class="card kpi"><div class="label">Chưa đến hạn</div><div class="value good">@aging.Sum(a => a.NotDue).ToMoney()</div></div></div>
+    <div class="col-md-3"><div class="card kpi"><div class="label">Quá hạn</div><div class="value bad">@overdue.ToMoney()</div><div class="sub">trong đó > 30 ngày: @aging.Sum(a => a.D31_60 + a.D61_90 + a.Over90).ToMoney()</div></div></div>
+    <div class="col-md-3"><div class="card kpi"><div class="label">@(ar ? "Đã thu" : "Đã trả") 30 ngày qua</div><div class="value">@Model.Sum(v => v.Amount).ToMoney()</div></div></div>
+</div>
+<div class="card mb-3"><div class="card-header">Số dư công nợ theo đối tượng</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0">
+    <thead><tr><th>Mã</th><th>@(ar ? "Khách hàng" : "Nhà cung cấp")</th><th class="num">Số dư sổ cái</th><th class="num">HĐ còn nợ</th><th class="num">Quá hạn</th>@if (ar) { <th class="num">Hạn mức</th> }<th></th></tr></thead>
+    <tbody>
+    @foreach (var r in rows.OrderByDescending(r => r.Balance))
+    {
+        var od = r.Open.Where(i => i.IsOverdue).Sum(i => i.Outstanding);
+        <tr><td>@r.Partner.Code</td><td>@r.Partner.Name</td><td class="num fw-semibold @(r.Balance < 0 ? "text-primary" : "")" title="@(r.Balance < 0 ? (ar ? "Khách trả trước" : "Ứng trước NCC") : "")">@r.Balance.ToMoney()</td>
+            <td class="num">@r.Open.Count</td><td class="num @(od > 0 ? "bad" : "")">@(od > 0 ? od.ToMoney() : "")</td>
+            @if (ar) { <td class="num @(r.Partner.CreditLimit > 0 && r.Balance > r.Partner.CreditLimit ? "bad" : "")">@(r.Partner.CreditLimit > 0 ? r.Partner.CreditLimit.ToMoney() : "—")</td> }
+            <td class="text-end text-nowrap"><a class="btn btn-sm btn-light" asp-action="Statement" asp-route-id="@r.Partner.Id" asp-route-kind="@ViewBag.Kind">Sổ chi tiết</a>
+                <a class="btn btn-sm btn-outline-primary" asp-controller="Cash" asp-action="Create" asp-route-type="@(ar ? "Receipt" : "Payment")" asp-route-partnerId="@r.Partner.Id">@(ar ? "Thu tiền" : "Trả tiền")</a></td></tr>
+    }
+    @if (!rows.Any()) { <tr><td colspan="7" class="text-center text-muted py-4">Không có công nợ.</td></tr> }
+    </tbody>
+</table></div></div></div>
+<div class="card"><div class="card-header">@(ar ? "Phiếu thu" : "Phiếu chi") 30 ngày gần nhất</div><div class="card-body p-0"><table class="table table-sm mb-0">
+    <thead><tr><th>Ngày</th><th>Số phiếu</th><th>Đối tượng</th><th>Quỹ / TK</th><th>Diễn giải</th><th class="num">Số tiền</th></tr></thead>
+    <tbody>
+    @foreach (var v in Model)
+    {
+        <tr><td>@v.Date.ToDate()</td><td><a asp-controller="Cash" asp-action="Details" asp-route-id="@v.Id">@v.Number</a></td><td>@v.Partner?.Name</td><td>@v.CashAccount?.Name</td><td>@v.Description</td><td class="num">@v.Amount.ToMoney()</td></tr>
+    }
+    </tbody>
+</table></div></div>

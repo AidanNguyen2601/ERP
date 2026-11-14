@@ -1,0 +1,19 @@
+@model UserFormViewModel
+@{ ViewData["Title"] = Model.Id == 0 ? "Thêm người dùng" : $"Sửa người dùng {Model.Username}"; var depts = (List<string>)ViewBag.Departments; }
+<div class="card" style="max-width:700px"><div class="card-body">
+<form asp-action="Save" method="post">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="row g-3">
+        <div class="col-md-6"><label asp-for="Username" class="form-label"></label><input asp-for="Username" class="form-control" /><span asp-validation-for="Username" class="text-danger small"></span></div>
+        <div class="col-md-6"><label asp-for="FullName" class="form-label"></label><input asp-for="FullName" class="form-control" /><span asp-validation-for="FullName" class="text-danger small"></span></div>
+        <div class="col-md-6"><label asp-for="Department" class="form-label"></label><input asp-for="Department" class="form-control" list="depts" /><datalist id="depts">@foreach (var d in depts) { <option>@d</option> }</datalist><span asp-validation-for="Department" class="text-danger small"></span></div>
+        <div class="col-md-6"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" /></div>
+        <div class="col-md-6"><label asp-for="Role" class="form-label"></label><select asp-for="Role" class="form-select" asp-items="ViewBag.Roles"></select></div>
+        <div class="col-md-6"><label asp-for="Password" class="form-label"></label><input asp-for="Password" class="form-control" placeholder="@(Model.Id == 0 ? "" : "Để trống nếu không đổi")" /><span asp-validation-for="Password" class="text-danger small"></span></div>
+        <div class="col-12 form-check ms-2"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div>
+    </div>
+    <div class="mt-4"><button class="btn btn-primary">Lưu</button> <a asp-action="Index" class="btn btn-light">Hủy</a></div>
+</form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

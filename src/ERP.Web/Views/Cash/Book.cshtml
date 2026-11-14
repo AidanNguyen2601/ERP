@@ -1,0 +1,20 @@
+@model List<LedgerRow>
+@{
+    var ca = (CashAccount)ViewBag.CashAccount; var opening = (decimal)ViewBag.Opening;
+    ViewData["Title"] = (ca.Type == CashAccountType.Cash ? "Sổ quỹ tiền mặt – " : "Sổ tiền gửi ngân hàng – ") + ca.Name;
+}
+<div class="subnav"><a asp-action="Index">← Quỹ & phiếu thu chi</a></div>
+<form class="toolbar" method="get"><input type="hidden" name="id" value="@ca.Id" />
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@(((DateTime)ViewBag.To).Iso())" class="form-control form-control-sm" /></div>
+    <button class="btn btn-sm btn-outline-primary">Xem</button><button type="button" class="btn btn-sm btn-light border ms-auto" onclick="window.print()">In</button></form>
+<div class="card"><div class="card-body p-0"><table class="table table-sm mb-0 report-table">
+    <thead><tr><th>Ngày</th><th>Số CT</th><th>Diễn giải</th><th>TK đối ứng</th><th class="num">Thu (Nợ)</th><th class="num">Chi (Có)</th><th class="num">Tồn</th></tr></thead>
+    <tbody><tr class="bold"><td colspan="6">Số dư đầu kỳ</td><td class="num">@opening.ToMoney()</td></tr>
+    @foreach (var r in Model)
+    {
+        <tr><td>@r.Date.ToDate()</td><td><a asp-controller="Journals" asp-action="Details" asp-route-id="@r.EntryId">@r.Number</a></td><td>@r.Description</td><td>@r.CounterAccounts</td>
+            <td class="num">@(r.Debit != 0 ? r.Debit.ToMoney() : "")</td><td class="num">@(r.Credit != 0 ? r.Credit.ToMoney() : "")</td><td class="num @(r.Balance < 0 ? "bad" : "")">@r.Balance.ToMoney()</td></tr>
+    }</tbody>
+    <tfoot><tr class="total"><td colspan="4">Cộng phát sinh / tồn cuối kỳ</td><td class="num">@Model.Sum(r => r.Debit).ToMoney()</td><td class="num">@Model.Sum(r => r.Credit).ToMoney()</td><td class="num">@((Model.Any() ? Model.Last().Balance : opening).ToMoney())</td></tr></tfoot>
+</table></div></div>

@@ -1,0 +1,18 @@
+@model Account
+@{ ViewData["Title"] = Model.Id == 0 ? "Thêm tài khoản" : $"Sửa tài khoản {Model.Code}"; }
+<div class="card" style="max-width:720px"><div class="card-body">
+<form asp-action="Save" method="post">
+    <input type="hidden" asp-for="Id" /><input type="hidden" asp-for="IsPostable" />
+    <div class="row g-3">
+        <div class="col-md-4"><label asp-for="Code" class="form-label"></label><input asp-for="Code" class="form-control" /><span asp-validation-for="Code" class="text-danger small"></span></div>
+        <div class="col-md-8"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+        <div class="col-md-6"><label asp-for="Type" class="form-label"></label><select asp-for="Type" class="form-select" asp-items="Html.GetEnumSelectList<AccountType>()"></select></div>
+        <div class="col-md-6 pt-4">
+            <div class="form-check"><input asp-for="TrackPartner" class="form-check-input" /><label asp-for="TrackPartner" class="form-check-label"></label></div>
+            <div class="form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div>
+        </div>
+    </div>
+    <div class="mt-4"><button class="btn btn-primary">Lưu</button> <a asp-action="Index" class="btn btn-light">Hủy</a></div>
+</form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

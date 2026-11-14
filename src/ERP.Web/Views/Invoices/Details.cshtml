@@ -1,0 +1,69 @@
+@model Invoice
+@{
+    var sales = Model.Direction == InvoiceDirection.Sales; var cfg = (ErpSettings)ViewBag.Company;
+    ViewData["Title"] = $"{(sales ? "Hóa đơn bán" : "Hóa đơn mua")} {Model.Series} {Model.InvoiceNo ?? Model.Number}";
+    var pays = (List<PaymentAllocation>)ViewBag.Payments; var canAcc = User.CanAccounting();
+}
+<div class="actions mb-3">
+    <a class="btn btn-sm btn-light border" asp-action="Index" asp-route-direction="@Model.Direction">← Danh sách</a>
+    <button class="btn btn-sm btn-light border" onclick="window.print()">In hóa đơn</button>
+    @if (Model.JournalEntryId.HasValue) { <a class="btn btn-sm btn-light border" asp-controller="Journals" asp-action="Details" asp-route-id="@Model.JournalEntryId">Bút toán</a> }
+    @if (Model.SalesOrder != null) { <a class="btn btn-sm btn-light border" asp-controller="SalesOrders" asp-action="Details" asp-route-id="@Model.SalesOrderId">Đơn bán @Model.SalesOrder.Number</a> }
+    @if (Model.PurchaseOrder != null) { <a class="btn btn-sm btn-light border" asp-controller="PurchaseOrders" asp-action="Details" asp-route-id="@Model.PurchaseOrderId">Đơn mua @Model.PurchaseOrder.Number</a> }
+    @if (canAcc && Model.Status == InvoiceStatus.Draft)
+    {
+        <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id">Sửa</a>
+        <form asp-action="Issue" asp-route-id="@Model.Id" method="post" data-confirm="@(sales ? "Phát hành hóa đơn? Hệ thống cấp số và ghi nhận doanh thu, công nợ." : "Ghi sổ hóa đơn mua?")"><button class="btn btn-sm btn-success">@(sales ? "Phát hành" : "Ghi sổ")</button></form>
+        <form asp-action="Delete" asp-route-id="@Model.Id" method="post" data-confirm="Xóa hóa đơn nháp?"><button class="btn btn-sm btn-outline-danger">Xóa nháp</button></form>
+    }
+    @if (canAcc && Model.Status == InvoiceStatus.Issued && Model.Outstanding > 0)
+    {
+        <a class="btn btn-sm btn-primary" asp-controller="Cash" asp-action="Create" asp-route-type="@(sales ? "Receipt" : "Payment")" asp-route-invoiceId="@Model.Id">@(sales ? "Thu tiền" : "Thanh toán")</a>
+    }
+    @if (canAcc && Model.Status == InvoiceStatus.Issued && Model.PaidAmount == 0)
+    {
+        <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="d-flex gap-1" data-confirm="Hủy hóa đơn và đảo bút toán?"><input name="reason" class="form-control form-control-sm" placeholder="Lý do hủy" required /><button class="btn btn-sm btn-outline-danger text-nowrap">Hủy HĐ</button></form>
+    }
+</div>
+<div class="print-paper">
+    <div class="d-flex justify-content-between">
+        <div class="small">
+            @if (sales) { <span><b>Đơn vị bán hàng: @cfg.CompanyName</b><br />MST: @cfg.CompanyTaxCode<br />Địa chỉ: @cfg.CompanyAddress</span> }
+            else { <span><b>Đơn vị bán hàng: @Model.Partner?.Name</b><br />MST: @Model.Partner?.TaxCode<br />Địa chỉ: @Model.Partner?.Address</span> }
+        </div>
+        <div class="text-end small">Ký hiệu: <b>@Model.Series</b><br />Số: <b class="text-danger fs-6">@(Model.InvoiceNo ?? "—")</b><br /><partial name="_Badge" model="Model.Status" /></div>
+    </div>
+    <h3 class="mt-3 mb-0">HÓA ĐƠN GIÁ TRỊ GIA TĂNG</h3>
+    <div class="text-center small mb-3">Ngày @Model.Date.Day tháng @Model.Date.Month năm @Model.Date.Year</div>
+    <div class="small mb-2">
+        @if (sales) { <span>Tên đơn vị mua: <b>@Model.Partner?.Name</b> · MST: @Model.Partner?.TaxCode<br />Địa chỉ: @Model.Partner?.Address</span> }
+        else { <span>Đơn vị mua: <b>@cfg.CompanyName</b> · MST: @cfg.CompanyTaxCode</span> }
+        <br />Hạn thanh toán: @Model.DueDate.ToDate() · Số chứng từ nội bộ: @Model.Number
+    </div>
+    <table class="table table-sm table-bordered">
+        <thead><tr><th>STT</th><th>Tên hàng hóa, dịch vụ</th><th>ĐVT</th><th class="num">Số lượng</th><th class="num">Đơn giá</th><th class="num">Thành tiền</th><th class="num">TS</th><th class="num">Tiền thuế</th>@if (!sales) { <th>TK</th> }</tr></thead>
+        <tbody>
+        @{ var n = 1; }
+        @foreach (var l in Model.Lines)
+        {
+            <tr><td>@(n++)</td><td>@l.Description</td><td>@l.Unit</td><td class="num">@l.Quantity.ToQty()</td><td class="num">@l.UnitPrice.ToMoney()</td><td class="num">@l.Amount.ToMoney()</td><td class="num">@l.VatRate%</td><td class="num">@l.VatAmount.ToMoney()</td>
+                @if (!sales) { <td class="small">@(l.GoodsPosted ? "đã nhập kho" : l.Account?.Code ?? "6427")</td> }</tr>
+        }
+        </tbody>
+        <tfoot>
+            <tr><td colspan="5" class="text-end">Cộng tiền hàng</td><td class="num">@Model.Subtotal.ToMoney()</td><td></td><td class="num">@Model.VatAmount.ToMoney()</td>@if (!sales) { <td></td> }</tr>
+            <tr class="fw-bold"><td colspan="5" class="text-end">Tổng cộng tiền thanh toán</td><td colspan="3" class="num fs-6">@Model.Total.ToMoney()</td>@if (!sales) { <td></td> }</tr>
+        </tfoot>
+    </table>
+    <div class="small"><i>Số tiền viết bằng chữ: @VietnameseNumber.ToWords(Model.Total)</i></div>
+    @if (!string.IsNullOrWhiteSpace(Model.Note)) { <div class="small mt-1">Ghi chú: @Model.Note</div> }
+    <div class="row text-center small mt-4"><div class="col">Người mua hàng<br /><i>(Chữ ký số nếu có)</i></div><div class="col">Người bán hàng<br /><i>(Chữ ký số)</i></div></div>
+</div>
+@if (Model.Status == InvoiceStatus.Issued)
+{
+    <div class="card mt-3" style="max-width:900px;margin:0 auto"><div class="card-header d-flex justify-content-between"><span>Thanh toán</span><span>Đã thanh toán <b>@Model.PaidAmount.ToMoney()</b> · Còn nợ <b class="@(Model.IsOverdue ? "bad" : "")">@Model.Outstanding.ToMoney()</b></span></div>
+    <div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+        @foreach (var p in pays) { <tr><td>@p.CashVoucher?.Date.ToDate()</td><td><a asp-controller="Cash" asp-action="Details" asp-route-id="@p.CashVoucherId">@p.CashVoucher?.Number</a></td><td>@p.CashVoucher?.Description</td><td class="num">@p.Amount.ToMoney()</td></tr> }
+        @if (!pays.Any()) { <tr><td class="text-muted text-center py-2">Chưa có thanh toán.</td></tr> }
+    </tbody></table></div></div>
+}

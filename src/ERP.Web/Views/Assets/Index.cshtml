@@ -1,0 +1,43 @@
+@model List<FixedAsset>
+@{
+    ViewData["Title"] = "Tài sản cố định";
+    var cats = (List<AssetCategory>)ViewBag.Categories; var runs = (List<DepreciationRun>)ViewBag.Runs; var next = (DateTime)ViewBag.NextRun;
+    var canAcc = User.CanAccounting();
+}
+<div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="card kpi"><div class="label">Nguyên giá</div><div class="value">@Model.Where(a => a.Status != AssetStatus.Disposed).Sum(a => a.OriginalCost).ToShortMoney()</div><div class="sub">@Model.Count(a => a.Status != AssetStatus.Disposed) tài sản đang theo dõi</div></div></div>
+    <div class="col-md-3"><div class="card kpi"><div class="label">Hao mòn lũy kế</div><div class="value">@Model.Where(a => a.Status != AssetStatus.Disposed).Sum(a => a.AccumulatedDepreciation).ToShortMoney()</div></div></div>
+    <div class="col-md-3"><div class="card kpi"><div class="label">Giá trị còn lại</div><div class="value">@Model.Where(a => a.Status != AssetStatus.Disposed).Sum(a => a.NetBookValue).ToShortMoney()</div></div></div>
+    <div class="col-md-3"><div class="card kpi"><div class="label">Khấu hao kỳ tới (@next.ToString("MM/yyyy"))</div><div class="value">@(((decimal)ViewBag.Preview).ToShortMoney())</div>
+        @if (canAcc && next <= DateTime.Today.AddMonths(1))
+        {
+            <form asp-action="RunDepreciation" method="post" class="mt-1" data-confirm="Trích khấu hao tháng @next.ToString("MM/yyyy")?"><input type="hidden" name="year" value="@next.Year" /><input type="hidden" name="month" value="@next.Month" /><button class="btn btn-sm btn-primary">Trích khấu hao @next.ToString("MM/yyyy")</button></form>
+        }</div></div>
+</div>
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Nhóm</label><select name="categoryId" class="form-select form-select-sm"><option value="">-- Tất cả --</option>@foreach (var c in cats) { <option value="@c.Id" selected="@((int?)ViewBag.CategoryId == c.Id)">@c.Name</option> }</select></div>
+    <div><label class="form-label small mb-0">Trạng thái</label><select name="status" class="form-select form-select-sm"><option value="">-- Tất cả --</option>@foreach (AssetStatus s in Enum.GetValues<AssetStatus>()) { <option value="@s" selected="@(ViewBag.Status is AssetStatus x && x == s)">@s.GetDisplayName()</option> }</select></div>
+    <button class="btn btn-sm btn-outline-primary">Lọc</button>
+    @if (canAcc) { <a class="btn btn-sm btn-primary ms-auto" asp-action="Create">+ Ghi tăng tài sản</a> }
+</form>
+<div class="card mb-3"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0">
+    <thead><tr><th>Mã</th><th>Tên tài sản</th><th>Nhóm</th><th>Bộ phận</th><th>Bắt đầu KH</th><th class="num">Tháng KH</th><th class="num">Nguyên giá</th><th class="num">KH / tháng</th><th class="num">Hao mòn lũy kế</th><th class="num">Còn lại</th><th style="width:110px">Đã KH</th><th>Trạng thái</th></tr></thead>
+    <tbody>
+    @foreach (var a in Model)
+    {
+        var pct = a.OriginalCost == 0 ? 0 : (int)(a.AccumulatedDepreciation * 100 / a.OriginalCost);
+        <tr><td><a asp-action="Details" asp-route-id="@a.Id">@a.Code</a></td><td>@a.Name</td><td class="small">@a.Category?.Name</td><td class="small">@a.Department</td><td>@a.DepreciationStartDate.ToString("MM/yyyy")</td>
+            <td class="num">@a.UsefulLifeMonths</td><td class="num">@a.OriginalCost.ToMoney()</td><td class="num">@a.MonthlyDepreciation.ToMoney()</td><td class="num">@a.AccumulatedDepreciation.ToMoney()</td><td class="num fw-semibold">@a.NetBookValue.ToMoney()</td>
+            <td><div class="progress"><div class="progress-bar" style="width:@pct%"></div></div><span class="small text-muted">@pct%</span></td><td><partial name="_Badge" model="a.Status" /></td></tr>
+    }
+    </tbody>
+</table></div></div></div>
+<div class="row g-3">
+    <div class="col-lg-7"><div class="card"><div class="card-header">Nhóm tài sản & tài khoản hạch toán</div><div class="card-body p-0"><table class="table table-sm mb-0">
+        <thead><tr><th>Nhóm</th><th>TK nguyên giá</th><th>TK chi phí khấu hao</th><th class="num">Thời gian mặc định</th></tr></thead><tbody>
+        @foreach (var c in cats) { <tr><td>@c.Code – @c.Name</td><td>@c.AssetAccount?.Code</td><td>@c.ExpenseAccount?.Code – @c.ExpenseAccount?.Name</td><td class="num">@c.DefaultLifeMonths tháng</td></tr> }
+        </tbody></table></div></div></div>
+    <div class="col-lg-5"><div class="card"><div class="card-header">Lịch sử trích khấu hao</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+        @foreach (var r in runs) { <tr><td>Tháng @r.Month.ToString("00")/@r.Year</td><td class="num">@r.Total.ToMoney()</td><td class="small text-muted">@r.CreatedBy</td><td>@if (r.JournalEntryId.HasValue) { <a asp-controller="Journals" asp-action="Details" asp-route-id="@r.JournalEntryId">Bút toán</a> }</td></tr> }
+        </tbody></table></div></div></div>
+</div>

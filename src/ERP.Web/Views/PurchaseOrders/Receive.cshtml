@@ -1,0 +1,21 @@
+@model PurchaseOrder
+@{ ViewData["Title"] = $"Nhận hàng – đơn mua {Model.Number}"; }
+<div class="card" style="max-width:1000px"><div class="card-body">
+<div class="meta mb-2">Nhà cung cấp <b>@Model.Vendor?.Name</b> · nhập vào <b>@Model.Warehouse?.Name</b></div>
+<form asp-action="Receive" asp-route-id="@Model.Id" method="post">
+    <div class="row g-2 mb-3"><div class="col-md-3"><label class="form-label small">Ngày nhập kho</label><input type="date" name="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div></div>
+    <table class="table table-sm align-middle">
+        <thead><tr><th>Mã</th><th>Tên hàng</th><th class="num">Đặt</th><th class="num">Đã nhận</th><th class="num">Còn lại</th><th style="width:160px" class="text-end">Thực nhận lần này</th></tr></thead>
+        <tbody>
+        @foreach (var l in Model.Lines)
+        {
+            var rem = l.Quantity - l.ReceivedQty;
+            <tr><td>@l.Item?.Code</td><td>@l.Item?.Name</td><td class="num">@l.Quantity.ToQty()</td><td class="num">@l.ReceivedQty.ToQty()</td><td class="num">@rem.ToQty()</td>
+                <td><input type="number" name="qty[@l.Id]" value="@rem.Raw()" min="0" max="@rem.Raw()" step="0.001" class="form-control form-control-sm text-end" @(rem <= 0 ? "readonly" : "") /></td></tr>
+        }
+        </tbody>
+    </table>
+    <button class="btn btn-primary">Xác nhận nhập kho</button> <a class="btn btn-light" asp-action="Details" asp-route-id="@Model.Id">Hủy</a>
+    <div class="small text-muted mt-2">Ghi sổ: Nợ TK kho (152 / 1561) / Có 331 theo giá mua chưa thuế; giá vốn bình quân được cập nhật.</div>
+</form>
+</div></div>

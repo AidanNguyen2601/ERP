@@ -1,0 +1,22 @@
+@model OrderForm
+@{ ViewData["Title"] = Model.Id == 0 ? "Lập đơn bán hàng" : $"Sửa đơn bán {Model.Number}"; }
+<form asp-action="Save" method="post">
+<input type="hidden" asp-for="Id" />
+<div class="card mb-3"><div class="card-body">
+    <div asp-validation-summary="All" class="alert alert-danger py-2 empty-hide"></div>
+    <div class="row g-3">
+        <div class="col-md-5"><label asp-for="PartnerId" class="form-label">Khách hàng</label><select asp-for="PartnerId" class="form-select" asp-items="ViewBag.Partners"><option value="">-- Chọn --</option></select></div>
+        <div class="col-md-3"><label asp-for="WarehouseId" class="form-label">Kho xuất</label><select asp-for="WarehouseId" class="form-select" asp-items="ViewBag.Whs"><option value="">-- Chọn --</option></select></div>
+        <div class="col-md-2"><label asp-for="Date" class="form-label">Ngày đơn</label><input asp-for="Date" type="date" class="form-control" /></div>
+        <div class="col-md-2"><label asp-for="DeliveryDate" class="form-label">Ngày giao</label><input asp-for="DeliveryDate" type="date" class="form-control" /></div>
+        <div class="col-12"><label asp-for="Note" class="form-label"></label><input asp-for="Note" class="form-control" /></div>
+    </div>
+</div></div>
+<div class="card mb-3"><div class="card-body"><partial name="_ItemLines" model="(LineEditorOptions)ViewBag.LineOptions" />
+    <div class="small text-muted">Giá bán gợi ý theo danh mục; được sửa và áp chiết khấu từng dòng. Thành phẩm xuất từ Kho thành phẩm, hàng hóa từ Kho hàng hóa.</div></div></div>
+<div class="d-flex gap-2">
+    <button class="btn btn-light border" name="confirm" value="false">Lưu nháp</button>
+    <button class="btn btn-primary" name="confirm" value="true">Lưu & xác nhận đơn</button>
+    <a class="btn btn-light" asp-action="Index">Hủy</a>
+</div>
+</form>

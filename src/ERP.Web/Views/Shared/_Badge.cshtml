@@ -1,0 +1,20 @@
+@model Enum
+@{
+    var css = Model switch
+    {
+        DocStatus.Draft or InvoiceStatus.Draft or PoStatus.Draft or SoStatus.Draft or ProductionStatus.Draft => "bg-secondary",
+        DocStatus.Posted or InvoiceStatus.Issued => "bg-success",
+        DocStatus.Cancelled or InvoiceStatus.Cancelled or PoStatus.Cancelled or SoStatus.Cancelled or ProductionStatus.Cancelled => "bg-dark",
+        PoStatus.PendingApproval => "bg-warning text-dark",
+        PoStatus.Approved or SoStatus.Confirmed or ProductionStatus.Released => "bg-info text-dark",
+        PoStatus.PartiallyReceived or SoStatus.PartiallyDelivered or ProductionStatus.InProgress => "bg-primary",
+        PoStatus.Received or SoStatus.Delivered => "bg-teal",
+        PoStatus.Completed or SoStatus.Completed or ProductionStatus.Completed => "bg-success",
+        AssetStatus.InUse => "bg-success", AssetStatus.FullyDepreciated => "bg-secondary", AssetStatus.Disposed => "bg-dark",
+        InvoiceDirection.Sales => "bg-primary", InvoiceDirection.Purchase => "bg-warning text-dark",
+        CashVoucherType.Receipt => "bg-success", CashVoucherType.Payment => "bg-danger", CashVoucherType.Transfer => "bg-info text-dark",
+        InvDocType.Receipt => "bg-success", InvDocType.Issue => "bg-danger", InvDocType.Transfer => "bg-info text-dark", InvDocType.Adjustment => "bg-warning text-dark",
+        _ => "bg-light text-dark border"
+    };
+}
+<span class="badge @css">@Model.GetDisplayName()</span>

@@ -1,0 +1,19 @@
+@model List<Bom>
+@{ ViewData["Title"] = "Định mức nguyên vật liệu (BOM)"; }
+<div class="subnav"><a asp-controller="Production" asp-action="Index">Lệnh sản xuất</a><a class="active" asp-action="Index">Định mức (BOM)</a><a asp-controller="Production" asp-action="Mrp">Hoạch định vật tư</a>
+    @if ((bool)ViewBag.CanEdit) { <a asp-action="Create">+ Định mức mới</a> }</div>
+<div class="row g-3">
+@foreach (var b in Model)
+{
+    var mat = b.Lines.Sum(l => l.Quantity * (100 + l.ScrapPct) / 100 * (l.Item?.AvgCost ?? 0)) / b.OutputQuantity;
+    var cost = mat + b.LaborCostPerUnit + b.OverheadPerUnit; var price = b.FinishedItem?.SalePrice ?? 0;
+    <div class="col-md-6 col-xl-4"><div class="card h-100"><div class="card-body">
+        <div class="d-flex justify-content-between"><a class="fw-semibold" asp-action="Details" asp-route-id="@b.Id">@b.Code</a>@if (!b.IsActive) { <span class="badge bg-secondary">Ngưng</span> }</div>
+        <div class="mb-2">@b.FinishedItem?.Name</div>
+        <ul class="small mb-2 ps-3">@foreach (var l in b.Lines) { <li>@l.Item?.Name: @l.Quantity.ToQty() @l.Item?.Unit @(l.ScrapPct > 0 ? $"(+{l.ScrapPct:0.#}% hao hụt)" : "")</li> }</ul>
+        <div class="d-flex justify-content-between small"><span class="text-muted">Giá thành định mức</span><b>@cost.ToMoney()</b></div>
+        <div class="d-flex justify-content-between small"><span class="text-muted">Giá bán</span><span>@price.ToMoney()</span></div>
+        <div class="d-flex justify-content-between small"><span class="text-muted">Biên lợi nhuận gộp</span><span class="@(price > 0 && (price - cost) / price < 0.2m ? "warn" : "good")">@(price > 0 ? ((price - cost) * 100 / price).ToString("0.#") + "%" : "—")</span></div>
+    </div></div></div>
+}
+</div>

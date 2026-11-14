@@ -1,0 +1,27 @@
+@model List<(int Year, int Month, FiscalPeriod? P, bool Closing, decimal Revenue, decimal Profit)>
+@{ ViewData["Title"] = "Khóa sổ & kết chuyển cuối kỳ"; var canAcc = User.CanAccounting(); }
+<partial name="_GlNav" />
+<div class="card"><div class="card-body p-0"><table class="table table-hover mb-0">
+    <thead><tr><th>Kỳ</th><th class="num">Doanh thu</th><th class="num">Lợi nhuận trước thuế</th><th>Kết chuyển</th><th>Trạng thái</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var p in Model)
+    {
+        var closed = p.P?.IsClosed == true;
+        <tr><td><b>@p.Month.ToString("00")/@p.Year</b></td><td class="num">@p.Revenue.ToMoney()</td><td class="num @(p.Profit < 0 ? "bad" : "")">@p.Profit.ToMoney()</td>
+            <td>@(p.Closing ? "✓ Đã kết chuyển" : "")</td>
+            <td>@if (closed) { <span class="badge bg-dark">🔒 Đã khóa</span> <span class="small text-muted">@p.P!.ClosedBy · @p.P.ClosedAt?.ToString("dd/MM/yyyy HH:mm")</span> } else { <span class="badge bg-success">Đang mở</span> }</td>
+            <td class="text-end"><div class="actions justify-content-end">
+                @if (canAcc && !closed)
+                {
+                    if (!p.Closing) { <form asp-action="ClosingEntry" method="post"><input type="hidden" name="year" value="@p.Year" /><input type="hidden" name="month" value="@p.Month" /><button class="btn btn-sm btn-outline-primary">Kết chuyển</button></form> }
+                    <form asp-action="Close" method="post" data-confirm="Khóa sổ kỳ @p.Month.ToString("00")/@p.Year? Sẽ tự kết chuyển nếu chưa làm."><input type="hidden" name="year" value="@p.Year" /><input type="hidden" name="month" value="@p.Month" /><button class="btn btn-sm btn-dark">Khóa sổ</button></form>
+                }
+                @if (closed && (User.InAny(AppRoles.Approvers) || User.IsInRole(AppRoles.Accountant)))
+                {
+                    <form asp-action="Reopen" method="post" data-confirm="Mở khóa kỳ này?"><input type="hidden" name="year" value="@p.Year" /><input type="hidden" name="month" value="@p.Month" /><button class="btn btn-sm btn-outline-secondary">Mở khóa</button></form>
+                }
+            </div></td></tr>
+    }
+    </tbody>
+</table></div></div>
+<div class="small text-muted mt-2">Kết chuyển: số dư các TK doanh thu, chi phí (đầu 5–8) trong tháng chuyển sang TK 911, kết quả lãi / lỗ chuyển sang TK 4212. Khóa sổ chặn mọi nghiệp vụ ghi sổ có ngày trong kỳ đã khóa.</div>

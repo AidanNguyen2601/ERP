@@ -1,0 +1,50 @@
+# Phương án A: ERP có SQL Server riêng.  Chạy: docker compose up -d --build
+name: erp
+
+services:
+  erp-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: erp-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${ERP_SA_PASSWORD}
+      MSSQL_PID: Developer
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "${ERP_DB_PORT:-1438}:1433"
+    volumes:
+      - erp-sqldata:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks: [erp-net]
+    restart: unless-stopped
+
+  erp-web:
+    build: { context: ., dockerfile: Dockerfile }
+    image: erp-web:latest
+    container_name: erp-web
+    depends_on:
+      erp-db: { condition: service_healthy }
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__ErpConnection: "Server=erp-db,1433;Database=ERP_DB;User Id=sa;Password=${ERP_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true"
+      DataProtection__KeysPath: /app/keys
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "${ERP_WEB_PORT:-8130}:8080"
+    volumes:
+      - erp-keys:/app/keys
+    networks: [erp-net]
+    restart: unless-stopped
+
+volumes:
+  erp-sqldata:
+  erp-keys:
+
+networks:
+  erp-net:
+    name: erp-net

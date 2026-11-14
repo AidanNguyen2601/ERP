@@ -1,0 +1,47 @@
+@model FixedAsset
+@{
+    ViewData["Title"] = $"{Model.Code} – {Model.Name}";
+    var hist = (List<DepreciationLine>)ViewBag.History; var entries = (List<JournalEntry>)ViewBag.Entries;
+    var remaining = Model.MonthlyDepreciation == 0 ? 0 : (int)Math.Ceiling(Model.NetBookValue / Model.MonthlyDepreciation);
+}
+<div class="actions mb-3"><a class="btn btn-sm btn-light border" asp-action="Index">← Danh sách</a>
+    @if (User.CanAccounting() && Model.Status != AssetStatus.Disposed) { <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id">Sửa</a> }</div>
+<div class="row g-3">
+    <div class="col-lg-7"><div class="card"><div class="card-body">
+        <div class="fs-5 fw-semibold mb-2">@Model.Name <partial name="_Badge" model="Model.Status" /></div>
+        <dl class="row info mb-0">
+            <dt class="col-sm-4">Nhóm</dt><dd class="col-sm-8">@Model.Category?.Name (TK @Model.Category?.AssetAccount?.Code, chi phí @Model.Category?.ExpenseAccount?.Code)</dd>
+            <dt class="col-sm-4">Bộ phận / Serial</dt><dd class="col-sm-8">@Model.Department · @Model.SerialNo</dd>
+            <dt class="col-sm-4">Ngày mua / bắt đầu KH</dt><dd class="col-sm-8">@Model.AcquisitionDate.ToDate() / @Model.DepreciationStartDate.ToDate()</dd>
+            <dt class="col-sm-4">Nguyên giá</dt><dd class="col-sm-8">@Model.OriginalCost.ToMoney()</dd>
+            <dt class="col-sm-4">Thời gian khấu hao</dt><dd class="col-sm-8">@Model.UsefulLifeMonths tháng · @Model.MonthlyDepreciation.ToMoney()/tháng (đường thẳng)</dd>
+            <dt class="col-sm-4">Hao mòn lũy kế</dt><dd class="col-sm-8">@Model.AccumulatedDepreciation.ToMoney()</dd>
+            <dt class="col-sm-4">Giá trị còn lại</dt><dd class="col-sm-8 fw-bold">@Model.NetBookValue.ToMoney() @if (Model.Status == AssetStatus.InUse) { <span class="text-muted small">(còn khoảng @remaining tháng)</span> }</dd>
+            @if (Model.Status == AssetStatus.Disposed) { <dt class="col-sm-4">Thanh lý</dt><dd class="col-sm-8">@Model.DisposalDate.ToDate() · thu @Model.DisposalValue?.ToMoney()</dd> }
+        </dl>
+    </div></div>
+    @if (entries.Any())
+    {
+        <div class="card mt-3"><div class="card-header">Bút toán tăng / giảm</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+            @foreach (var j in entries) { <tr><td>@j.Date.ToDate()</td><td><a asp-controller="Journals" asp-action="Details" asp-route-id="@j.Id">@j.Number</a></td><td>@j.Description</td></tr> }
+        </tbody></table></div></div>
+    }
+    </div>
+    <div class="col-lg-5">
+        @if (User.CanAccounting() && Model.Status != AssetStatus.Disposed)
+        {
+            <div class="card mb-3"><div class="card-header">Thanh lý / nhượng bán</div><div class="card-body">
+                <form asp-action="Liquidate" asp-route-id="@Model.Id" method="post" data-confirm="Thanh lý tài sản này? Giá trị còn lại ghi vào chi phí khác (811).">
+                    <div class="mb-2"><label class="form-label small">Ngày thanh lý</label><input type="date" name="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+                    <div class="mb-2"><label class="form-label small">Tiền thu thanh lý (711)</label><input type="number" name="proceeds" value="0" step="1000" min="0" class="form-control form-control-sm" /></div>
+                    <div class="mb-2"><label class="form-label small">Thu vào</label><select name="cashAccountId" class="form-select form-select-sm" asp-items="ViewBag.CashAccounts"></select></div>
+                    <button class="btn btn-sm btn-outline-danger">Thanh lý</button>
+                </form>
+            </div></div>
+        }
+        <div class="card"><div class="card-header">Lịch sử khấu hao</div><div class="card-body p-0" style="max-height:360px;overflow:auto"><table class="table table-sm mb-0"><tbody>
+            @foreach (var h in hist) { <tr><td>Tháng @h.DepreciationRun?.Month.ToString("00")/@h.DepreciationRun?.Year</td><td class="num">@h.Amount.ToMoney()</td></tr> }
+            @if (!hist.Any()) { <tr><td class="text-muted text-center py-3">Chưa trích khấu hao trong hệ thống.</td></tr> }
+        </tbody></table></div></div>
+    </div>
+</div>

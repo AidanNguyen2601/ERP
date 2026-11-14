@@ -1,0 +1,22 @@
+@model List<ProductionOrder>
+@{ ViewData["Title"] = "Lệnh sản xuất"; var counts = (Dictionary<ProductionStatus, int>)ViewBag.Counts; var st = ViewBag.Status as ProductionStatus?; }
+<div class="subnav"><a class="active" asp-action="Index">Lệnh sản xuất</a><a asp-controller="Boms" asp-action="Index">Định mức (BOM)</a><a asp-action="Mrp">Hoạch định vật tư</a>
+    @if ((bool)ViewBag.CanEdit) { <a asp-action="Create">+ Lệnh sản xuất</a> }</div>
+<div class="toolbar">
+    <a class="btn btn-sm @(st == null ? "btn-secondary" : "btn-light border")" asp-action="Index">Tất cả</a>
+    @foreach (ProductionStatus s in Enum.GetValues<ProductionStatus>()) { if (counts.ContainsKey(s)) { <a class="btn btn-sm @(st == s ? "btn-secondary" : "btn-light border")" asp-action="Index" asp-route-status="@s">@s.GetDisplayName() (@counts[s])</a> } }
+</div>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0">
+    <thead><tr><th>Số lệnh</th><th>Thành phẩm</th><th class="num">Số lượng</th><th>Bắt đầu</th><th>Hoàn thành DK</th><th style="width:140px">Xuất NVL</th><th class="num">Giá thành / SP</th><th>Trạng thái</th></tr></thead>
+    <tbody>
+    @foreach (var p in Model)
+    {
+        var req = p.Lines.Sum(l => l.RequiredQty); var pct = req == 0 ? 0 : (int)(p.Lines.Sum(l => Math.Min(l.IssuedQty, l.RequiredQty)) * 100 / req);
+        <tr><td><a asp-action="Details" asp-route-id="@p.Id">@p.Number</a></td><td>@p.Item?.Name</td><td class="num">@p.Quantity.ToQty()</td><td>@p.StartDate.ToDate()</td>
+            <td class="@(p.DueDate < DateTime.Today && p.Status is ProductionStatus.Released or ProductionStatus.InProgress ? "overdue" : "")">@p.DueDate.ToDate()</td>
+            <td><div class="progress"><div class="progress-bar" style="width:@pct%"></div></div></td>
+            <td class="num">@(p.UnitCost > 0 ? p.UnitCost.ToMoney() : "")</td><td><partial name="_Badge" model="p.Status" /></td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="8" class="text-center text-muted py-4">Không có lệnh.</td></tr> }
+    </tbody>
+</table></div></div></div>

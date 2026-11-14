@@ -1,0 +1,13 @@
+@{ var a = ViewContext.RouteData.Values["action"]?.ToString(); var w = User.InAny(AppRoles.WarehouseTeam + "," + AppRoles.Accountant); }
+<div class="subnav">
+    <a class="@(a == "Index" ? "active" : "")" asp-action="Index">Tồn kho</a>
+    <a class="@(a == "Docs" ? "active" : "")" asp-action="Docs">Phiếu kho</a>
+    <a asp-controller="Items" asp-action="Index">Hàng hóa, vật tư</a>
+    @if (w)
+    {
+        <a asp-action="Create" asp-route-type="Receipt">+ Nhập kho</a>
+        <a asp-action="Create" asp-route-type="Issue">+ Xuất kho</a>
+        <a asp-action="Create" asp-route-type="Transfer">+ Chuyển kho</a>
+        <a asp-action="Create" asp-route-type="Adjustment">+ Kiểm kê</a>
+    }
+</div>

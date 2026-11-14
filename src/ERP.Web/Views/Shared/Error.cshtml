@@ -1,0 +1,6 @@
+@model ErrorViewModel
+@{ ViewData["Title"] = "Lỗi"; }
+<div class="card"><div class="card-body">
+    <h4 class="text-danger">Đã có lỗi xảy ra trong quá trình xử lý.</h4>
+    @if (Model.ShowRequestId) { <p>Mã yêu cầu: <code>@Model.RequestId</code></p> }
+</div></div>

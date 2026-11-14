@@ -1,0 +1,24 @@
+@model List<InventoryDoc>
+@{ ViewData["Title"] = "Phiếu nhập / xuất kho"; }
+<partial name="_Nav" />
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@(((DateTime)ViewBag.To).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Loại</label><select name="type" class="form-select form-select-sm"><option value="">-- Tất cả --</option>
+        @foreach (InvDocType t in Enum.GetValues<InvDocType>()) { <option value="@t" selected="@(ViewBag.Type is InvDocType x && x == t)">@t.GetDisplayName()</option> }</select></div>
+    <div><label class="form-label small mb-0">Kho</label><select name="warehouseId" class="form-select form-select-sm" asp-items="ViewBag.Whs"><option value="">-- Tất cả --</option></select></div>
+    <div><label class="form-label small mb-0">Trạng thái</label><select name="status" class="form-select form-select-sm"><option value="">-- Tất cả --</option><option value="Draft" selected="@(ViewBag.Status is DocStatus d && d == DocStatus.Draft)">Nháp</option><option value="Posted" selected="@(ViewBag.Status is DocStatus p && p == DocStatus.Posted)">Đã ghi sổ</option></select></div>
+    <button class="btn btn-sm btn-outline-primary">Lọc</button>
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Ngày</th><th>Số phiếu</th><th>Loại</th><th>Kho</th><th>Nguồn</th><th>Diễn giải</th><th class="num">Số dòng</th><th class="num">Giá trị</th><th>Trạng thái</th></tr></thead>
+    <tbody>
+    @foreach (var d in Model)
+    {
+        <tr><td>@d.Date.ToDate()</td><td><a asp-action="Details" asp-route-id="@d.Id">@d.Number</a></td><td><partial name="_Badge" model="d.Type" /></td>
+            <td class="small">@d.Warehouse?.Code@(d.ToWarehouse != null ? " → " + d.ToWarehouse.Code : "")</td><td class="small">@d.Origin.GetDisplayName() @d.OriginRef</td>
+            <td class="small">@d.Reason</td><td class="num">@d.Lines.Count</td><td class="num">@(d.Status == DocStatus.Posted ? d.TotalAmount.ToMoney() : "")</td><td><partial name="_Badge" model="d.Status" /></td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="9" class="text-center text-muted py-4">Không có phiếu.</td></tr> }
+    </tbody>
+</table></div></div></div>

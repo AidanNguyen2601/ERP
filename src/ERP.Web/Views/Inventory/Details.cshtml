@@ -1,0 +1,45 @@
+@model InventoryDoc
+@{
+    ViewData["Title"] = $"{Model.Type.GetDisplayName()} {Model.Number}";
+    var book = ViewBag.Book as Dictionary<int, decimal>; var can = (bool)ViewBag.CanWrite;
+}
+<partial name="_Nav" />
+<div class="card"><div class="card-body">
+    <div class="doc-head">
+        <div>
+            <div class="fs-5 fw-semibold">@Model.Number <partial name="_Badge" model="Model.Type" /> <partial name="_Badge" model="Model.Status" /></div>
+            <div class="meta">Ngày @Model.Date.ToDate() · Kho @Model.Warehouse?.Name@(Model.ToWarehouse != null ? " → " + Model.ToWarehouse.Name : "") · Nguồn: @Model.Origin.GetDisplayName() @Model.OriginRef
+                @(Model.Partner != null ? " · " + Model.Partner.Name : "") @(Model.CounterAccount != null ? $" · TK đối ứng {Model.CounterAccount.Code}" : "") · Lập bởi @(Model.CreatedBy?.FullName ?? "Hệ thống")</div>
+            <div>@Model.Reason</div>
+        </div>
+        <div class="actions">
+            <button class="btn btn-sm btn-light border" onclick="window.print()">In phiếu</button>
+            @if (Model.JournalEntryId.HasValue && User.SeesFinance()) { <a class="btn btn-sm btn-light border" asp-controller="Journals" asp-action="Details" asp-route-id="@Model.JournalEntryId">Bút toán</a> }
+            @if (can && Model.Status == DocStatus.Draft)
+            {
+                if (Model.Origin == DocOrigin.Manual) { <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id">Sửa</a> }
+                <form asp-action="Post" asp-route-id="@Model.Id" method="post"><button class="btn btn-sm btn-success">Ghi sổ</button></form>
+                <form asp-action="Delete" asp-route-id="@Model.Id" method="post" data-confirm="Xóa phiếu nháp?"><button class="btn btn-sm btn-outline-danger">Xóa</button></form>
+            }
+        </div>
+    </div>
+    <table class="table table-sm">
+        <thead><tr><th>#</th><th>Mã</th><th>Tên hàng</th><th>ĐVT</th>@if (Model.Type == InvDocType.Adjustment) { <th class="num">Sổ sách</th><th class="num">Thực tế</th> }<th class="num">@(Model.Type == InvDocType.Adjustment ? "Chênh lệch" : "Số lượng")</th><th class="num">Đơn giá</th><th class="num">Thành tiền</th></tr></thead>
+        <tbody>
+        @{ var n = 1; }
+        @foreach (var l in Model.Lines)
+        {
+            <tr><td>@(n++)</td><td>@l.Item?.Code</td><td>@l.Item?.Name</td><td>@l.Item?.Unit</td>
+                @if (Model.Type == InvDocType.Adjustment)
+                {
+                    var bk = Model.Status == DocStatus.Draft ? book?.GetValueOrDefault(l.ItemId) ?? 0 : (l.CountedQty ?? 0) - l.Quantity;
+                    <td class="num">@bk.ToQty()</td><td class="num">@l.CountedQty?.ToQty()</td>
+                    <td class="num @(((l.CountedQty ?? 0) - bk) < 0 ? "bad" : "good")">@(((l.CountedQty ?? 0) - bk).ToQty())</td>
+                }
+                else { <td class="num">@l.Quantity.ToQty()</td> }
+                <td class="num">@(Model.Status == DocStatus.Posted || Model.Type == InvDocType.Receipt ? l.UnitCost.ToMoney() : "")</td><td class="num">@(Model.Status == DocStatus.Posted ? l.Amount.ToMoney() : "")</td></tr>
+        }
+        </tbody>
+        @if (Model.Status == DocStatus.Posted) { <tfoot><tr class="fw-bold"><td colspan="@(Model.Type == InvDocType.Adjustment ? 8 : 6)" class="text-end">Cộng</td><td class="num">@Model.TotalAmount.ToMoney()</td></tr></tfoot> }
+    </table>
+</div></div>
