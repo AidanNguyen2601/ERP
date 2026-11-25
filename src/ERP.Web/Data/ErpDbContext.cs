@@ -46,6 +46,14 @@ public class ErpDbContext : DbContext
     // Danh mục dùng chung & tùy chọn người dùng
     public DbSet<CatalogItem> CatalogItems => Set<CatalogItem>();
     public DbSet<UserPreference> UserPreferences => Set<UserPreference>();
+    // Cấu hình bút toán theo giao dịch
+    public DbSet<PostingRule> PostingRules => Set<PostingRule>();
+    // Quản lý chất lượng
+    public DbSet<QcPlan> QcPlans => Set<QcPlan>();
+    public DbSet<QcPlanLine> QcPlanLines => Set<QcPlanLine>();
+    public DbSet<QcInspection> QcInspections => Set<QcInspection>();
+    public DbSet<QcInspectionLine> QcInspectionLines => Set<QcInspectionLine>();
+    public DbSet<QcNonconformance> QcNonconformances => Set<QcNonconformance>();
 
     /// <summary>Mọi cột tiền / số lượng: decimal(18,2)</summary>
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
@@ -81,6 +89,13 @@ public class ErpDbContext : DbContext
         modelBuilder.Entity<ProductionOrder>().HasIndex(x => x.Number).IsUnique();
         modelBuilder.Entity<CatalogItem>().HasIndex(x => new { x.Type, x.Code }).IsUnique();
         modelBuilder.Entity<UserPreference>().HasIndex(x => new { x.UserId, x.Key }).IsUnique();
+        modelBuilder.Entity<PostingRule>().HasIndex(x => x.Key).IsUnique();
+        modelBuilder.Entity<QcPlan>().HasIndex(x => x.Code).IsUnique();
+        modelBuilder.Entity<QcInspection>().HasIndex(x => x.Number).IsUnique();
+        modelBuilder.Entity<QcInspection>().HasIndex(x => new { x.Origin, x.OriginId });
+        modelBuilder.Entity<QcNonconformance>().HasIndex(x => x.Number).IsUnique();
+        modelBuilder.Entity<QcPlanLine>().HasOne(l => l.QcPlan).WithMany(p => p.Lines).HasForeignKey(l => l.QcPlanId);
+        modelBuilder.Entity<QcInspectionLine>().HasOne(l => l.QcInspection).WithMany(p => p.Lines).HasForeignKey(l => l.QcInspectionId);
 
         // Chứng từ đã phát sinh không xóa dây chuyền
         foreach (var fk in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))

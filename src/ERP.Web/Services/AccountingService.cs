@@ -35,6 +35,27 @@ public class AccountingService
     }
     public async Task<int> IdAsync(string code) => (await AccAsync(code)).Id;
 
+    // ------------------------------------------------------------------ Cấu hình bút toán theo giao dịch
+    private Dictionary<string, Account>? _rules;
+
+    /// <summary>
+    /// Tài khoản hạch toán cho một dòng định khoản đã khai báo trong PostingCatalog:
+    /// tài khoản cấu hình (nếu còn hạch toán được và đúng đầu số cho phép), nếu không thì tài khoản mặc định.
+    /// </summary>
+    public async Task<Account> RuleAccountAsync(string key)
+    {
+        var def = PostingCatalog.Find(key) ?? throw new InvalidOperationException($"Chưa khai báo cấu hình bút toán '{key}'.");
+        _rules ??= await _db.PostingRules.Include(r => r.Account).Where(r => r.Account != null)
+            .ToDictionaryAsync(r => r.Key, r => r.Account!);
+        if (_rules.TryGetValue(key, out var acc) && acc.IsPostable && acc.IsActive && PostingCatalog.Allows(def, acc.Code)) return acc;
+        return await AccAsync(def.DefaultCode!);
+    }
+    public async Task<int> RuleAsync(string key) => (await RuleAccountAsync(key)).Id;
+    public Task<int> InventoryRuleAsync(ItemType t) => RuleAsync(PostingCatalog.InventoryKey(t));
+    public Task<int> RevenueRuleAsync(ItemType? t) => RuleAsync(PostingCatalog.RevenueKey(t));
+    /// <summary>Bỏ bộ nhớ đệm sau khi đổi cấu hình trong cùng request</summary>
+    public void ResetRuleCache() => _rules = null;
+
     public static string InventoryAccount(ItemType t) => t switch
     {
         ItemType.Material => Material,

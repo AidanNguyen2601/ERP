@@ -1,0 +1,137 @@
+@model QcInspection
+@{
+    ViewData["Title"] = Model.Id == 0 ? "Lập phiếu kiểm tra chất lượng" : $"Phiếu kiểm tra {Model.Number}";
+    var fromDoc = Model.Origin != DocOrigin.Manual;
+}
+<form asp-action="Save" method="post" id="qcForm">
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="Origin" /><input type="hidden" asp-for="OriginRef" /><input type="hidden" asp-for="OriginId" />
+    @* Dùng cho nút "Nạp lại tiêu chí" (GET Create) *@
+    @if (Model.Origin == DocOrigin.Purchase) { <input type="hidden" name="poId" value="@Model.OriginId" /> }
+    @if (Model.Origin == DocOrigin.Production) { <input type="hidden" name="productionId" value="@Model.OriginId" /> }
+    @if (Model.Origin == DocOrigin.Sales) { <input type="hidden" name="soId" value="@Model.OriginId" /> }
+    <div asp-validation-summary="All" class="alert alert-danger py-2 empty-hide"></div>
+
+    <div class="card mb-3"><div class="card-body"><div class="row g-3">
+        @if (fromDoc)
+        {
+            <div class="col-12"><span class="badge bg-light text-dark border"><i class="bi bi-link-45deg"></i> @Model.Origin.GetDisplayName(): @Model.OriginRef</span></div>
+        }
+        <div class="col-md-2"><label asp-for="Date" class="form-label"></label><input asp-for="Date" type="date" class="form-control" /></div>
+        <div class="col-md-3"><label asp-for="Stage" class="form-label"></label><select asp-for="Stage" asp-items="Html.GetEnumSelectList<QcStage>()" class="form-select"></select></div>
+        <div class="col-md-4"><label asp-for="ItemId" class="form-label"></label>
+            @if (fromDoc) { <input type="hidden" asp-for="ItemId" /><input class="form-control" value="@Model.Item?.Code – @Model.Item?.Name" readonly /> }
+            else { <select asp-for="ItemId" asp-items="ViewBag.Items" class="form-select"><option value="">-- Chọn --</option></select> }
+            <span asp-validation-for="ItemId" class="text-danger small"></span></div>
+        <div class="col-md-3"><label asp-for="QcPlanId" class="form-label"></label><select asp-for="QcPlanId" asp-items="ViewBag.Plans" class="form-select"><option value="">-- Không theo kế hoạch --</option></select></div>
+        <div class="col-md-2"><label asp-for="LotQty" class="form-label"></label><input asp-for="LotQty" type="number" step="0.001" class="form-control" id="lotQty" /><span asp-validation-for="LotQty" class="text-danger small"></span></div>
+        <div class="col-md-2"><label asp-for="SampleQty" class="form-label"></label><input asp-for="SampleQty" type="number" step="0.001" class="form-control" /></div>
+        <div class="col-md-3"><label asp-for="WarehouseId" class="form-label"></label><select asp-for="WarehouseId" asp-items="ViewBag.Whs" class="form-select"><option value="">--</option></select></div>
+        <div class="col-md-5"><label asp-for="PartnerId" class="form-label"></label><select asp-for="PartnerId" asp-items="ViewBag.Partners" class="form-select"><option value="">--</option></select></div>
+        @if (Model.Id == 0)
+        {
+            <div class="col-12"><button type="submit" class="btn btn-sm btn-outline-secondary" formaction="@Url.Action("Create")" formmethod="get" formnovalidate>
+                <i class="bi bi-arrow-repeat"></i> Nạp lại tiêu chí theo công đoạn / mặt hàng / kế hoạch đã chọn</button></div>
+        }
+    </div></div></div>
+
+    <div class="card mb-3"><div class="card-header d-flex justify-content-between"><span>Kết quả theo tiêu chí</span>
+        <span class="small text-muted fw-normal">@(Model.QcPlan != null ? $"Theo kế hoạch {Model.QcPlan.Code}" : "")</span></div>
+        <div class="card-body p-0"><div class="table-responsive"><table class="table table-sm align-middle mb-0" data-grid="off">
+            <thead><tr><th style="width:36px">#</th><th>Tiêu chí</th><th>Tiêu chuẩn</th><th style="width:220px">Kết quả</th><th style="width:70px"></th><th style="min-width:180px">Ghi chú</th></tr></thead>
+            <tbody>
+            @for (var k = 0; k < Model.Lines.Count; k++)
+            {
+                var l = Model.Lines.ElementAt(k);
+                <tr class="qc-line" data-type="@l.Type" data-min="@l.MinValue?.Raw()" data-max="@l.MaxValue?.Raw()" data-critical="@(l.IsCritical ? "1" : "0")">
+                    <td class="text-muted">@(k + 1)
+                        <input type="hidden" name="Lines[@k].Name" value="@l.Name" /><input type="hidden" name="Lines[@k].Method" value="@l.Method" />
+                        <input type="hidden" name="Lines[@k].Standard" value="@l.Standard" /><input type="hidden" name="Lines[@k].Type" value="@l.Type" />
+                        <input type="hidden" name="Lines[@k].MinValue" value="@l.MinValue?.Raw()" /><input type="hidden" name="Lines[@k].MaxValue" value="@l.MaxValue?.Raw()" />
+                        <input type="hidden" name="Lines[@k].Unit" value="@l.Unit" /><input type="hidden" name="Lines[@k].IsCritical" value="@(l.IsCritical ? "true" : "false")" /></td>
+                    <td>@l.Name @if (l.IsCritical) { <span class="badge bg-danger ms-1">Trọng yếu</span> }
+                        @if (!string.IsNullOrWhiteSpace(l.Method)) { <div class="small text-muted">@l.Method</div> }</td>
+                    <td class="small">@l.Standard</td>
+                    <td>
+                        @if (l.Type == QcCriterionType.Measure)
+                        {
+                            <div class="input-group input-group-sm"><input class="form-control text-end qc-measure" inputmode="decimal" name="Lines[@k].MeasuredValue" value="@l.MeasuredValue?.Raw()" placeholder="Giá trị đo" />
+                                @if (!string.IsNullOrEmpty(l.Unit)) { <span class="input-group-text">@l.Unit</span> }</div>
+                            <input type="hidden" class="qc-passed" name="Lines[@k].Passed" value="@(l.Passed?.ToString().ToLowerInvariant())" />
+                        }
+                        else
+                        {
+                            <select class="form-select form-select-sm qc-passed" name="Lines[@k].Passed">
+                                <option value="" selected="@(l.Passed == null)">-- Chưa đánh giá --</option>
+                                <option value="true" selected="@(l.Passed == true)">Đạt</option>
+                                <option value="false" selected="@(l.Passed == false)">Không đạt</option>
+                            </select>
+                        }
+                    </td>
+                    <td class="qc-mark"></td>
+                    <td><input class="form-control form-control-sm" name="Lines[@k].Note" value="@l.Note" /></td>
+                </tr>
+            }
+            @if (!Model.Lines.Any())
+            {
+                <tr><td colspan="6" class="text-muted text-center py-3">Không có kế hoạch kiểm tra phù hợp — chọn kế hoạch rồi bấm <i>Nạp lại tiêu chí</i>, hoặc chỉ ghi nhận số lượng đạt / không đạt.</td></tr>
+            }
+            </tbody>
+        </table></div></div></div>
+
+    <div class="card mb-3"><div class="card-header">Kết luận</div><div class="card-body"><div class="row g-3">
+        <div class="col-md-2"><label asp-for="AcceptedQty" class="form-label"></label><input asp-for="AcceptedQty" type="number" step="0.001" class="form-control" id="accQty" /></div>
+        <div class="col-md-2"><label asp-for="RejectedQty" class="form-label"></label><input asp-for="RejectedQty" type="number" step="0.001" class="form-control" id="rejQty" /></div>
+        <div class="col-md-3"><label asp-for="Result" class="form-label"></label><select asp-for="Result" asp-items="Html.GetEnumSelectList<QcResult>()" class="form-select" id="result"></select>
+            <div class="form-text">Gợi ý theo tiêu chí: <b id="suggest">—</b> <a href="#" id="applySuggest" class="ms-1">Áp dụng</a></div></div>
+        <div class="col-md-5"><label asp-for="Note" class="form-label"></label><textarea asp-for="Note" rows="2" class="form-control"></textarea></div>
+    </div>
+    <p class="small text-muted mb-0 mt-2">Khi kết luận, số lượng không đạt sẽ tự lập <b>báo cáo không phù hợp (NCR)</b> để quyết định hướng xử lý (trả lại NCC, sửa chữa, hủy bỏ, chấp nhận nhân nhượng).</p>
+    </div></div>
+
+    <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-outline-primary" name="submit" value="draft"><i class="bi bi-save"></i> Lưu nháp</button>
+        <button class="btn btn-primary" name="submit" value="complete" data-confirm-click="Kết luận phiếu kiểm tra? Sau khi kết luận không sửa được."><i class="bi bi-patch-check"></i> Kết luận</button>
+        <a class="btn btn-light" asp-action="@(Model.Id == 0 ? "Index" : "Details")" asp-route-id="@(Model.Id == 0 ? null : Model.Id)">Hủy</a>
+    </div>
+</form>
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+<script>
+(function () {
+    const labels = { Pass: 'Đạt', Conditional: 'Đạt có điều kiện', Fail: 'Không đạt', Pending: 'Chưa đủ dữ liệu' };
+    const values = { Pending: '0', Pass: '1', Conditional: '2', Fail: '3' };
+    const num = s => { const v = parseFloat(String(s ?? '').replace(',', '.')); return isNaN(v) ? null : v; };
+    let suggestion = 'Pending';
+    function evaluate() {
+        let anyFail = false, critFail = false, allPass = true, rows = 0;
+        document.querySelectorAll('tr.qc-line').forEach(tr => {
+            rows++;
+            let passed = null;
+            if (tr.dataset.type === 'Measure') {
+                const v = num(tr.querySelector('.qc-measure').value), min = num(tr.dataset.min), max = num(tr.dataset.max);
+                if (v !== null) passed = (min === null || v >= min) && (max === null || v <= max);
+                tr.querySelector('.qc-passed').value = passed === null ? '' : String(passed);
+            } else {
+                const s = tr.querySelector('.qc-passed').value; passed = s === '' ? null : s === 'true';
+            }
+            tr.querySelector('.qc-mark').innerHTML = passed === null ? '' : passed ? '<span class="good"><i class="bi bi-check-circle-fill"></i></span>' : '<span class="bad"><i class="bi bi-x-circle-fill"></i></span>';
+            tr.classList.toggle('table-danger', passed === false);
+            if (passed === false) { anyFail = true; if (tr.dataset.critical === '1') critFail = true; }
+            if (passed !== true) allPass = false;
+        });
+        suggestion = critFail ? 'Fail' : anyFail ? 'Conditional' : (rows > 0 && allPass) || rows === 0 ? 'Pass' : 'Pending';
+        document.getElementById('suggest').textContent = labels[suggestion];
+    }
+    const lot = document.getElementById('lotQty'), acc = document.getElementById('accQty'), rej = document.getElementById('rejQty');
+    rej.addEventListener('input', () => { const l = num(lot.value) || 0, r = num(rej.value) || 0; acc.value = Math.max(0, +(l - r).toFixed(3)); });
+    acc.addEventListener('input', () => { const l = num(lot.value) || 0, a = num(acc.value) || 0; rej.value = Math.max(0, +(l - a).toFixed(3)); });
+    lot.addEventListener('input', () => { const l = num(lot.value) || 0, r = num(rej.value) || 0; acc.value = Math.max(0, +(l - r).toFixed(3)); });
+    document.getElementById('applySuggest').addEventListener('click', e => { e.preventDefault(); document.getElementById('result').value = values[suggestion]; });
+    document.getElementById('qcForm').addEventListener('input', evaluate);
+    document.getElementById('qcForm').addEventListener('change', evaluate);
+    document.querySelectorAll('[data-confirm-click]').forEach(b => b.addEventListener('click', e => { if (!confirm(b.getAttribute('data-confirm-click'))) e.preventDefault(); }));
+    evaluate();
+})();
+</script>
+}

@@ -118,15 +118,15 @@ public class InventoryService
             var lines = new List<JLine>();
             foreach (var l in doc.Lines.Where(x => x.Amount != 0))
             {
-                var inv = await _acc.IdAsync(AccountingService.InventoryAccount(items[l.ItemId].Type));
+                var inv = await _acc.InventoryRuleAsync(items[l.ItemId].Type);
                 var amt = l.Amount;
                 switch (doc.Type)
                 {
                     case InvDocType.Receipt:
                         var cr = doc.Origin switch
                         {
-                            DocOrigin.Purchase => await _acc.IdAsync(AccountingService.Payable),
-                            DocOrigin.Production => await _acc.IdAsync(AccountingService.Wip),
+                            DocOrigin.Purchase => await _acc.RuleAsync(PostingCatalog.PrPayable),
+                            DocOrigin.Production => await _acc.RuleAsync(PostingCatalog.PrdWip),
                             _ => doc.CounterAccountId ?? throw new BusinessException("Chọn tài khoản đối ứng cho phiếu nhập.")
                         };
                         lines.Add(new JLine(inv, amt, 0));
@@ -135,16 +135,17 @@ public class InventoryService
                     case InvDocType.Issue:
                         var dr = doc.Origin switch
                         {
-                            DocOrigin.Sales => await _acc.IdAsync(AccountingService.Cogs),
-                            DocOrigin.Production => await _acc.IdAsync(AccountingService.Wip),
+                            DocOrigin.Sales => await _acc.RuleAsync(PostingCatalog.SdCogs),
+                            DocOrigin.Production => await _acc.RuleAsync(PostingCatalog.PrdWip),
                             _ => doc.CounterAccountId ?? throw new BusinessException("Chọn tài khoản đối ứng cho phiếu xuất.")
                         };
-                        lines.Add(new JLine(dr, amt, 0));
+                        // Xuất trả nhà cung cấp từ quản lý chất lượng: TK đối ứng công nợ cần đối tượng
+                        lines.Add(new JLine(dr, amt, 0, doc.Origin == DocOrigin.Quality ? doc.PartnerId : null));
                         lines.Add(new JLine(inv, 0, amt));
                         break;
                     case InvDocType.Adjustment:
-                        if (l.Quantity > 0) { lines.Add(new JLine(inv, amt, 0)); lines.Add(new JLine(await _acc.IdAsync(AccountingService.SurplusAsset), 0, amt)); }
-                        else { lines.Add(new JLine(await _acc.IdAsync(AccountingService.ShortageAsset), amt, 0)); lines.Add(new JLine(inv, 0, amt)); }
+                        if (l.Quantity > 0) { lines.Add(new JLine(inv, amt, 0)); lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.ScSurplus), 0, amt)); }
+                        else { lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.ScShortage), amt, 0)); lines.Add(new JLine(inv, 0, amt)); }
                         break;
                 }
             }

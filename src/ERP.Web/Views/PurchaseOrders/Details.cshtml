@@ -18,6 +18,8 @@
             <div class="meta">Lập bởi @Model.CreatedBy?.FullName @(Model.ApprovedBy != null ? $"· Duyệt: {Model.ApprovedBy.FullName} lúc {Model.ApprovedAt:dd/MM/yyyy HH:mm}" : Model.ApprovedAt != null ? "· Duyệt tự động (dưới ngưỡng)" : "")</div>
             @if (!string.IsNullOrWhiteSpace(Model.Note)) { <div>@Model.Note</div> }</div>
         <div class="actions">
+            @if (Model.Status is PoStatus.Approved or PoStatus.PartiallyReceived or PoStatus.Received or PoStatus.Completed)
+            { <partial name="_QcButton" model="@(new QcLink("poId", Model.Id, Model.Number, Model.Lines.Where(l => l.ReceivedQty > 0).Select(l => (l.ItemId, $"{l.Item?.Code} – {l.Item?.Name} (đã nhận {l.ReceivedQty.ToQty()})")).ToList()))" /> }
             @if (canEdit && Model.Status == PoStatus.Draft)
             {
                 <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id">Sửa</a>

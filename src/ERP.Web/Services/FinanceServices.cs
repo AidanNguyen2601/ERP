@@ -62,12 +62,12 @@ public class CashService
                     if (f.Type != CashVoucherType.Receipt) throw new BusinessException("Thu tiền khách hàng phải dùng phiếu thu.");
                     if (partner == null || !partner.IsCustomer) throw new BusinessException("Chọn khách hàng.");
                     lines.Add(new JLine(ca.AccountId, v.Amount, 0));
-                    lines.Add(new JLine(await _acc.IdAsync(AccountingService.Receivable), 0, v.Amount, partner.Id));
+                    lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.CrReceivable), 0, v.Amount, partner.Id));
                     break;
                 case CashPurpose.VendorPayment:
                     if (f.Type != CashVoucherType.Payment) throw new BusinessException("Trả tiền nhà cung cấp phải dùng phiếu chi.");
                     if (partner == null || !partner.IsVendor) throw new BusinessException("Chọn nhà cung cấp.");
-                    lines.Add(new JLine(await _acc.IdAsync(AccountingService.Payable), v.Amount, 0, partner.Id));
+                    lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.CpPayable), v.Amount, 0, partner.Id));
                     lines.Add(new JLine(ca.AccountId, 0, v.Amount));
                     break;
                 default:
@@ -186,14 +186,14 @@ public class AssetService
         var lines = new List<JLine>
         {
             new(cat!.DepreciationAccountId, a.AccumulatedDepreciation, 0),
-            new(await _acc.IdAsync(AccountingService.OtherExpense), a.NetBookValue, 0),
+            new(await _acc.RuleAsync(PostingCatalog.AdLoss), a.NetBookValue, 0),
             new(cat.AssetAccountId, 0, a.OriginalCost)
         };
         if (proceeds > 0)
         {
             var ca = await _db.CashAccounts.FindAsync(cashAccountId) ?? throw new BusinessException("Chọn quỹ / tài khoản nhận tiền thanh lý.");
             lines.Add(new JLine(ca.AccountId, proceeds, 0));
-            lines.Add(new JLine(await _acc.IdAsync(AccountingService.OtherIncome), 0, proceeds));
+            lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.AdIncome), 0, proceeds));
         }
         await _acc.PostAsync(date, $"Thanh lý TSCĐ {a.Code} – {a.Name}", JournalSource.FixedAsset, a.Code, a.Id, lines);
         a.Status = AssetStatus.Disposed; a.DisposalDate = date; a.DisposalValue = proceeds;
@@ -266,10 +266,10 @@ public class ProductionService
         if (completedQty <= 0) throw new BusinessException("Số lượng hoàn thành phải lớn hơn 0.");
         if (labor < 0 || overhead < 0) throw new BusinessException("Chi phí không âm.");
         po.LaborCost = Math.Round(labor, 0); po.OverheadCost = Math.Round(overhead, 0);
-        var wip = await _acc.IdAsync(AccountingService.Wip);
+        var wip = await _acc.RuleAsync(PostingCatalog.PrdWip);
         var lines = new List<JLine>();
-        if (po.LaborCost > 0) { lines.Add(new JLine(wip, po.LaborCost, 0)); lines.Add(new JLine(await _acc.IdAsync(AccountingService.DirectLabor), 0, po.LaborCost)); }
-        if (po.OverheadCost > 0) { lines.Add(new JLine(wip, po.OverheadCost, 0)); lines.Add(new JLine(await _acc.IdAsync(AccountingService.Overhead), 0, po.OverheadCost)); }
+        if (po.LaborCost > 0) { lines.Add(new JLine(wip, po.LaborCost, 0)); lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.PrdLabor), 0, po.LaborCost)); }
+        if (po.OverheadCost > 0) { lines.Add(new JLine(wip, po.OverheadCost, 0)); lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.PrdOverhead), 0, po.OverheadCost)); }
         if (lines.Any()) await _acc.PostAsync(date, $"Kết chuyển chi phí nhân công, SXC vào lệnh {po.Number}", JournalSource.Production, po.Number, po.Id, lines);
         po.CompletedQty = completedQty;
         po.UnitCost = Math.Round(po.TotalCost / completedQty, 2);
@@ -310,7 +310,7 @@ public class PeriodService
         var rows = await _acc.PostedLines()
             .Where(l => l.JournalEntry!.Date >= from && l.JournalEntry.Date <= to && l.JournalEntry.Source != JournalSource.Closing)
             .Select(l => new { l.AccountId, l.Account!.Code, l.Debit, l.Credit }).ToListAsync();
-        var i911 = await _acc.IdAsync(AccountingService.IncomeSummary);
+        var i911 = await _acc.RuleAsync(PostingCatalog.PcSummary);
         var lines = new List<JLine>();
         decimal profit = 0;
         foreach (var g in rows.Where(r => r.Code[0] is '5' or '6' or '7' or '8').GroupBy(r => r.AccountId))
@@ -323,7 +323,7 @@ public class PeriodService
             profit -= net;
         }
         if (!lines.Any()) return null;
-        var r4212 = await _acc.IdAsync(AccountingService.RetainedThisYear);
+        var r4212 = await _acc.RuleAsync(PostingCatalog.PcRetained);
         if (profit > 0) { lines.Add(new JLine(i911, profit, 0)); lines.Add(new JLine(r4212, 0, profit)); }
         else if (profit < 0) { lines.Add(new JLine(r4212, -profit, 0)); lines.Add(new JLine(i911, 0, -profit)); }
         return await _acc.PostAsync(to, $"Kết chuyển xác định kết quả kinh doanh tháng {month:00}/{year} (lãi/lỗ {profit:N0})", JournalSource.Closing, $"KC{month:00}{year % 100:00}", null, lines);

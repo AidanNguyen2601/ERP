@@ -1,0 +1,47 @@
+@model List<QcInspection>
+@{
+    ViewData["Title"] = "Phiếu kiểm tra chất lượng";
+    var stage = ViewBag.Stage as QcStage?; var result = ViewBag.Result as QcResult?; var status = ViewBag.Status as QcStatus?;
+}
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@(((DateTime)ViewBag.To).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Công đoạn</label><select name="stage" class="form-select form-select-sm"><option value="">-- Tất cả --</option>
+        @foreach (QcStage s in Enum.GetValues<QcStage>()) { <option value="@s" selected="@(stage == s)">@s.GetDisplayName()</option> }</select></div>
+    <div><label class="form-label small mb-0">Kết luận</label><select name="result" class="form-select form-select-sm"><option value="">-- Tất cả --</option>
+        @foreach (QcResult r in Enum.GetValues<QcResult>()) { <option value="@r" selected="@(result == r)">@r.GetDisplayName()</option> }</select></div>
+    <div><label class="form-label small mb-0">Trạng thái</label><select name="status" class="form-select form-select-sm"><option value="">-- Tất cả --</option>
+        @foreach (QcStatus s in Enum.GetValues<QcStatus>()) { <option value="@s" selected="@(status == s)">@s.GetDisplayName()</option> }</select></div>
+    <div><label class="form-label small mb-0">Tìm</label><input name="q" value="@ViewBag.Q" class="form-control form-control-sm" placeholder="Số phiếu, mã hàng, chứng từ" /></div>
+    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-funnel"></i> Lọc</button>
+    @if ((bool)ViewBag.CanWrite)
+    {
+        <div class="dropdown ms-auto">
+            <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-plus-lg"></i> Lập phiếu thủ công</button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                @foreach (QcStage s in Enum.GetValues<QcStage>()) { <li><a class="dropdown-item" asp-action="Create" asp-route-stage="@s"><i class="bi @QcUi.Icon(s) me-2"></i>@s.GetDisplayName()</a></li> }
+            </ul>
+        </div>
+    }
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Số phiếu</th><th>Ngày</th><th>Công đoạn</th><th>Mặt hàng</th><th>Chứng từ gốc</th><th>NCC / KH</th><th class="num">SL lô</th><th class="num">Không đạt</th><th class="num">Tỷ lệ lỗi</th><th>Kết luận</th><th>Trạng thái</th><th>Người kiểm</th></tr></thead>
+    <tbody>
+    @foreach (var i in Model)
+    {
+        <tr class="@(i.Status == QcStatus.Cancelled ? "text-muted" : "")">
+            <td><a asp-action="Details" asp-route-id="@i.Id"><b>@i.Number</b></a></td><td>@i.Date.ToDate()</td>
+            <td class="small text-nowrap"><i class="bi @QcUi.Icon(i.Stage)"></i> @i.Stage.GetDisplayName()</td>
+            <td>@i.Item?.Code <div class="small text-muted">@i.Item?.Name</div></td>
+            <td class="small">@i.OriginRef</td><td class="small">@i.Partner?.Name</td>
+            <td class="num">@i.LotQty.ToQty()</td><td class="num @(i.RejectedQty > 0 ? "bad" : "")">@(i.RejectedQty > 0 ? i.RejectedQty.ToQty() : "")</td>
+            <td class="num">@(i.Status == QcStatus.Completed ? i.DefectRate.ToPct() : "")</td>
+            <td>@if (i.Result != QcResult.Pending) { <span class="badge @QcUi.Badge(i.Result)">@i.Result.GetDisplayName()</span> }</td>
+            <td><span class="badge @QcUi.Badge(i.Status)">@i.Status.GetDisplayName()</span></td>
+            <td class="small">@i.Inspector?.FullName</td>
+        </tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="12" class="text-center text-muted py-3">Không có phiếu kiểm tra trong khoảng thời gian này.</td></tr> }
+    </tbody>
+</table></div></div></div>
+<p class="small text-muted mt-2"><i class="bi bi-lightbulb"></i> Lập phiếu nhanh từ chứng từ: nút <b>Kiểm tra chất lượng</b> trên đơn mua (hàng nhận về), lệnh sản xuất (thành phẩm) và đơn bán (trước khi giao).</p>

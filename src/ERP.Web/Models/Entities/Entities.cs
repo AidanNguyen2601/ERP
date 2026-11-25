@@ -29,6 +29,7 @@ public static class AppRoles
     public const string Purchasing = "Purchasing";
     public const string Warehouse = "Warehouse";
     public const string Production = "Production";
+    public const string Quality = "Quality";
 
     // Nhóm quyền dùng cho [Authorize(Roles = ...)]
     public const string Accounting = Admin + "," + Accountant;
@@ -38,8 +39,12 @@ public static class AppRoles
     public const string WarehouseTeam = Admin + "," + Warehouse;
     public const string ProductionTeam = Admin + "," + Production;
     public const string Approvers = Admin + "," + Director;
+    /// <summary>Lập / kết luận phiếu kiểm tra chất lượng</summary>
+    public const string QcInspectors = Admin + "," + Quality + "," + Warehouse + "," + Production;
+    /// <summary>Khai báo tiêu chí kiểm tra, quyết định xử lý hàng không đạt</summary>
+    public const string QcManagers = Admin + "," + Quality;
 
-    public static readonly string[] All = { Admin, Director, Accountant, Sales, Purchasing, Warehouse, Production };
+    public static readonly string[] All = { Admin, Director, Accountant, Sales, Purchasing, Warehouse, Production, Quality };
 
     public static string DisplayName(string role) => role switch
     {
@@ -50,6 +55,7 @@ public static class AppRoles
         Purchasing => "Mua hàng",
         Warehouse => "Thủ kho",
         Production => "Sản xuất",
+        Quality => "Quản lý chất lượng (QC)",
         _ => role
     };
 }
@@ -597,4 +603,143 @@ public class UserPreference
     [Required, StringLength(200)] public string Key { get; set; } = string.Empty;
     public string Value { get; set; } = string.Empty;
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
+}
+
+// =====================================================================
+//  CẤU HÌNH BÚT TOÁN THEO GIAO DỊCH
+// =====================================================================
+/// <summary>Tài khoản được chọn cho một dòng định khoản của giao dịch tự động (Key khai báo trong PostingCatalog)</summary>
+public class PostingRule
+{
+    public int Id { get; set; }
+    [Required, StringLength(60)] public string Key { get; set; } = string.Empty;
+    public int AccountId { get; set; }
+    public Account? Account { get; set; }
+    [StringLength(150)] public string? UpdatedBy { get; set; }
+    public DateTime UpdatedAt { get; set; } = DateTime.Now;
+}
+
+// =====================================================================
+//  QUẢN LÝ CHẤT LƯỢNG
+// =====================================================================
+/// <summary>Kế hoạch kiểm tra: bộ tiêu chí áp dụng cho một công đoạn, một mặt hàng hoặc một loại hàng</summary>
+public class QcPlan
+{
+    public int Id { get; set; }
+    [Required(ErrorMessage = "Nhập mã"), StringLength(20)][Display(Name = "Mã kế hoạch")] public string Code { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Nhập tên"), StringLength(200)][Display(Name = "Tên kế hoạch kiểm tra")] public string Name { get; set; } = string.Empty;
+    [Display(Name = "Công đoạn kiểm tra")] public QcStage Stage { get; set; } = QcStage.Incoming;
+    [Display(Name = "Áp dụng cho mặt hàng")] public int? ItemId { get; set; }
+    public Item? Item { get; set; }
+    [Display(Name = "Hoặc loại hàng")] public ItemType? ItemType { get; set; }
+    [Range(0, 100)][Display(Name = "Tỷ lệ lấy mẫu (%)")] public decimal SamplePct { get; set; } = 10;
+    [StringLength(500)][Display(Name = "Ghi chú")] public string? Note { get; set; }
+    [Display(Name = "Đang áp dụng")] public bool IsActive { get; set; } = true;
+    public ICollection<QcPlanLine> Lines { get; set; } = new List<QcPlanLine>();
+}
+
+public class QcPlanLine
+{
+    public int Id { get; set; }
+    public int QcPlanId { get; set; }
+    public QcPlan? QcPlan { get; set; }
+    public int Seq { get; set; }
+    [Required, StringLength(200)] public string Name { get; set; } = string.Empty;
+    [StringLength(200)] public string? Method { get; set; }
+    [StringLength(200)] public string? Standard { get; set; }
+    public QcCriterionType Type { get; set; } = QcCriterionType.PassFail;
+    public decimal? MinValue { get; set; }
+    public decimal? MaxValue { get; set; }
+    [StringLength(20)] public string? Unit { get; set; }
+    /// <summary>Tiêu chí trọng yếu: không đạt thì cả lô không đạt</summary>
+    public bool IsCritical { get; set; }
+}
+
+/// <summary>Phiếu kiểm tra chất lượng (KCS) cho một lô hàng</summary>
+public class QcInspection
+{
+    public int Id { get; set; }
+    [Required, StringLength(30)][Display(Name = "Số phiếu")] public string Number { get; set; } = string.Empty;
+    [DataType(DataType.Date)][Display(Name = "Ngày kiểm tra")] public DateTime Date { get; set; } = DateTime.Today;
+    [Display(Name = "Công đoạn")] public QcStage Stage { get; set; } = QcStage.Incoming;
+    [Required(ErrorMessage = "Chọn mặt hàng")][Display(Name = "Mặt hàng")] public int? ItemId { get; set; }
+    public Item? Item { get; set; }
+    [Display(Name = "Kho")] public int? WarehouseId { get; set; }
+    public Warehouse? Warehouse { get; set; }
+    [Display(Name = "Nhà cung cấp / khách hàng")] public int? PartnerId { get; set; }
+    public Partner? Partner { get; set; }
+    [Display(Name = "Nguồn")] public DocOrigin Origin { get; set; } = DocOrigin.Manual;
+    [StringLength(30)][Display(Name = "Chứng từ gốc")] public string? OriginRef { get; set; }
+    public int? OriginId { get; set; }
+    [Display(Name = "Kế hoạch kiểm tra")] public int? QcPlanId { get; set; }
+    public QcPlan? QcPlan { get; set; }
+    [Range(0.001, 100_000_000, ErrorMessage = "Số lượng lô phải > 0")][Display(Name = "Số lượng lô")] public decimal LotQty { get; set; }
+    [Range(0, 100_000_000)][Display(Name = "Số lượng mẫu")] public decimal SampleQty { get; set; }
+    [Range(0, 100_000_000)][Display(Name = "SL đạt")] public decimal AcceptedQty { get; set; }
+    [Range(0, 100_000_000)][Display(Name = "SL không đạt")] public decimal RejectedQty { get; set; }
+    [Display(Name = "Kết luận")] public QcResult Result { get; set; } = QcResult.Pending;
+    [Display(Name = "Trạng thái")] public QcStatus Status { get; set; } = QcStatus.Draft;
+    [StringLength(1000)][Display(Name = "Nhận xét")] public string? Note { get; set; }
+    public int? InspectorId { get; set; }
+    public AppUser? Inspector { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime? CompletedAt { get; set; }
+    public ICollection<QcInspectionLine> Lines { get; set; } = new List<QcInspectionLine>();
+
+    [NotMapped] public decimal DefectRate => LotQty > 0 ? Math.Round(RejectedQty * 100 / LotQty, 2) : 0;
+}
+
+public class QcInspectionLine
+{
+    public int Id { get; set; }
+    public int QcInspectionId { get; set; }
+    public QcInspection? QcInspection { get; set; }
+    public int Seq { get; set; }
+    [Required, StringLength(200)] public string Name { get; set; } = string.Empty;
+    [StringLength(200)] public string? Method { get; set; }
+    [StringLength(200)] public string? Standard { get; set; }
+    public QcCriterionType Type { get; set; } = QcCriterionType.PassFail;
+    public decimal? MinValue { get; set; }
+    public decimal? MaxValue { get; set; }
+    [StringLength(20)] public string? Unit { get; set; }
+    public bool IsCritical { get; set; }
+    /// <summary>Giá trị đo (tiêu chí đo lường)</summary>
+    public decimal? MeasuredValue { get; set; }
+    /// <summary>null = chưa đánh giá</summary>
+    public bool? Passed { get; set; }
+    [StringLength(300)] public string? Note { get; set; }
+}
+
+/// <summary>Báo cáo không phù hợp (NCR): xử lý số lượng hàng không đạt</summary>
+public class QcNonconformance
+{
+    public int Id { get; set; }
+    [Required, StringLength(30)][Display(Name = "Số NCR")] public string Number { get; set; } = string.Empty;
+    [DataType(DataType.Date)][Display(Name = "Ngày lập")] public DateTime Date { get; set; } = DateTime.Today;
+    [Display(Name = "Phiếu kiểm tra")] public int? InspectionId { get; set; }
+    public QcInspection? Inspection { get; set; }
+    [Required(ErrorMessage = "Chọn mặt hàng")][Display(Name = "Mặt hàng")] public int? ItemId { get; set; }
+    public Item? Item { get; set; }
+    [Display(Name = "Kho đang giữ hàng")] public int? WarehouseId { get; set; }
+    public Warehouse? Warehouse { get; set; }
+    [Display(Name = "Nhà cung cấp / khách hàng")] public int? PartnerId { get; set; }
+    public Partner? Partner { get; set; }
+    [Range(0.001, 100_000_000, ErrorMessage = "Số lượng phải > 0")][Display(Name = "Số lượng không phù hợp")] public decimal Quantity { get; set; }
+    [Required(ErrorMessage = "Mô tả lỗi"), StringLength(1000)][Display(Name = "Mô tả lỗi")] public string Description { get; set; } = string.Empty;
+    [StringLength(1000)][Display(Name = "Nguyên nhân gốc")] public string? RootCause { get; set; }
+    [Display(Name = "Hướng xử lý")] public NcrDisposition Disposition { get; set; } = NcrDisposition.Pending;
+    [StringLength(1000)][Display(Name = "Hành động khắc phục / phòng ngừa")] public string? CorrectiveAction { get; set; }
+    [StringLength(150)][Display(Name = "Người chịu trách nhiệm")] public string? Responsible { get; set; }
+    [DataType(DataType.Date)][Display(Name = "Hạn xử lý")] public DateTime? DueDate { get; set; }
+    [Display(Name = "Trạng thái")] public NcrStatus Status { get; set; } = NcrStatus.Open;
+    /// <summary>Phiếu xuất kho khi hủy bỏ / trả lại nhà cung cấp</summary>
+    public int? InventoryDocId { get; set; }
+    public InventoryDoc? InventoryDoc { get; set; }
+    public int? CreatedById { get; set; }
+    public AppUser? CreatedBy { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime? ClosedAt { get; set; }
+    [StringLength(150)] public string? ClosedBy { get; set; }
+
+    [NotMapped] public bool IsOverdue => Status == NcrStatus.Open && DueDate.HasValue && DueDate.Value.Date < DateTime.Today;
 }

@@ -1,0 +1,31 @@
+@model List<QcPlan>
+@{
+    ViewData["Title"] = "Kế hoạch & tiêu chí kiểm tra";
+    var stage = ViewBag.Stage as QcStage?;
+    var usage = (Dictionary<int, int>)ViewBag.Usage;
+}
+<div class="subnav">
+    <a class="@(stage == null ? "active" : "")" asp-action="Index">Tất cả</a>
+    @foreach (QcStage s in Enum.GetValues<QcStage>()) { <a class="@(stage == s ? "active" : "")" asp-action="Index" asp-route-stage="@s"><i class="bi @QcUi.Icon(s)"></i> @s.GetDisplayName()</a> }
+</div>
+<div class="toolbar">
+    <span class="small text-muted">Khi lập phiếu kiểm tra, hệ thống chọn kế hoạch theo thứ tự: đúng mặt hàng → đúng loại hàng → áp dụng chung cho công đoạn.</span>
+    @if ((bool)ViewBag.CanEdit) { <a class="btn btn-sm btn-primary ms-auto" asp-action="Create" asp-route-stage="@(stage ?? QcStage.Incoming)"><i class="bi bi-plus-lg"></i> Thêm kế hoạch</a> }
+</div>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Mã</th><th>Tên kế hoạch</th><th>Công đoạn</th><th>Phạm vi áp dụng</th><th class="num">Tiêu chí</th><th class="num">Trọng yếu</th><th class="num">Lấy mẫu</th><th class="num">Đã dùng</th><th>Trạng thái</th></tr></thead>
+    <tbody>
+    @foreach (var p in Model)
+    {
+        <tr class="@(p.IsActive ? "" : "text-muted")">
+            <td><a asp-action="Details" asp-route-id="@p.Id"><b>@p.Code</b></a></td><td>@p.Name</td>
+            <td class="small text-nowrap"><i class="bi @QcUi.Icon(p.Stage)"></i> @p.Stage.GetDisplayName()</td>
+            <td class="small">@(p.Item != null ? $"{p.Item.Code} – {p.Item.Name}" : p.ItemType.HasValue ? "Loại: " + p.ItemType.Value.GetDisplayName() : "Mọi mặt hàng")</td>
+            <td class="num">@p.Lines.Count</td><td class="num">@p.Lines.Count(l => l.IsCritical)</td><td class="num">@p.SamplePct.ToPct()</td>
+            <td class="num">@usage.GetValueOrDefault(p.Id)</td>
+            <td>@if (p.IsActive) { <span class="badge bg-success">Áp dụng</span> } else { <span class="badge bg-secondary">Ngưng</span> }</td>
+        </tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="9" class="text-center text-muted py-3">Chưa có kế hoạch kiểm tra.</td></tr> }
+    </tbody>
+</table></div></div></div>

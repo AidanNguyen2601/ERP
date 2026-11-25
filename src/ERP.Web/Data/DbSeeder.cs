@@ -20,41 +20,46 @@ public static class DbSeeder
         var db = sp.GetRequiredService<ErpDbContext>();
         await db.Database.EnsureCreatedAsync();
         await EnsureNewTablesAsync(db);
-        if (await db.Users.AnyAsync()) { await SeedCatalogsAsync(db); return; }
+        if (await db.Users.AnyAsync())
+        {
+            await SeedCatalogsAsync(db);
+            await SeedQualityAsync(db);
+            return;
+        }
         await SeedCoreAsync(sp, db);
         await SeedCatalogsAsync(db);
+        await SeedQualityAsync(db);
     }
 
     /// <summary>
-    /// Dự án dùng EnsureCreated (không có migration) nên database đã tạo từ phiên bản trước sẽ không tự có bảng mới.
-    /// Tạo bổ sung các bảng thêm sau nếu chưa có.
+    /// Dự án dùng EnsureCreated (không có migration) nên database tạo từ phiên bản trước không tự có bảng mới.
+    /// Lấy script tạo database do EF sinh ra từ model hiện tại và chỉ chạy các lệnh CREATE TABLE của bảng còn thiếu
+    /// (kèm CREATE INDEX của chính các bảng đó). Không sửa bảng đã có.
     /// </summary>
     private static async Task EnsureNewTablesAsync(ErpDbContext db)
     {
-        await db.Database.ExecuteSqlRawAsync("""
-            IF OBJECT_ID(N'dbo.CatalogItems', N'U') IS NULL
-            BEGIN
-                CREATE TABLE dbo.CatalogItems (
-                    Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_CatalogItems PRIMARY KEY,
-                    [Type] int NOT NULL,
-                    Code nvarchar(20) NOT NULL,
-                    Name nvarchar(100) NOT NULL,
-                    SortOrder int NOT NULL,
-                    Note nvarchar(300) NULL,
-                    IsActive bit NOT NULL);
-                CREATE UNIQUE INDEX IX_CatalogItems_Type_Code ON dbo.CatalogItems([Type], Code);
-            END
-            IF OBJECT_ID(N'dbo.UserPreferences', N'U') IS NULL
-            BEGIN
-                CREATE TABLE dbo.UserPreferences (
-                    Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_UserPreferences PRIMARY KEY,
-                    UserId int NOT NULL,
-                    [Key] nvarchar(200) NOT NULL,
-                    Value nvarchar(max) NOT NULL,
-                    UpdatedAt datetime2 NOT NULL);
-                CREATE UNIQUE INDEX IX_UserPreferences_UserId_Key ON dbo.UserPreferences(UserId, [Key]);
-            END
-            """);
+        var existing = (await db.Database.SqlQueryRaw<string>("SELECT TABLE_NAME AS [Value] FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'")
+            .ToListAsync()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var script = db.Database.GenerateCreateScript();
+        var batches = System.Text.RegularExpressions.Regex.Split(script, @"^\s*GO\s*$", System.Text.RegularExpressions.RegexOptions.Multiline)
+            .Select(b => b.Trim()).Where(b => b.Length > 0).ToList();
+        var tableRx = new System.Text.RegularExpressions.Regex(@"^CREATE TABLE \[(?:\w+)\]\.\[(\w+)\]|^CREATE TABLE \[(\w+)\]");
+        var indexRx = new System.Text.RegularExpressions.Regex(@"^CREATE (?:UNIQUE )?INDEX .* ON \[(?:\w+\]\.\[)?(\w+)\]");
+        var created = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var b in batches)
+        {
+            var t = tableRx.Match(b);
+            if (t.Success)
+            {
+                var name = t.Groups[1].Success ? t.Groups[1].Value : t.Groups[2].Value;
+                if (existing.Contains(name)) continue;
+                await db.Database.ExecuteSqlRawAsync(b);
+                created.Add(name);
+                continue;
+            }
+            var ix = indexRx.Match(b);
+            if (ix.Success && created.Contains(ix.Groups[1].Value)) await db.Database.ExecuteSqlRawAsync(b);
+        }
     }
 
     /// <summary>Danh mục mặc định + mọi giá trị đang dùng trong dữ liệu (chạy lại nhiều lần không trùng)</summary>
@@ -64,7 +69,7 @@ public static class DbSeeder
         var units = new[] { "Cái", "Bộ", "Chiếc", "Tấm", "Thanh", "Cuộn", "Hộp", "Thùng", "Kg", "Tấn", "Lít", "Mét", "m²", "m³", "Lần", "Chuyến", "Tháng", "Giờ" }
             .Concat(await db.Items.Select(i => i.Unit).Distinct().ToListAsync())
             .Concat(await db.InvoiceLines.Where(l => l.Unit != null).Select(l => l.Unit!).Distinct().ToListAsync());
-        var depts = new[] { "Ban Giám đốc", "Phòng Kế toán", "Phòng Kinh doanh", "Phòng Mua hàng", "Phòng CNTT", "Phòng Hành chính – Nhân sự", "Kho vận", "Xưởng sản xuất" }
+        var depts = new[] { "Ban Giám đốc", "Phòng Kế toán", "Phòng Kinh doanh", "Phòng Mua hàng", "Phòng CNTT", "Phòng Hành chính – Nhân sự", "Kho vận", "Xưởng sản xuất", "Phòng Quản lý chất lượng" }
             .Concat(await db.Users.Select(u => u.Department).Distinct().ToListAsync())
             .Concat(await db.FixedAssets.Where(a => a.Department != null).Select(a => a.Department!).Distinct().ToListAsync());
 
@@ -84,6 +89,55 @@ public static class DbSeeder
         }
         Add(CatalogType.Unit, units, "DVT");
         Add(CatalogType.Department, depts, "PB");
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>Kế hoạch kiểm tra chất lượng mẫu (chỉ tạo khi chưa có kế hoạch nào)</summary>
+    private static async Task SeedQualityAsync(ErpDbContext db)
+    {
+        if (await db.QcPlans.AnyAsync()) return;
+        var mdf = await db.Items.FirstOrDefaultAsync(i => i.Code == "NVL-MDF18");
+
+        static QcPlanLine PF(string name, string? standard = null, string? method = "Quan sát", bool critical = false) =>
+            new() { Name = name, Standard = standard, Method = method, Type = QcCriterionType.PassFail, IsCritical = critical };
+        static QcPlanLine M(string name, decimal min, decimal max, string unit, string? method, bool critical = false) =>
+            new() { Name = name, Type = QcCriterionType.Measure, MinValue = min, MaxValue = max, Unit = unit, Method = method, IsCritical = critical, Standard = $"{min:0.##} – {max:0.##} {unit}" };
+
+        var plans = new List<QcPlan>();
+        if (mdf != null)
+            plans.Add(new QcPlan
+            {
+                Code = "QC-IN-MDF", Name = "Kiểm tra đầu vào ván MDF 18mm", Stage = QcStage.Incoming, ItemId = mdf.Id, SamplePct = 5,
+                Lines = { M("Độ dày tấm ván", 17.7m, 18.3m, "mm", "Thước kẹp, đo 4 góc", true), M("Độ ẩm", 6, 10, "%", "Máy đo độ ẩm gỗ"),
+                          PF("Bề mặt không trầy xước, phồng rộp", "Không có khuyết tật nhìn thấy ở 1m", critical: true), PF("Có chứng từ CO / CQ của lô hàng", method: "Kiểm tra hồ sơ") }
+            });
+        plans.Add(new QcPlan
+        {
+            Code = "QC-IN-NVL", Name = "Kiểm tra đầu vào nguyên vật liệu", Stage = QcStage.Incoming, ItemType = ItemType.Material, SamplePct = 10,
+            Lines = { PF("Đúng chủng loại, quy cách theo đơn mua", critical: true), PF("Số lượng khớp phiếu giao hàng", method: "Đếm / cân"),
+                      PF("Bao bì nguyên vẹn, không ẩm mốc"), PF("Có chứng từ CO / CQ", method: "Kiểm tra hồ sơ") }
+        });
+        plans.Add(new QcPlan
+        {
+            Code = "QC-IN-HH", Name = "Kiểm tra đầu vào hàng hóa thương mại", Stage = QcStage.Incoming, ItemType = ItemType.Merchandise, SamplePct = 10,
+            Lines = { PF("Đúng model, màu sắc theo đơn", critical: true), PF("Vận hành thử đạt yêu cầu", method: "Chạy thử", critical: true),
+                      PF("Ngoại quan không móp méo, trầy xước"), PF("Đủ phụ kiện, hướng dẫn sử dụng, phiếu bảo hành") }
+        });
+        plans.Add(new QcPlan
+        {
+            Code = "QC-FG", Name = "Kiểm tra thành phẩm nội thất", Stage = QcStage.Final, ItemType = ItemType.FinishedGood, SamplePct = 20,
+            Lines = { M("Sai lệch kích thước tổng thể", -2, 2, "mm", "Thước cuộn so bản vẽ", true), M("Độ phẳng mặt bàn / cánh tủ", 0, 1, "mm", "Thước thẳng + căn lá"),
+                      PF("Màng sơn PU không chảy, bọt, lỗ kim", critical: true), PF("Liên kết chắc chắn, không lung lay", method: "Lắc thử", critical: true),
+                      PF("Bản lề, ray trượt vận hành êm", method: "Đóng mở 10 lần"), PF("Vệ sinh sạch, đóng gói đúng quy cách") }
+        });
+        plans.Add(new QcPlan
+        {
+            Code = "QC-OUT", Name = "Kiểm tra trước khi giao hàng", Stage = QcStage.Outgoing, SamplePct = 100,
+            Lines = { PF("Đúng mã hàng, số lượng theo đơn bán", method: "Đối chiếu phiếu xuất", critical: true), PF("Bao bì, tem nhãn đầy đủ"),
+                      PF("Không trầy xước, móp méo khi xếp xe") }
+        });
+        foreach (var p in plans) { var i = 1; foreach (var l in p.Lines) l.Seq = i++; }
+        db.QcPlans.AddRange(plans);
         await db.SaveChangesAsync();
     }
 
@@ -115,7 +169,8 @@ public static class DbSeeder
             U("kinhdoanh", "Lê Minh Tuấn", AppRoles.Sales, "Phòng Kinh doanh"),
             U("muahang", "Phạm Thu Trang", AppRoles.Purchasing, "Phòng Mua hàng"),
             U("thukho", "Võ Văn Nam", AppRoles.Warehouse, "Kho vận"),
-            U("sanxuat", "Đặng Hữu Phước", AppRoles.Production, "Xưởng sản xuất"));
+            U("sanxuat", "Đặng Hữu Phước", AppRoles.Production, "Xưởng sản xuất"),
+            U("qc", "Hồ Thị Lan", AppRoles.Quality, "Phòng Quản lý chất lượng"));
 
         // ------------------------------------------------------------ Hệ thống tài khoản (TT200 rút gọn)
         var coa = new (string Code, string Name, AccountType Type, bool Partner)[]

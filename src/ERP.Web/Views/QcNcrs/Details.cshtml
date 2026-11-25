@@ -1,0 +1,85 @@
+@model QcNonconformance
+@inject AccountingService Acc
+@{
+    ViewData["Title"] = $"Báo cáo không phù hợp {Model.Number}";
+    var canManage = (bool)ViewBag.CanManage; var canExecute = (bool)ViewBag.CanExecute;
+    var needsStock = Model.Disposition is NcrDisposition.Scrap or NcrDisposition.ReturnToVendor;
+    Account? counter = Model.Disposition switch
+    {
+        NcrDisposition.Scrap => await Acc.RuleAccountAsync(PostingCatalog.QcScrap),
+        NcrDisposition.ReturnToVendor => await Acc.RuleAccountAsync(PostingCatalog.QcReturnPayable),
+        _ => null
+    };
+}
+<div class="doc-head">
+    <div>
+        <div class="d-flex gap-2 flex-wrap"><span class="badge @QcUi.Badge(Model.Status)">@Model.Status.GetDisplayName()</span>
+            <span class="badge @QcUi.Badge(Model.Disposition)">@Model.Disposition.GetDisplayName()</span>
+            @if (Model.IsOverdue) { <span class="badge bg-danger">Quá hạn xử lý</span> }</div>
+        <div class="meta mt-1">Lập ngày @Model.Date.ToDate() @if (Model.CreatedBy != null) { <span>bởi @Model.CreatedBy.FullName</span> }
+            @if (Model.DueDate.HasValue) { <span>· hạn xử lý @Model.DueDate.ToDate()</span> }
+            @if (Model.ClosedAt.HasValue) { <span>· đóng @Model.ClosedAt.Value.ToDateTime() bởi @Model.ClosedBy</span> }</div>
+    </div>
+    <div class="actions">
+        <a class="btn btn-sm btn-light" asp-action="Index"><i class="bi bi-arrow-left"></i> Danh sách</a>
+        @if (canManage && Model.Status == NcrStatus.Open)
+        {
+            <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id"><i class="bi bi-pencil"></i> Cập nhật xử lý</a>
+            <form asp-action="Close" asp-route-id="@Model.Id" method="post" data-confirm="Đóng NCR?"><button class="btn btn-sm btn-success"><i class="bi bi-check2-circle"></i> Đóng NCR</button></form>
+        }
+    </div>
+</div>
+
+<div class="flow mb-3">
+    <span class="step done">Phát hiện</span><span class="arrow">›</span>
+    <span class="step @(Model.Disposition != NcrDisposition.Pending ? "done" : "current")">Quyết định xử lý</span><span class="arrow">›</span>
+    @if (needsStock) { <span class="step @(Model.InventoryDocId != null ? "done" : Model.Disposition != NcrDisposition.Pending ? "current" : "")">Xuất kho @(Model.Disposition == NcrDisposition.Scrap ? "hủy" : "trả NCC")</span><span class="arrow">›</span> }
+    <span class="step @(!string.IsNullOrWhiteSpace(Model.CorrectiveAction) ? "done" : "")">Khắc phục / phòng ngừa</span><span class="arrow">›</span>
+    <span class="step @(Model.Status == NcrStatus.Closed ? "done" : "")">Đóng</span>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7"><div class="card h-100"><div class="card-body"><dl class="row info mb-0">
+        <dt class="col-sm-4">Mặt hàng</dt><dd class="col-sm-8"><b>@Model.Item?.Code</b> – @Model.Item?.Name</dd>
+        <dt class="col-sm-4">Số lượng</dt><dd class="col-sm-8"><b>@Model.Quantity.ToQty()</b> @Model.Item?.Unit</dd>
+        <dt class="col-sm-4">Kho đang giữ</dt><dd class="col-sm-8">@Model.Warehouse?.Name</dd>
+        <dt class="col-sm-4">NCC / khách hàng</dt><dd class="col-sm-8">@Model.Partner?.Name</dd>
+        <dt class="col-sm-4">Phiếu kiểm tra</dt><dd class="col-sm-8">@if (Model.Inspection != null) { <a asp-controller="QcInspections" asp-action="Details" asp-route-id="@Model.InspectionId">@Model.Inspection.Number</a> } else { <span>NCR lập thủ công</span> }</dd>
+        <dt class="col-sm-4">Mô tả lỗi</dt><dd class="col-sm-8 pre">@Model.Description</dd>
+        <dt class="col-sm-4">Nguyên nhân gốc</dt><dd class="col-sm-8 pre">@Model.RootCause</dd>
+        <dt class="col-sm-4">Khắc phục / phòng ngừa</dt><dd class="col-sm-8 pre">@Model.CorrectiveAction</dd>
+        <dt class="col-sm-4">Người chịu trách nhiệm</dt><dd class="col-sm-8">@Model.Responsible</dd>
+    </dl></div></div></div>
+    <div class="col-lg-5">
+        @if (needsStock)
+        {
+            <div class="card"><div class="card-header"><i class="bi bi-box-arrow-up me-1"></i> Xuất kho theo hướng xử lý</div><div class="card-body">
+                @if (Model.InventoryDoc != null)
+                {
+                    <p class="mb-1">Đã lập phiếu <a asp-controller="Inventory" asp-action="Details" asp-route-id="@Model.InventoryDocId"><b>@Model.InventoryDoc.Number</b></a> ngày @Model.InventoryDoc.Date.ToDate().</p>
+                    <p class="small text-muted mb-0">Bút toán: Nợ @Model.InventoryDoc.CounterAccount?.Code / Có TK kho, giá trị @Model.InventoryDoc.TotalAmount.ToMoney() đ (xem trên phiếu kho).</p>
+                }
+                else
+                {
+                    <p class="small">Bút toán sẽ ghi: <b>Nợ @counter?.Code</b> (@counter?.Name) / <b>Có TK kho</b> theo giá vốn bình quân.
+                        <a asp-controller="PostingRules" asp-action="Index" asp-fragment="tx-@(Model.Disposition == NcrDisposition.Scrap ? "qc-scrap" : "qc-return")" class="small">Cấu hình bút toán</a></p>
+                    @if (canExecute && Model.Status == NcrStatus.Open)
+                    {
+                        <form asp-action="Execute" asp-route-id="@Model.Id" method="post" class="d-flex gap-2 align-items-end" data-confirm="Lập và ghi sổ phiếu xuất kho @Model.Quantity.ToQty() @Model.Item?.Unit?">
+                            <div><label class="form-label small mb-0">Ngày xuất</label><input type="date" name="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+                            <button class="btn btn-sm btn-danger"><i class="bi bi-box-arrow-up"></i> Lập phiếu xuất @(Model.Disposition == NcrDisposition.Scrap ? "hủy" : "trả NCC")</button>
+                        </form>
+                    }
+                }
+            </div></div>
+        }
+        else if (Model.Disposition == NcrDisposition.Pending)
+        {
+            <div class="alert alert-warning">Chưa quyết định hướng xử lý. Chọn: trả lại nhà cung cấp, sửa chữa / làm lại, hủy bỏ hoặc chấp nhận nhân nhượng.</div>
+        }
+        else
+        {
+            <div class="alert alert-light border">Hướng xử lý <b>@Model.Disposition.GetDisplayName()</b> không phát sinh nhập / xuất kho.</div>
+        }
+    </div>
+</div>

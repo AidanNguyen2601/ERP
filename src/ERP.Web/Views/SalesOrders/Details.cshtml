@@ -24,6 +24,8 @@
             @if (Model.CreditApprovedBy != null) { <div class="meta text-danger">Duyệt vượt hạn mức công nợ: @Model.CreditApprovedBy.FullName</div> }
             @if (!string.IsNullOrWhiteSpace(Model.Note)) { <div>@Model.Note</div> }</div>
         <div class="actions">
+            @if (Model.Status is SoStatus.Confirmed or SoStatus.PartiallyDelivered or SoStatus.Delivered)
+            { <partial name="_QcButton" model="@(new QcLink("soId", Model.Id, Model.Number, Model.Lines.Where(l => l.Item?.IsStocked == true).Select(l => (l.ItemId, $"{l.Item?.Code} – {l.Item?.Name} × {l.Quantity.ToQty()}")).ToList()))" /> }
             @if (canEdit && Model.Status == SoStatus.Draft) { <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id">Sửa</a> }
             @if ((canEdit || canOv) && Model.Status == SoStatus.Draft) { <form asp-action="Confirm" asp-route-id="@Model.Id" method="post"><button class="btn btn-sm btn-primary">Xác nhận đơn</button></form> }
             @if (canDel && Model.Status is SoStatus.Confirmed or SoStatus.PartiallyDelivered) { <a class="btn btn-sm btn-primary" asp-action="Deliver" asp-route-id="@Model.Id">Giao hàng / xuất kho</a> }

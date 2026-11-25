@@ -57,13 +57,13 @@ public class InvoiceService
                 var used = await _db.Invoices.Where(i => i.Direction == InvoiceDirection.Sales && i.Series == series && i.InvoiceNo != null).Select(i => i.InvoiceNo!).ToListAsync();
                 inv.InvoiceNo = (used.Select(n => int.TryParse(n, out var k) ? k : 0).DefaultIfEmpty(0).Max() + 1).ToString("0000000");
             }
-            lines.Add(new JLine(await _acc.IdAsync(AccountingService.Receivable), inv.Total, 0, partner.Id, $"Phải thu HĐ {inv.InvoiceNo}"));
+            lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.SiReceivable), inv.Total, 0, partner.Id, $"Phải thu HĐ {inv.InvoiceNo}"));
             foreach (var l in inv.Lines)
             {
-                var acc = l.AccountId ?? await _acc.IdAsync(AccountingService.RevenueAccount(l.ItemId.HasValue ? items[l.ItemId.Value].Type : null));
+                var acc = l.AccountId ?? await _acc.RevenueRuleAsync(l.ItemId.HasValue ? items[l.ItemId.Value].Type : null);
                 lines.Add(new JLine(acc, 0, l.Amount));
             }
-            if (inv.VatAmount > 0) lines.Add(new JLine(await _acc.IdAsync(AccountingService.VatOut), 0, inv.VatAmount));
+            if (inv.VatAmount > 0) lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.SiVatOut), 0, inv.VatAmount));
         }
         else
         {
@@ -77,12 +77,12 @@ public class InvoiceService
             {
                 if (l.AccountId == null && l.ItemId.HasValue && items[l.ItemId.Value].IsStocked)
                     throw new BusinessException($"Hàng {items[l.ItemId.Value].Code} cần nhập kho qua đơn mua hàng; hóa đơn mua trực tiếp chỉ dùng cho dịch vụ / chi phí (chọn TK chi phí).");
-                var acc = l.AccountId ?? await _acc.IdAsync(AccountingService.AdminServices);
+                var acc = l.AccountId ?? await _acc.RuleAsync(PostingCatalog.PiExpense);
                 lines.Add(new JLine(acc, l.Amount, 0, null, l.Description));
                 credit += l.Amount;
             }
-            if (inv.VatAmount > 0) { lines.Add(new JLine(await _acc.IdAsync(AccountingService.VatIn), inv.VatAmount, 0)); credit += inv.VatAmount; }
-            if (credit > 0) lines.Add(new JLine(await _acc.IdAsync(AccountingService.Payable), 0, credit, partner.Id, $"Phải trả HĐ {inv.InvoiceNo}"));
+            if (inv.VatAmount > 0) { lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.PiVatIn), inv.VatAmount, 0)); credit += inv.VatAmount; }
+            if (credit > 0) lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.PiPayable), 0, credit, partner.Id, $"Phải trả HĐ {inv.InvoiceNo}"));
         }
 
         if (inv.Id == 0) { _db.Invoices.Add(inv); await _db.SaveChangesAsync(); }

@@ -56,6 +56,7 @@ public static class Menu
             new() { Key = "journals", Title = "Chứng từ kế toán", Icon = "bi-journal-text", Controller = "Journals", Visible = Fin, Active = m => m.Is("Journals") },
             new() { Key = "reports", Title = "Báo cáo tài chính", Icon = "bi-graph-up-arrow", Controller = "Reports", Action = "TrialBalance", Visible = Fin, Active = m => m.Is("Reports") && m.Action != "Periods" },
             new() { Key = "periods", Title = "Khóa sổ & kết chuyển", Icon = "bi-lock", Controller = "Reports", Action = "Periods", Visible = Fin, Active = m => m.Is("Reports", "Periods") },
+            new() { Key = "posting-rules", Title = "Cấu hình bút toán", Icon = "bi-sliders", Controller = "PostingRules", Visible = Fin, Active = m => m.Is("PostingRules") },
         }},
         new() { Key = "debts", Title = "Phải thu · Phải trả", Icon = "bi-arrow-down-up", Tint = "#ecfdf5", Items = new MenuItem[]
         {
@@ -91,6 +92,13 @@ public static class Menu
             new() { Key = "mo", Title = "Lệnh sản xuất", Icon = "bi-tools", Controller = "Production", Active = m => m.Is("Production") && m.Action != "Mrp" },
             new() { Key = "bom", Title = "Định mức (BOM)", Icon = "bi-diagram-3", Controller = "Boms", Active = m => m.Is("Boms") },
             new() { Key = "mrp", Title = "Hoạch định vật tư", Icon = "bi-clipboard-data", Controller = "Production", Action = "Mrp", Active = m => m.Is("Production", "Mrp") },
+        }},
+        new() { Key = "quality", Title = "Quản lý chất lượng", Icon = "bi-patch-check", Tint = "#ecfeff", Items = new MenuItem[]
+        {
+            new() { Key = "qc-inspections", Title = "Phiếu kiểm tra (KCS)", Icon = "bi-clipboard-check", Controller = "QcInspections", Active = m => m.Is("QcInspections") },
+            new() { Key = "qc-ncrs", Title = "Xử lý hàng không đạt (NCR)", Icon = "bi-exclamation-octagon", Controller = "QcNcrs", Active = m => m.Is("QcNcrs") },
+            new() { Key = "qc-plans", Title = "Kế hoạch & tiêu chí kiểm tra", Icon = "bi-list-check", Controller = "QcPlans", Active = m => m.Is("QcPlans") },
+            new() { Key = "qc-reports", Title = "Báo cáo chất lượng", Icon = "bi-bar-chart-line", Controller = "QcReports", Active = m => m.Is("QcReports") },
         }},
         new() { Key = "catalogs", Title = "Danh mục", Icon = "bi-collection", Tint = "#f5f3ff", Items = new MenuItem[]
         {

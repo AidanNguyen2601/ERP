@@ -1,0 +1,85 @@
+@model List<ERP.Web.Controllers.PostingRulesController.TxRow>
+@{
+    ViewData["Title"] = "Cấu hình bút toán theo giao dịch";
+    var canEdit = (bool)ViewBag.CanEdit;
+    var modules = (List<string>)ViewBag.Modules;
+    var module = ViewBag.Module as string;
+    string SideClass(string s) => s == "Nợ" ? "side-dr" : s == "Có" ? "side-cr" : "side-both";
+    string Summary(ERP.Web.Controllers.PostingRulesController.TxRow t, string side) =>
+        string.Join(", ", t.Lines.Where(l => l.Def.Side.Contains(side)).Select(l => l.Rule?.Effective.Code ?? (l.Def.Title.StartsWith("TK tiền") ? "TK tiền" : "TK kho")).Distinct());
+}
+<div class="alert alert-info d-flex gap-2 align-items-start">
+    <i class="bi bi-info-circle fs-5"></i>
+    <div>Chọn tài khoản hạch toán cho từng dòng định khoản của các nghiệp vụ tự động. Cấu hình áp dụng cho chứng từ <b>ghi sổ từ thời điểm lưu</b>;
+        bút toán đã ghi không thay đổi (hủy chứng từ sẽ đảo đúng bút toán gốc). Mỗi dòng chỉ cho chọn tài khoản chi tiết trong nhóm đầu số phù hợp
+        để báo cáo công nợ, thuế GTGT và báo cáo tài chính luôn đúng.</div>
+</div>
+<div class="subnav">
+    <a class="@(string.IsNullOrEmpty(module) ? "active" : "")" asp-action="Index">Tất cả</a>
+    @foreach (var m in modules) { <a class="@(m == module ? "active" : "")" asp-action="Index" asp-route-module="@m">@m</a> }
+</div>
+
+@foreach (var t in Model)
+{
+    var changed = t.ChangedCount;
+    <div class="card mb-3 posting-card" id="tx-@t.Tx.Code">
+        <div class="card-header d-flex flex-wrap align-items-center gap-2">
+            <i class="bi @t.Tx.Icon text-primary"></i><span>@t.Tx.Title</span>
+            <span class="badge bg-light text-dark border">@t.Tx.Module</span>
+            @if (changed > 0) { <span class="badge bg-warning text-dark">@changed tài khoản khác mặc định</span> }
+            <span class="ms-auto small text-muted fw-normal posting-formula">Nợ <b>@Summary(t, "Nợ")</b> / Có <b>@Summary(t, "Có")</b></span>
+        </div>
+        <div class="card-body pb-2">
+            <p class="small text-muted mb-2">@t.Tx.Description</p>
+            <form asp-action="Save" method="post">
+                <input type="hidden" name="tx" value="@t.Tx.Code" /><input type="hidden" name="module" value="@module" />
+                <div class="table-responsive"><table class="table table-sm align-middle mb-2" data-grid="off">
+                    <thead><tr><th style="width:80px">Nợ / Có</th><th>Dòng định khoản</th><th style="width:120px">Mặc định</th><th style="min-width:280px">Tài khoản áp dụng</th><th style="width:190px">Cập nhật</th></tr></thead>
+                    <tbody>
+                    @foreach (var (def, r) in t.Lines)
+                    {
+                        <tr class="@(r == null ? "text-muted" : "")">
+                            <td><span class="side-badge @SideClass(def.Side)">@def.Side</span></td>
+                            <td>@def.Title
+                                @if (def.Prefixes != null) { <div class="small text-muted">Cho phép TK đầu @string.Join(", ", def.Prefixes)</div> }</td>
+                            <td>@if (r?.Default != null) { <span title="@r.Default.Name">@r.Default.Code</span> } else if (r == null) { <span class="small">—</span> }</td>
+                            <td>
+                                @if (r == null) { <span class="small fst-italic">Cố định – theo chứng từ</span> }
+                                else if (canEdit)
+                                {
+                                    <select name="accounts[@def.Key]" class="form-select form-select-sm @(r.Default != null && r.Effective.Id != r.Default.Id ? "border-warning" : "")">
+                                        @foreach (var a in r.Options)
+                                        {
+                                            <option value="@a.Id" selected="@(a.Id == r.Effective.Id)">@a.Code – @a.Name@(r.Default?.Id == a.Id ? "  (mặc định)" : "")</option>
+                                        }
+                                    </select>
+                                }
+                                else { <b>@r.Effective.Code</b> <span class="small">– @r.Effective.Name</span> }
+                            </td>
+                            <td class="small text-muted">@if (r?.Saved != null) { <span>@r.Saved.UpdatedBy<br />@r.Saved.UpdatedAt.ToDateTime()</span> }</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table></div>
+                @if (canEdit && t.Lines.Any(l => l.Rule != null))
+                {
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-primary"><i class="bi bi-check2"></i> Lưu cấu hình</button>
+                        @if (t.Lines.Any(l => l.Rule?.Saved != null))
+                        {
+                            <button class="btn btn-sm btn-outline-secondary" formaction="@Url.Action("Reset")" data-confirm-click="Khôi phục tài khoản mặc định cho giao dịch này?"><i class="bi bi-arrow-counterclockwise"></i> Về mặc định</button>
+                        }
+                    </div>
+                }
+            </form>
+        </div>
+    </div>
+}
+@section Scripts {
+<script>
+    // Nút phụ trong form cần hỏi xác nhận riêng (data-confirm của form áp cho mọi nút)
+    document.querySelectorAll('[data-confirm-click]').forEach(b => b.addEventListener('click', e => {
+        if (!confirm(b.getAttribute('data-confirm-click'))) e.preventDefault();
+    }));
+</script>
+}

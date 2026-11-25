@@ -284,3 +284,9 @@ body.grid-compact .table > :not(caption) > * > * { padding-top: .2rem; padding-b
     .hbrand { display: none; }
 }
 @media print { .hnav, .grid-tools, .fav-star, .sidebar-backdrop { display: none !important; } table.grid .col-resizer { display: none; } }
+
+/* ===================================================================== CẤU HÌNH BÚT TOÁN */
+.side-badge { display: inline-block; min-width: 54px; text-align: center; padding: 2px 8px; border-radius: 12px; font-size: .78rem; font-weight: 600; }
+.side-dr { background: #dbeafe; color: #1e40af; } .side-cr { background: #dcfce7; color: #166534; } .side-both { background: #f1f5f9; color: #475569; }
+.posting-card:target { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+.posting-formula b { color: #0f172a; }

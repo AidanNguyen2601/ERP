@@ -1,0 +1,68 @@
+@model QcInspection
+@{
+    ViewData["Title"] = $"Phiếu kiểm tra {Model.Number}";
+    var ncrs = (List<QcNonconformance>)ViewBag.Ncrs;
+    var canWrite = (bool)ViewBag.CanWrite;
+    string? originUrl = Model.Origin switch
+    {
+        DocOrigin.Purchase => Url.Action("Details", "PurchaseOrders", new { id = Model.OriginId }),
+        DocOrigin.Production => Url.Action("Details", "Production", new { id = Model.OriginId }),
+        DocOrigin.Sales => Url.Action("Details", "SalesOrders", new { id = Model.OriginId }),
+        _ => null
+    };
+}
+<div class="doc-head">
+    <div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge @QcUi.Badge(Model.Status)">@Model.Status.GetDisplayName()</span>
+            @if (Model.Result != QcResult.Pending) { <span class="badge fs-6 @QcUi.Badge(Model.Result)">@Model.Result.GetDisplayName()</span> }
+        </div>
+        <div class="meta mt-1"><i class="bi @QcUi.Icon(Model.Stage)"></i> @Model.Stage.GetDisplayName() · ngày @Model.Date.ToDate()
+            @if (Model.Inspector != null) { <span>· người kiểm @Model.Inspector.FullName</span> }
+            @if (Model.CompletedAt.HasValue) { <span>· kết luận lúc @Model.CompletedAt.Value.ToDateTime()</span> }</div>
+    </div>
+    <div class="actions">
+        <a class="btn btn-sm btn-light" asp-action="Index"><i class="bi bi-arrow-left"></i> Danh sách</a>
+        @if (canWrite && Model.Status == QcStatus.Draft)
+        {
+            <a class="btn btn-sm btn-primary" asp-action="Edit" asp-route-id="@Model.Id"><i class="bi bi-pencil"></i> Nhập kết quả / kết luận</a>
+            <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" data-confirm="Hủy phiếu kiểm tra nháp?"><button class="btn btn-sm btn-outline-danger">Hủy phiếu</button></form>
+        }
+        <button type="button" class="btn btn-sm btn-light" onclick="print()"><i class="bi bi-printer"></i> In</button>
+    </div>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-lg-7"><div class="card h-100"><div class="card-body"><dl class="row info mb-0">
+        <dt class="col-sm-4">Mặt hàng</dt><dd class="col-sm-8"><b>@Model.Item?.Code</b> – @Model.Item?.Name</dd>
+        <dt class="col-sm-4">Chứng từ gốc</dt><dd class="col-sm-8">@if (originUrl != null) { <a href="@originUrl">@Model.Origin.GetDisplayName() @Model.OriginRef</a> } else { <span>Thủ công</span> }</dd>
+        <dt class="col-sm-4">NCC / khách hàng</dt><dd class="col-sm-8">@Model.Partner?.Name</dd>
+        <dt class="col-sm-4">Kho</dt><dd class="col-sm-8">@Model.Warehouse?.Name</dd>
+        <dt class="col-sm-4">Kế hoạch kiểm tra</dt><dd class="col-sm-8">@if (Model.QcPlan != null) { <a asp-controller="QcPlans" asp-action="Details" asp-route-id="@Model.QcPlanId">@Model.QcPlan.Code – @Model.QcPlan.Name</a> }</dd>
+        @if (!string.IsNullOrWhiteSpace(Model.Note)) { <dt class="col-sm-4">Nhận xét</dt><dd class="col-sm-8 pre">@Model.Note</dd> }
+    </dl></div></div></div>
+    <div class="col-lg-5"><div class="row g-2">
+        <div class="col-6"><div class="card kpi"><div class="label">Số lượng lô</div><div class="value">@Model.LotQty.ToQty()</div><div class="sub">Mẫu @Model.SampleQty.ToQty()</div></div></div>
+        <div class="col-6"><div class="card kpi"><div class="label">Tỷ lệ lỗi</div><div class="value @(Model.RejectedQty > 0 ? "bad" : "good")">@Model.DefectRate.ToPct()</div><div class="sub">Đạt @Model.AcceptedQty.ToQty() · lỗi @Model.RejectedQty.ToQty()</div></div></div>
+        @foreach (var n in ncrs)
+        {
+            <div class="col-12"><a class="card kpi text-decoration-none" asp-controller="QcNcrs" asp-action="Details" asp-route-id="@n.Id">
+                <div class="label">Báo cáo không phù hợp</div><div class="d-flex justify-content-between align-items-center"><b>@n.Number</b>
+                    <span><span class="badge @QcUi.Badge(n.Disposition)">@n.Disposition.GetDisplayName()</span> <span class="badge @QcUi.Badge(n.Status)">@n.Status.GetDisplayName()</span></span></div></a></div>
+        }
+    </div></div>
+</div>
+<div class="card"><div class="card-header">Kết quả theo tiêu chí</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0">
+    <thead><tr><th>#</th><th>Tiêu chí</th><th>Phương pháp</th><th>Tiêu chuẩn</th><th class="num">Giá trị đo</th><th>Đánh giá</th><th>Ghi chú</th></tr></thead>
+    <tbody>
+    @foreach (var l in Model.Lines)
+    {
+        <tr class="@(l.Passed == false ? "table-danger" : "")">
+            <td>@l.Seq</td><td>@l.Name @if (l.IsCritical) { <span class="badge bg-danger ms-1">Trọng yếu</span> }</td><td class="small">@l.Method</td><td>@l.Standard</td>
+            <td class="num">@(l.MeasuredValue.HasValue ? l.MeasuredValue.Value.ToQty() + " " + l.Unit : "")</td>
+            <td>@if (l.Passed == true) { <span class="good"><i class="bi bi-check-circle-fill"></i> Đạt</span> } else if (l.Passed == false) { <span class="bad"><i class="bi bi-x-circle-fill"></i> Không đạt</span> } else { <span class="text-muted">—</span> }</td>
+            <td class="small">@l.Note</td>
+        </tr>
+    }
+    @if (!Model.Lines.Any()) { <tr><td colspan="7" class="text-muted text-center py-3">Không có tiêu chí.</td></tr> }
+    </tbody>
+</table></div></div></div>
