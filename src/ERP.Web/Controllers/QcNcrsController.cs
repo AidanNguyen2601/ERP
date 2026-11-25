@@ -33,6 +33,7 @@ public class QcNcrsController : ErpControllerBase
         var n = await Load(id);
         if (n == null) return NotFound();
         ViewBag.CanManage = CanManage; ViewBag.CanExecute = CanExecute;
+        ViewBag.Returns = await Db.PurchaseReturns.Include(r => r.PurchaseOrderLine).ThenInclude(l => l!.PurchaseOrder).Include(r => r.Offsets).ThenInclude(o => o.Invoice).Where(r => r.NcrId == id).OrderBy(r => r.Id).ToListAsync();
         return View(n);
     }
 

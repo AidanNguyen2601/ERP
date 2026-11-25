@@ -25,12 +25,35 @@ public static class DbSeeder
             await SeedCatalogsAsync(db);
             await SeedQualityAsync(db);
             await SeedQcDemoAsync(sp, db);
+            await BackfillPurchaseReturnsAsync(sp, db);
             return;
         }
         await SeedCoreAsync(sp, db);
         await SeedCatalogsAsync(db);
         await SeedQualityAsync(db);
         await SeedQcDemoAsync(sp, db);
+        await BackfillPurchaseReturnsAsync(sp, db);
+    }
+
+    /// <summary>
+    /// Phiếu trả hàng NCR lập trước khi có cơ chế đồng bộ công nợ / thuế / đơn mua: bổ sung bút toán điều chỉnh và cấn trừ hóa đơn.
+    /// Chạy lại nhiều lần an toàn (chỉ xử lý NCR chưa có phiếu trả hàng); lỗi thì hoàn tác và bỏ qua.
+    /// </summary>
+    private static async Task BackfillPurchaseReturnsAsync(IServiceProvider sp, ErpDbContext db)
+    {
+        var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger("PurchaseReturnBackfill");
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
+        {
+            var n = await sp.GetRequiredService<PurchaseReturnService>().BackfillLegacyAsync();
+            await tx.CommitAsync();
+            if (n > 0) logger.LogInformation("Đã bổ sung đồng bộ công nợ / thuế cho {Count} phiếu trả hàng nhà cung cấp cũ", n);
+        }
+        catch (Exception ex)
+        {
+            await tx.RollbackAsync(); db.ChangeTracker.Clear();
+            logger.LogWarning(ex, "Không bổ sung được đồng bộ cho phiếu trả hàng cũ (đã hoàn tác, ứng dụng vẫn chạy bình thường)");
+        }
     }
 
     /// <summary>Dữ liệu mẫu quản lý chất lượng (tắt bằng Database:SeedQcDemo = false)</summary>
@@ -47,6 +70,11 @@ public static class DbSeeder
     /// </summary>
     private static async Task EnsureNewTablesAsync(ErpDbContext db)
     {
+        // Cột thêm sau vào bảng đã có (EnsureCreated không tự thêm cột)
+        await db.Database.ExecuteSqlRawAsync("""
+            IF OBJECT_ID(N'dbo.PurchaseOrderLines', N'U') IS NOT NULL AND COL_LENGTH(N'dbo.PurchaseOrderLines', N'ReturnedQty') IS NULL
+                ALTER TABLE dbo.PurchaseOrderLines ADD ReturnedQty decimal(18,2) NOT NULL CONSTRAINT DF_PurchaseOrderLines_ReturnedQty DEFAULT 0;
+            """);
         var existing = (await db.Database.SqlQueryRaw<string>("SELECT TABLE_NAME AS [Value] FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'")
             .ToListAsync()).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var script = db.Database.GenerateCreateScript();

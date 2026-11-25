@@ -19,8 +19,10 @@ public class QualityService
     private readonly AccountingService _acc;
     private readonly CurrentUser _user;
 
-    public QualityService(ErpDbContext db, InventoryService inv, AccountingService acc, CurrentUser user)
-    { _db = db; _inv = inv; _acc = acc; _user = user; }
+    private readonly PurchaseReturnService _returns;
+
+    public QualityService(ErpDbContext db, InventoryService inv, AccountingService acc, CurrentUser user, PurchaseReturnService returns)
+    { _db = db; _inv = inv; _acc = acc; _user = user; _returns = returns; }
 
     public Task<string> NextInspectionNumberAsync(DateTime date) => DocNumbers.NextAsync(_db.QcInspections.Select(x => x.Number), "KCS", date);
     public Task<string> NextNcrNumberAsync(DateTime date) => DocNumbers.NextAsync(_db.QcNonconformances.Select(x => x.Number), "NCR", date);
@@ -126,24 +128,13 @@ public class QualityService
         var item = await _db.Items.FindAsync(n.ItemId) ?? throw new BusinessException("Không tìm thấy mặt hàng.");
         if (!item.IsStocked) throw new BusinessException("Hàng dịch vụ không quản lý tồn kho.");
 
-        int counter; int? partnerId = null; string reason;
-        if (n.Disposition == NcrDisposition.Scrap)
-        {
-            counter = await _acc.RuleAsync(PostingCatalog.QcScrap);
-            reason = $"Xuất hủy hàng không đạt theo {n.Number}";
-        }
-        else
-        {
-            var vendor = n.PartnerId.HasValue ? await _db.Partners.FindAsync(n.PartnerId) : null;
-            if (vendor == null || !vendor.IsVendor) throw new BusinessException("Trả lại nhà cung cấp: chọn nhà cung cấp trên NCR.");
-            counter = await _acc.RuleAsync(PostingCatalog.QcReturnPayable);
-            partnerId = vendor.Id;
-            reason = $"Trả lại {vendor.Name} hàng không đạt theo {n.Number}";
-        }
+        if (n.Disposition == NcrDisposition.ReturnToVendor)
+            return await _returns.ReturnAsync(n, date);   // phiếu kho + công nợ + thuế + đơn mua + cấn trừ hóa đơn
+
         var doc = new InventoryDoc
         {
             Type = InvDocType.Issue, Date = date.Date, WarehouseId = n.WarehouseId.Value, Origin = DocOrigin.Quality, OriginRef = n.Number, OriginId = n.Id,
-            PartnerId = partnerId, CounterAccountId = counter, Reason = reason, CreatedById = _user.Id,
+            CounterAccountId = await _acc.RuleAsync(PostingCatalog.QcScrap), Reason = $"Xuất hủy hàng không đạt theo {n.Number}", CreatedById = _user.Id,
             Number = await _inv.NextNumberAsync(InvDocType.Issue, date.Date)
         };
         doc.Lines.Add(new InventoryDocLine { ItemId = item.Id, Quantity = n.Quantity });

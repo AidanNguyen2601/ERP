@@ -126,6 +126,8 @@ public class AssetService
     private readonly ErpDbContext _db;
     private readonly AccountingService _acc;
     private readonly CurrentUser _user;
+    /// <summary>Ký hiệu chứng từ công nợ phát sinh khi ghi tăng TSCĐ mua chịu</summary>
+    public const string AssetInvoiceSeries = "TSCD";
     public AssetService(ErpDbContext db, AccountingService acc, CurrentUser user) { _db = db; _acc = acc; _user = user; }
 
     /// <summary>Số khấu hao của tài sản trong tháng (đường thẳng, tính tròn tháng bắt đầu khấu hao)</summary>
@@ -171,11 +173,27 @@ public class AssetService
         await _db.SaveChangesAsync();
         if (counterAccountId == null) return;
         var cat = await _db.AssetCategories.FindAsync(a.CategoryId) ?? throw new BusinessException("Chọn nhóm tài sản.");
-        await _acc.PostAsync(a.AcquisitionDate, $"Ghi tăng TSCĐ {a.Code} – {a.Name}", JournalSource.FixedAsset, a.Code, a.Id, new[]
+        var je = await _acc.PostAsync(a.AcquisitionDate, $"Ghi tăng TSCĐ {a.Code} – {a.Name}", JournalSource.FixedAsset, a.Code, a.Id, new[]
         {
             new JLine(cat.AssetAccountId, a.OriginalCost, 0),
             new JLine(counterAccountId.Value, 0, a.OriginalCost, partnerId)
         });
+
+        // Mua chịu: khoản phải trả nhà cung cấp phải nằm trong sổ chi tiết công nợ (tuổi nợ, cấn trừ khi thanh toán) như mọi hóa đơn mua
+        var counter = await _db.Accounts.FindAsync(counterAccountId.Value);
+        if (counter is { TrackPartner: true } && counter.Code.StartsWith("331") && partnerId.HasValue)
+        {
+            var vendor = await _db.Partners.FindAsync(partnerId.Value);
+            _db.Invoices.Add(new Invoice
+            {
+                Direction = InvoiceDirection.Purchase, Number = await DocNumbers.NextAsync(_db.Invoices.Select(i => i.Number), "HDM", a.AcquisitionDate),
+                Date = a.AcquisitionDate, DueDate = a.AcquisitionDate.AddDays(vendor?.PaymentTermDays ?? 30), PartnerId = partnerId, Series = AssetInvoiceSeries, InvoiceNo = a.Code,
+                Status = InvoiceStatus.Issued, Subtotal = a.OriginalCost, VatAmount = 0, Total = a.OriginalCost, JournalEntryId = je.Id, CreatedById = _user.Id,
+                Note = $"Công nợ mua TSCĐ {a.Code} – {a.Name}",
+                Lines = { new InvoiceLine { Description = $"Mua TSCĐ {a.Code} – {a.Name}", Quantity = 1, UnitPrice = a.OriginalCost, Amount = a.OriginalCost, AccountId = cat.AssetAccountId } }
+            });
+            await _db.SaveChangesAsync();
+        }
     }
 
     /// <summary>Thanh lý: Nợ 2141 hao mòn, Nợ 811 giá trị còn lại / Có 211x nguyên giá; thu thanh lý Nợ tiền / Có 711</summary>
@@ -272,9 +290,10 @@ public class ProductionService
         if (po.OverheadCost > 0) { lines.Add(new JLine(wip, po.OverheadCost, 0)); lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.PrdOverhead), 0, po.OverheadCost)); }
         if (lines.Any()) await _acc.PostAsync(date, $"Kết chuyển chi phí nhân công, SXC vào lệnh {po.Number}", JournalSource.Production, po.Number, po.Id, lines);
         po.CompletedQty = completedQty;
-        po.UnitCost = Math.Round(po.TotalCost / completedQty, 2);
+        po.UnitCost = Math.Round(po.TotalCost / completedQty, 2);   // hiển thị 2 số lẻ
+        // Nhập kho theo giá thành chính xác (không làm tròn đơn giá) để giá trị thành phẩm = tổng chi phí tập hợp, TK 154 về 0
         await _inv.CreateAndPostAsync(InvDocType.Receipt, date, po.FinishedWarehouseId!.Value, DocOrigin.Production, po.Number, po.Id, null,
-            $"Nhập kho thành phẩm lệnh {po.Number}", new[] { (po.ItemId, completedQty, po.UnitCost) }, _user.Id);
+            $"Nhập kho thành phẩm lệnh {po.Number}", new[] { (po.ItemId, completedQty, po.TotalCost / completedQty) }, _user.Id);
         po.Status = ProductionStatus.Completed;
         po.CompletedDate = date;
         await _db.SaveChangesAsync();

@@ -56,6 +56,7 @@ public static class Menu
             new() { Key = "journals", Title = "Chứng từ kế toán", Icon = "bi-journal-text", Controller = "Journals", Visible = Fin, Active = m => m.Is("Journals") },
             new() { Key = "reports", Title = "Báo cáo tài chính", Icon = "bi-graph-up-arrow", Controller = "Reports", Action = "TrialBalance", Visible = Fin, Active = m => m.Is("Reports") && m.Action != "Periods" },
             new() { Key = "periods", Title = "Khóa sổ & kết chuyển", Icon = "bi-lock", Controller = "Reports", Action = "Periods", Visible = Fin, Active = m => m.Is("Reports", "Periods") },
+            new() { Key = "reconcile", Title = "Đối chiếu phân hệ – kế toán", Icon = "bi-check2-square", Controller = "Reconciliation", Visible = Fin, Active = m => m.Is("Reconciliation") },
             new() { Key = "posting-rules", Title = "Cấu hình bút toán", Icon = "bi-sliders", Controller = "PostingRules", Visible = Fin, Active = m => m.Is("PostingRules") },
         }},
         new() { Key = "debts", Title = "Phải thu · Phải trả", Icon = "bi-arrow-down-up", Tint = "#ecfdf5", Items = new MenuItem[]

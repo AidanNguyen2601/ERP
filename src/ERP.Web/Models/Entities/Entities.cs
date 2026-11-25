@@ -288,6 +288,10 @@ public class PurchaseOrderLine
     public int VatRate { get; set; }
     public decimal ReceivedQty { get; set; }
     public decimal InvoicedQty { get; set; }
+    /// <summary>Số lượng đã trả lại nhà cung cấp khi CHƯA lập hóa đơn (giảm số lượng còn phải lập hóa đơn; phần đã có hóa đơn được cấn trừ công nợ)</summary>
+    public decimal ReturnedQty { get; set; }
+    /// <summary>Số lượng còn có thể lập hóa đơn mua = đã nhận − đã trả chưa lập hóa đơn − đã lập hóa đơn</summary>
+    [NotMapped] public decimal BillableQty => ReceivedQty - ReturnedQty - InvoicedQty;
     [NotMapped] public decimal Amount => Math.Round(Quantity * UnitPrice, 0);
 }
 
@@ -742,4 +746,50 @@ public class QcNonconformance
     [StringLength(150)] public string? ClosedBy { get; set; }
 
     [NotMapped] public bool IsOverdue => Status == NcrStatus.Open && DueDate.HasValue && DueDate.Value.Date < DateTime.Today;
+}
+
+// =====================================================================
+//  TRẢ HÀNG NHÀ CUNG CẤP (từ xử lý NCR chất lượng)
+// =====================================================================
+/// <summary>
+/// Trả hàng nhà cung cấp theo từng dòng đơn mua: phần chưa lập hóa đơn giảm số lượng phải lập hóa đơn (và giảm hàng nhập chưa có hóa đơn),
+/// phần đã có hóa đơn được cấn trừ vào công nợ hóa đơn kèm hoàn thuế GTGT đầu vào.
+/// </summary>
+public class PurchaseReturn
+{
+    public int Id { get; set; }
+    public int NcrId { get; set; }
+    public QcNonconformance? Ncr { get; set; }
+    public int InventoryDocId { get; set; }
+    public InventoryDoc? InventoryDoc { get; set; }
+    public int PurchaseOrderLineId { get; set; }
+    public PurchaseOrderLine? PurchaseOrderLine { get; set; }
+    public DateTime Date { get; set; } = DateTime.Today;
+    public decimal Quantity { get; set; }
+    /// <summary>Phần chưa lập hóa đơn</summary>
+    public decimal QtyUnbilled { get; set; }
+    /// <summary>Phần đã lập hóa đơn</summary>
+    public decimal QtyBilled { get; set; }
+    public decimal UnitPrice { get; set; }
+    /// <summary>Giá trị trả lại theo giá mua (chưa thuế) = phần chưa lập hóa đơn + phần đã lập hóa đơn</summary>
+    public decimal Amount { get; set; }
+    /// <summary>Phần giá trị của số lượng đã lập hóa đơn (chưa thuế)</summary>
+    public decimal BilledAmount { get; set; }
+    /// <summary>Thuế GTGT đầu vào được hoàn (chỉ phần đã lập hóa đơn)</summary>
+    public decimal VatAmount { get; set; }
+    /// <summary>Phần giảm trừ chưa cấn trừ được vào hóa đơn nào (hóa đơn đã thanh toán hết) – nhà cung cấp còn nợ lại</summary>
+    public decimal Unapplied { get; set; }
+    public int? AdjustJournalEntryId { get; set; }
+    public ICollection<InvoiceOffset> Offsets { get; set; } = new List<InvoiceOffset>();
+}
+
+/// <summary>Cấn trừ công nợ một hóa đơn mua bằng giá trị hàng trả lại (đã cộng vào Invoice.PaidAmount)</summary>
+public class InvoiceOffset
+{
+    public int Id { get; set; }
+    public int PurchaseReturnId { get; set; }
+    public PurchaseReturn? PurchaseReturn { get; set; }
+    public int InvoiceId { get; set; }
+    public Invoice? Invoice { get; set; }
+    public decimal Amount { get; set; }
 }

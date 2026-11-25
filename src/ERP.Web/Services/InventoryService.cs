@@ -69,10 +69,10 @@ public class InventoryService
             foreach (var l in doc.Lines) l.Quantity = (l.CountedQty ?? 0) - Level(l.ItemId, doc.WarehouseId).Quantity;
 
         var moves = new List<StockMove>();
-        void Move(InventoryDocLine l, int whId, decimal qty, decimal unitCost) => moves.Add(new StockMove
+        void Move(InventoryDocLine l, int whId, decimal qty, decimal unitCost, decimal? amount = null) => moves.Add(new StockMove
         {
             Date = doc.Date, ItemId = l.ItemId, WarehouseId = whId, Quantity = qty, UnitCost = unitCost,
-            Amount = Math.Round(qty * unitCost, 0), DocNumber = doc.Number, Description = doc.Reason
+            Amount = amount ?? Math.Round(qty * unitCost, 0), DocNumber = doc.Number, Description = doc.Reason
         });
 
         var shortages = new List<string>();
@@ -100,9 +100,16 @@ public class InventoryService
                 var qty = Math.Abs(l.Quantity);
                 var lv = Level(item.Id, doc.WarehouseId);
                 if (lv.Quantity < qty) { shortages.Add($"{item.Code} (tồn {lv.Quantity.ToQty()}, cần {qty.ToQty()})"); continue; }
+                // Xuất hết toàn bộ tồn của mặt hàng (mọi kho): giá trị xuất = toàn bộ giá trị còn trên sổ kho, không để dư do làm tròn giá bình quân
+                var amount = Math.Round(qty * item.AvgCost, 0);
+                if (doc.Type != InvDocType.Transfer && qty == TotalQty(item.Id))
+                {
+                    var book = await _db.StockMoves.Where(m => m.ItemId == item.Id).SumAsync(m => m.Amount) + moves.Where(m => m.ItemId == item.Id).Sum(m => m.Amount);
+                    if (book >= 0) amount = book;
+                }
                 lv.Quantity -= qty;
-                l.UnitCost = item.AvgCost; l.Amount = Math.Round(qty * item.AvgCost, 0);
-                Move(l, doc.WarehouseId, -qty, item.AvgCost);
+                l.UnitCost = qty == 0 ? item.AvgCost : Math.Round(amount / qty, 2); l.Amount = amount;
+                Move(l, doc.WarehouseId, -qty, item.AvgCost, doc.Type == InvDocType.Transfer ? null : -amount);
                 if (doc.Type == InvDocType.Transfer)
                 {
                     Level(item.Id, doc.ToWarehouseId!.Value).Quantity += qty;

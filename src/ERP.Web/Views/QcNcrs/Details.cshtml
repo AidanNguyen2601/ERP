@@ -4,6 +4,7 @@
     ViewData["Title"] = $"Báo cáo không phù hợp {Model.Number}";
     var canManage = (bool)ViewBag.CanManage; var canExecute = (bool)ViewBag.CanExecute;
     var needsStock = Model.Disposition is NcrDisposition.Scrap or NcrDisposition.ReturnToVendor;
+    var rets = (List<PurchaseReturn>)ViewBag.Returns;
     Account? counter = Model.Disposition switch
     {
         NcrDisposition.Scrap => await Acc.RuleAccountAsync(PostingCatalog.QcScrap),
@@ -58,11 +59,30 @@
                 {
                     <p class="mb-1">Đã lập phiếu <a asp-controller="Inventory" asp-action="Details" asp-route-id="@Model.InventoryDocId"><b>@Model.InventoryDoc.Number</b></a> ngày @Model.InventoryDoc.Date.ToDate().</p>
                     <p class="small text-muted mb-0">Bút toán: Nợ @Model.InventoryDoc.CounterAccount?.Code / Có TK kho, giá trị @Model.InventoryDoc.TotalAmount.ToMoney() đ (xem trên phiếu kho).</p>
+                    @if (rets.Any())
+                    {
+                        <hr class="my-2" />
+                        <div class="small fw-semibold mb-1">Tác động lên công nợ, thuế và đơn mua</div>
+                        <table class="table table-sm small mb-0" data-grid="off"><thead><tr><th>Đơn mua</th><th class="num">SL</th><th class="num">Giá trị</th><th class="num">Thuế hoàn</th><th>Cấn trừ hóa đơn</th></tr></thead><tbody>
+                        @foreach (var r in rets)
+                        {
+                            <tr><td><a asp-controller="PurchaseOrders" asp-action="Details" asp-route-id="@r.PurchaseOrderLine?.PurchaseOrderId">@r.PurchaseOrderLine?.PurchaseOrder?.Number</a></td>
+                                <td class="num">@r.Quantity.ToQty()</td><td class="num">@r.Amount.ToMoney()</td><td class="num">@(r.VatAmount > 0 ? r.VatAmount.ToMoney() : "")</td>
+                                <td>@foreach (var o in r.Offsets) { <div>@(o.Invoice?.InvoiceNo ?? o.Invoice?.Number): @o.Amount.ToMoney()</div> }
+                                    @if (r.QtyUnbilled > 0) { <div class="text-muted">@r.QtyUnbilled.ToQty() chưa lập hóa đơn → giảm số lượng phải lập hóa đơn</div> }
+                                    @if (r.Unapplied > 0) { <div class="warn">Chưa cấn trừ @r.Unapplied.ToMoney() (hóa đơn đã thanh toán hết – NCC còn nợ lại)</div> }</td></tr>
+                        }
+                        </tbody></table>
+                    }
                 }
                 else
                 {
                     <p class="small">Bút toán sẽ ghi: <b>Nợ @counter?.Code</b> (@counter?.Name) / <b>Có TK kho</b> theo giá vốn bình quân.
                         <a asp-controller="PostingRules" asp-action="Index" asp-fragment="tx-@(Model.Disposition == NcrDisposition.Scrap ? "qc-scrap" : "qc-return")" class="small">Cấu hình bút toán</a></p>
+                    @if (Model.Disposition == NcrDisposition.ReturnToVendor)
+                    {
+                        <p class="small text-muted">Hệ thống đồng thời: ghi giảm công nợ nhà cung cấp theo <b>giá mua</b> (chênh lệch so với giá vốn kho vào TK chênh lệch), hoàn <b>thuế GTGT đầu vào</b> và cấn trừ vào <b>hóa đơn mua</b> đối với phần đã có hóa đơn; phần chưa có hóa đơn giảm số lượng phải lập hóa đơn trên đơn mua.</p>
+                    }
                     @if (canExecute && Model.Status == NcrStatus.Open)
                     {
                         <form asp-action="Execute" asp-route-id="@Model.Id" method="post" class="d-flex gap-2 align-items-end" data-confirm="Lập và ghi sổ phiếu xuất kho @Model.Quantity.ToQty() @Model.Item?.Unit?">

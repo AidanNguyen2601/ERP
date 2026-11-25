@@ -101,6 +101,7 @@ public class InvoiceService
     public async Task CancelAsync(Invoice inv, string reason)
     {
         if (inv.Status == InvoiceStatus.Cancelled) throw new BusinessException("Hóa đơn đã hủy.");
+        if (inv.Series == AssetService.AssetInvoiceSeries) throw new BusinessException("Công nợ này phát sinh từ ghi tăng TSCĐ: điều chỉnh hoặc thanh lý tài sản thay vì hủy chứng từ.");
         if (inv.PaidAmount > 0) throw new BusinessException("Hóa đơn đã thanh toán một phần, hãy hủy phiếu thu / chi trước.");
         if (inv.Status == InvoiceStatus.Issued) await _acc.ReverseAsync(inv.JournalEntryId, DateTime.Today, reason);
         await ReleaseOrderQtyAsync(inv);
@@ -178,7 +179,7 @@ public class PurchaseService
         if (po.Status is PoStatus.Draft or PoStatus.PendingApproval or PoStatus.Cancelled) return;
         var received = po.Lines.All(l => l.ReceivedQty >= l.Quantity);
         var any = po.Lines.Any(l => l.ReceivedQty > 0);
-        var invoiced = po.Lines.All(l => l.InvoicedQty >= l.Quantity);
+        var invoiced = po.Lines.All(l => l.InvoicedQty + l.ReturnedQty >= l.Quantity);
         po.Status = received && invoiced ? PoStatus.Completed : received ? PoStatus.Received : any ? PoStatus.PartiallyReceived : PoStatus.Approved;
     }
 
@@ -225,7 +226,7 @@ public class PurchaseService
     /// <summary>Lập hóa đơn mua (nháp) cho phần đã nhận chưa có hóa đơn</summary>
     public async Task<Invoice> CreateInvoiceAsync(PurchaseOrder po, DateTime date, string? series, string? invoiceNo)
     {
-        var lines = po.Lines.Where(l => l.ReceivedQty - l.InvoicedQty > 0).ToList();
+        var lines = po.Lines.Where(l => l.BillableQty > 0).ToList();
         if (!lines.Any()) throw new BusinessException("Không còn hàng đã nhận chưa có hóa đơn.");
         var vendor = await _db.Partners.FindAsync(po.VendorId);
         var inv = new Invoice
@@ -236,7 +237,7 @@ public class PurchaseService
         };
         foreach (var l in lines)
         {
-            var q = l.ReceivedQty - l.InvoicedQty;
+            var q = l.BillableQty;
             inv.Lines.Add(new InvoiceLine
             {
                 ItemId = l.ItemId, Description = l.Item?.Name ?? "", Unit = l.Item?.Unit, Quantity = q, UnitPrice = l.UnitPrice,

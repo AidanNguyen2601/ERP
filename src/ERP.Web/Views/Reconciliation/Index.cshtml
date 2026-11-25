@@ -1,0 +1,58 @@
+@model List<ReconCheck>
+@{
+    ViewData["Title"] = "Đối chiếu phân hệ – kế toán";
+    var bad = Model.Count(c => !c.Ok);
+    string Fmt(ReconCheck c, decimal v) => c.Kind == ReconKind.Qty ? v.ToQty() : v.ToMoney();
+}
+<div class="alert @(bad == 0 ? "alert-success" : "alert-warning") d-flex align-items-center gap-2">
+    <i class="bi @(bad == 0 ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill") fs-5"></i>
+    <div>@if (bad == 0) { <b>Tất cả @Model.Count phép đối chiếu đều khớp.</b> <span>Các phân hệ và sổ cái đang đồng bộ.</span> }
+        else { <b>@bad / @Model.Count phép đối chiếu có chênh lệch.</b> <span>Bấm vào từng mục để xem chi tiết và mở chứng từ cần xử lý.</span> }</div>
+</div>
+
+<div class="card mb-3"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0 align-middle" data-grid="off">
+    <thead><tr><th style="width:50px">Mã</th><th>Phép đối chiếu</th><th class="num">Số mục kiểm tra</th><th class="num">Phân hệ</th><th class="num">Sổ cái / chứng từ</th><th class="num">Lỗi</th><th style="width:110px">Kết quả</th></tr></thead>
+    <tbody>
+    @foreach (var g in Model.GroupBy(c => c.Group))
+    {
+        <tr class="group"><td colspan="7" class="fw-semibold bg-light">@g.Key</td></tr>
+        foreach (var c in g)
+        {
+            <tr>
+                <td class="text-muted">@c.Code</td>
+                <td><a href="#chk-@c.Code" class="text-decoration-none">@c.Title</a></td>
+                <td class="num">@c.Checked</td>
+                <td class="num">@(c.Kind == ReconKind.Count ? "" : Fmt(c, c.LeftTotal))</td>
+                <td class="num">@(c.Kind == ReconKind.Count ? "" : Fmt(c, c.RightTotal))</td>
+                <td class="num @(c.Ok ? "" : "bad fw-semibold")">@c.Rows.Count</td>
+                <td>@if (c.Ok) { <span class="badge bg-success">Khớp</span> } else { <span class="badge bg-danger">Lệch</span> }</td>
+            </tr>
+        }
+    }
+    </tbody>
+</table></div></div></div>
+
+@foreach (var c in Model.Where(c => !c.Ok))
+{
+    <div class="card mb-3" id="chk-@c.Code">
+        <div class="card-header d-flex justify-content-between"><span><span class="badge bg-danger me-2">@c.Code</span>@c.Title</span><span class="small text-muted fw-normal">@c.Rows.Count mục lệch</span></div>
+        <div class="card-body">
+            <p class="small text-muted mb-2">@c.Description</p>
+            @if (!string.IsNullOrEmpty(c.Hint)) { <p class="small mb-2"><i class="bi bi-lightbulb"></i> @c.Hint</p> }
+            <div class="table-responsive"><table class="table table-sm mb-0" data-grid="off">
+                <thead><tr><th>Đối tượng / chứng từ</th><th>Nội dung</th>@if (c.Kind != ReconKind.Count) { <th class="num">@c.LeftLabel</th><th class="num">@c.RightLabel</th><th class="num">Chênh lệch</th> }<th>Ghi chú</th></tr></thead>
+                <tbody>
+                @foreach (var r in c.Rows.Take(100))
+                {
+                    <tr>
+                        <td>@if (r.Url != null) { <a href="@r.Url">@r.Key</a> } else { @r.Key }</td><td>@r.Name</td>
+                        @if (c.Kind != ReconKind.Count) { <td class="num">@Fmt(c, r.Left)</td><td class="num">@Fmt(c, r.Right)</td><td class="num bad">@Fmt(c, r.Diff)</td> }
+                        <td class="small text-muted">@r.Note</td>
+                    </tr>
+                }
+                </tbody>
+            </table></div>
+            @if (c.Rows.Count > 100) { <div class="small text-muted mt-1">Hiển thị 100 / @c.Rows.Count dòng đầu.</div> }
+        </div>
+    </div>
+}

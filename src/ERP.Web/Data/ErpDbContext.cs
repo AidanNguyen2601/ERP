@@ -54,6 +54,8 @@ public class ErpDbContext : DbContext
     public DbSet<QcInspection> QcInspections => Set<QcInspection>();
     public DbSet<QcInspectionLine> QcInspectionLines => Set<QcInspectionLine>();
     public DbSet<QcNonconformance> QcNonconformances => Set<QcNonconformance>();
+    public DbSet<PurchaseReturn> PurchaseReturns => Set<PurchaseReturn>();
+    public DbSet<InvoiceOffset> InvoiceOffsets => Set<InvoiceOffset>();
 
     /// <summary>Mọi cột tiền / số lượng: decimal(18,2)</summary>
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
@@ -94,6 +96,8 @@ public class ErpDbContext : DbContext
         modelBuilder.Entity<QcInspection>().HasIndex(x => x.Number).IsUnique();
         modelBuilder.Entity<QcInspection>().HasIndex(x => new { x.Origin, x.OriginId });
         modelBuilder.Entity<QcNonconformance>().HasIndex(x => x.Number).IsUnique();
+        modelBuilder.Entity<PurchaseReturn>().HasIndex(x => x.NcrId);
+        modelBuilder.Entity<PurchaseReturn>().HasIndex(x => x.PurchaseOrderLineId);
         modelBuilder.Entity<QcPlanLine>().HasOne(l => l.QcPlan).WithMany(p => p.Lines).HasForeignKey(l => l.QcPlanId);
         modelBuilder.Entity<QcInspectionLine>().HasOne(l => l.QcInspection).WithMany(p => p.Lines).HasForeignKey(l => l.QcInspectionId);
 

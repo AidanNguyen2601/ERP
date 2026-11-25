@@ -39,6 +39,8 @@ public class PurchaseOrdersController : ErpControllerBase
         if (po == null) return NotFound();
         ViewBag.Receipts = await Db.InventoryDocs.Include(d => d.Lines).Where(d => d.Origin == DocOrigin.Purchase && d.OriginId == id).OrderBy(d => d.Date).ToListAsync();
         ViewBag.Invoices = await Db.Invoices.Where(i => i.PurchaseOrderId == id).OrderBy(i => i.Date).ToListAsync();
+        ViewBag.Returns = await Db.PurchaseReturns.Include(r => r.PurchaseOrderLine).ThenInclude(l => l!.Item).Include(r => r.Ncr).Include(r => r.InventoryDoc).Include(r => r.Offsets)
+            .Where(r => r.PurchaseOrderLine!.PurchaseOrderId == id).OrderBy(r => r.Date).ThenBy(r => r.Id).ToListAsync();
         ViewBag.CanEdit = CanEdit; ViewBag.CanReceive = CanReceive; ViewBag.Threshold = _svc.ApprovalThreshold;
         return View(po);
     }

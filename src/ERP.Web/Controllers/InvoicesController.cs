@@ -156,8 +156,10 @@ public class InvoicesController : ErpControllerBase
         var y = year ?? DateTime.Today.Year; var m = month ?? DateTime.Today.Month;
         var f = new DateTime(y, m, 1); var t = f.AddMonths(1).AddDays(-1);
         var list = await Db.Invoices.Include(i => i.Partner).Include(i => i.Lines)
-            .Where(i => i.Status == InvoiceStatus.Issued && i.Date >= f && i.Date <= t && i.Series != "DK").OrderBy(i => i.Date).ThenBy(i => i.InvoiceNo).ToListAsync();
+            .Where(i => i.Status == InvoiceStatus.Issued && i.Date >= f && i.Date <= t && i.Series != "DK" && i.Series != AssetService.AssetInvoiceSeries).OrderBy(i => i.Date).ThenBy(i => i.InvoiceNo).ToListAsync();
         ViewBag.Year = y; ViewBag.Month = m;
+        ViewBag.Returns = await Db.PurchaseReturns.Include(r => r.Ncr).Include(r => r.PurchaseOrderLine).ThenInclude(l => l!.Item).Include(r => r.PurchaseOrderLine).ThenInclude(l => l!.PurchaseOrder)
+            .Where(r => r.Date >= f && r.Date <= t && r.VatAmount > 0).OrderBy(r => r.Date).ToListAsync();
         return View(list);
     }
 

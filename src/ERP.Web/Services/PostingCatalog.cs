@@ -35,7 +35,7 @@ public static class PostingCatalog
     public const string ScSurplus = "SC.Surplus", ScShortage = "SC.Shortage";
     public const string AdLoss = "AD.Loss", AdIncome = "AD.Income";
     public const string PcSummary = "PC.Summary", PcRetained = "PC.Retained";
-    public const string QcScrap = "QC.Scrap", QcReturnPayable = "QC.ReturnPayable";
+    public const string QcScrap = "QC.Scrap", QcReturnPayable = "QC.ReturnPayable", QcReturnVariance = "QC.ReturnVariance";
 
     private const string Inventory = "TK hàng tồn kho theo loại hàng (cấu hình ở nhóm \"Hàng tồn kho\")";
 
@@ -109,9 +109,11 @@ public static class PostingCatalog
             new(null, "Có", Inventory),
         }),
         new("qc-return", "Trả lại hàng không đạt cho nhà cung cấp", "bi-arrow-return-left", "Quản lý chất lượng",
-            "NCR quyết định trả lại nhà cung cấp: giảm hàng tồn kho, giảm công nợ phải trả (theo giá vốn bình quân).", new PostingLineDef[]
+            "NCR quyết định trả lại nhà cung cấp: giảm hàng tồn kho theo giá vốn, giảm công nợ phải trả theo giá mua (kèm hoàn thuế GTGT đầu vào, cấn trừ vào hóa đơn mua).", new PostingLineDef[]
         {
-            new(QcReturnPayable, "Nợ", "Giảm phải trả nhà cung cấp", "331", new[] { "331", "1388" }),
+            new(QcReturnPayable, "Nợ", "Giảm phải trả nhà cung cấp (theo giá vốn bình quân)", "331", new[] { "331", "1388" }),
+            new(QcReturnVariance, "Nợ / Có", "Chênh lệch giá mua so với giá vốn bình quân khi trả hàng", "632", new[] { "632", "711", "811", "1562" }, "Phần giá mua cao / thấp hơn giá vốn kho được ghi vào đây để công nợ giảm đúng bằng giá trên hóa đơn"),
+            new(null, "Nợ / Có", "Thuế GTGT đầu vào được hoàn (phần đã lập hóa đơn): Nợ 331 / Có TK thuế đầu vào cấu hình ở \"Ghi sổ hóa đơn mua vào\""),
             new(null, "Có", Inventory),
         }),
         new("asset-disposal", "Thanh lý / nhượng bán TSCĐ", "bi-building-dash", "Tài sản",

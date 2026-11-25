@@ -2,10 +2,11 @@
 @{
     ViewData["Title"] = $"Đơn mua {Model.Number}";
     var receipts = (List<InventoryDoc>)ViewBag.Receipts; var invs = (List<Invoice>)ViewBag.Invoices;
+    var rets = (List<PurchaseReturn>)ViewBag.Returns;
     var canEdit = (bool)ViewBag.CanEdit; var canRec = (bool)ViewBag.CanReceive; var canAcc = User.CanAccounting();
     var steps = new[] { PoStatus.Draft, PoStatus.PendingApproval, PoStatus.Approved, PoStatus.PartiallyReceived, PoStatus.Received, PoStatus.Completed };
     var cur = Array.IndexOf(steps, Model.Status);
-    var toBill = Model.Lines.Sum(l => l.ReceivedQty - l.InvoicedQty);
+    var toBill = Model.Lines.Sum(l => l.BillableQty);
 }
 <div class="flow mb-3">
 @for (var i = 0; i < steps.Length; i++) { if (i > 0) { <span class="arrow">›</span> } <span class="step @(Model.Status == PoStatus.Cancelled ? "" : i < cur ? "done" : i == cur ? "current" : "")">@steps[i].GetDisplayName()</span> }
@@ -71,3 +72,18 @@
         </form>
     }</div></div>
 </div>
+@if (rets.Any())
+{
+    <div class="card mt-3"><div class="card-header"><i class="bi bi-arrow-return-left me-1"></i> Trả hàng nhà cung cấp (từ xử lý NCR chất lượng)</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0" data-grid="off">
+        <thead><tr><th>Ngày</th><th>NCR</th><th>Phiếu kho</th><th>Mặt hàng</th><th class="num">SL trả</th><th class="num">Chưa lập HĐ</th><th class="num">Đã lập HĐ</th><th class="num">Giá trị (chưa thuế)</th><th class="num">Hoàn thuế GTGT</th><th class="num">Cấn trừ hóa đơn</th><th class="num">Chưa cấn trừ</th></tr></thead>
+        <tbody>
+        @foreach (var r in rets)
+        {
+            <tr><td>@r.Date.ToDate()</td><td><a asp-controller="QcNcrs" asp-action="Details" asp-route-id="@r.NcrId">@r.Ncr?.Number</a></td>
+                <td><a asp-controller="Inventory" asp-action="Details" asp-route-id="@r.InventoryDocId">@r.InventoryDoc?.Number</a></td><td>@r.PurchaseOrderLine?.Item?.Code</td>
+                <td class="num">@r.Quantity.ToQty()</td><td class="num">@r.QtyUnbilled.ToQty()</td><td class="num">@r.QtyBilled.ToQty()</td>
+                <td class="num">@r.Amount.ToMoney()</td><td class="num">@r.VatAmount.ToMoney()</td><td class="num">@r.Offsets.Sum(o => o.Amount).ToMoney()</td><td class="num">@(r.Unapplied > 0 ? r.Unapplied.ToMoney() : "")</td></tr>
+        }
+        </tbody>
+    </table></div></div></div>
+}
