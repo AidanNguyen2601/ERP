@@ -101,6 +101,7 @@ public class InvoiceService
     public async Task CancelAsync(Invoice inv, string reason)
     {
         if (inv.Status == InvoiceStatus.Cancelled) throw new BusinessException("Hóa đơn đã hủy.");
+        if (await _db.SalesCreditNotes.AnyAsync(n => n.InvoiceId == inv.Id && n.Status == DocStatus.Posted)) throw new BusinessException("Hóa đơn đã có hóa đơn điều chỉnh giảm (hàng trả lại / giảm giá): hủy các chứng từ điều chỉnh trước.");
         if (inv.Series == AssetService.AssetInvoiceSeries) throw new BusinessException("Công nợ này phát sinh từ ghi tăng TSCĐ: điều chỉnh hoặc thanh lý tài sản thay vì hủy chứng từ.");
         if (inv.PaidAmount > 0) throw new BusinessException("Hóa đơn đã thanh toán một phần, hãy hủy phiếu thu / chi trước.");
         if (inv.Status == InvoiceStatus.Issued) await _acc.ReverseAsync(inv.JournalEntryId, DateTime.Today, reason);

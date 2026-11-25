@@ -167,6 +167,18 @@ public class InventoryController : ErpControllerBase
         return View(moves.Where(m => m.Date >= f && m.Date <= t).ToList());
     }
 
+    /// <summary>Hủy (đảo) phiếu kho đã ghi sổ</summary>
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Cancel(int id, string? reason)
+    {
+        if (!CanWrite) return Denied();
+        var d = await Db.InventoryDocs.Include(x => x.Lines).FirstOrDefaultAsync(x => x.Id == id);
+        if (d == null) return NotFound();
+        await _inv.ReverseAsync(d, DateTime.Today, reason ?? "");
+        Success($"Đã hủy phiếu {d.Number}: tồn kho và bút toán đã được đảo lại.");
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
     // ------------------------------------------------------------------ Danh mục kho
     public async Task<IActionResult> Warehouses() => View(await Db.Warehouses.OrderBy(w => w.Code).ToListAsync());
 

@@ -1,0 +1,30 @@
+@model List<SalesCreditNote>
+@{
+    ViewData["Title"] = "Hàng bán trả lại / giảm giá";
+    var kind = ViewBag.Kind as CreditNoteKind?;
+}
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@(((DateTime)ViewBag.To).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Loại</label><select name="kind" class="form-select form-select-sm"><option value="">-- Tất cả --</option>
+        @foreach (CreditNoteKind k in Enum.GetValues<CreditNoteKind>()) { <option value="@k" selected="@(kind == k)">@k.GetDisplayName()</option> }</select></div>
+    <div><label class="form-label small mb-0">Tìm</label><input name="q" value="@ViewBag.Q" class="form-control form-control-sm" placeholder="Số chứng từ, khách, số HĐ" /></div>
+    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-funnel"></i> Lọc</button>
+    <span class="ms-auto small text-muted">Lập từ trang chi tiết <a asp-controller="Invoices" asp-action="Index" asp-route-direction="Sales">hóa đơn bán ra</a>: nút <b>Hàng trả lại</b> / <b>Giảm giá</b>.</span>
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Số chứng từ</th><th>Ngày</th><th>Loại</th><th>Khách hàng</th><th>Hóa đơn gốc</th><th class="num">Tiền hàng</th><th class="num">Thuế</th><th class="num">Tổng giảm</th><th>Lý do</th><th>Trạng thái</th></tr></thead>
+    <tbody>
+    @foreach (var n in Model)
+    {
+        <tr class="@(n.Status == DocStatus.Cancelled ? "text-muted" : "")">
+            <td><a asp-action="Details" asp-route-id="@n.Id"><b>@n.Number</b></a></td><td>@n.Date.ToDate()</td><td>@n.Kind.GetDisplayName()</td><td>@n.Customer?.Name</td>
+            <td><a asp-controller="Invoices" asp-action="Details" asp-route-id="@n.InvoiceId">@n.Invoice?.Series @n.Invoice?.InvoiceNo</a></td>
+            <td class="num">@n.Subtotal.ToMoney()</td><td class="num">@n.VatAmount.ToMoney()</td><td class="num">@n.Total.ToMoney()</td>
+            <td class="small" style="max-width:260px">@n.Reason</td>
+            <td>@if (n.Status == DocStatus.Posted) { <span class="badge bg-success">Đã ghi sổ</span> } else { <span class="badge bg-secondary">Đã hủy</span> }</td>
+        </tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="10" class="text-center text-muted py-3">Chưa có hóa đơn điều chỉnh giảm trong khoảng thời gian này.</td></tr> }
+    </tbody>
+</table></div></div></div>

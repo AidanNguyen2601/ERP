@@ -35,6 +35,7 @@ public class InvoicesController : ErpControllerBase
             .Include(x => x.SalesOrder).Include(x => x.PurchaseOrder).Include(x => x.CreatedBy).FirstOrDefaultAsync(x => x.Id == id);
         if (i == null) return NotFound();
         ViewBag.Payments = await Db.PaymentAllocations.Include(a => a.CashVoucher).Where(a => a.InvoiceId == id).ToListAsync();
+        ViewBag.CreditNotes = await Db.SalesCreditNotes.Where(n => n.InvoiceId == id).OrderBy(n => n.Date).ThenBy(n => n.Id).ToListAsync();
         ViewBag.Company = _cfg;
         return View(i);
     }
@@ -158,6 +159,7 @@ public class InvoicesController : ErpControllerBase
         var list = await Db.Invoices.Include(i => i.Partner).Include(i => i.Lines)
             .Where(i => i.Status == InvoiceStatus.Issued && i.Date >= f && i.Date <= t && i.Series != "DK" && i.Series != AssetService.AssetInvoiceSeries).OrderBy(i => i.Date).ThenBy(i => i.InvoiceNo).ToListAsync();
         ViewBag.Year = y; ViewBag.Month = m;
+        ViewBag.CreditNotes = await Db.SalesCreditNotes.Include(n => n.Customer).Include(n => n.Invoice).Where(n => n.Status == DocStatus.Posted && n.Date >= f && n.Date <= t && n.VatAmount > 0).OrderBy(n => n.Date).ToListAsync();
         ViewBag.Returns = await Db.PurchaseReturns.Include(r => r.Ncr).Include(r => r.PurchaseOrderLine).ThenInclude(l => l!.Item).Include(r => r.PurchaseOrderLine).ThenInclude(l => l!.PurchaseOrder)
             .Where(r => r.Date >= f && r.Date <= t && r.VatAmount > 0).OrderBy(r => r.Date).ToListAsync();
         return View(list);

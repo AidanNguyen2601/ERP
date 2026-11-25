@@ -21,6 +21,16 @@
                 <form asp-action="Post" asp-route-id="@Model.Id" method="post"><button class="btn btn-sm btn-success">Ghi sổ</button></form>
                 <form asp-action="Delete" asp-route-id="@Model.Id" method="post" data-confirm="Xóa phiếu nháp?"><button class="btn btn-sm btn-outline-danger">Xóa</button></form>
             }
+            @if (can && Model.Status == DocStatus.Posted)
+            {
+                if (InventoryService.OwnerCancelHint(Model) is { } hint) { <span class="small text-muted align-self-center" title="@hint"><i class="bi bi-info-circle"></i> Không hủy trực tiếp</span> }
+                else
+                {
+                    <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="d-inline-flex gap-1" data-confirm="Hủy phiếu @Model.Number? Tồn kho và bút toán sẽ được đảo lại.">
+                        <input name="reason" class="form-control form-control-sm" style="width:200px" placeholder="Lý do hủy (bắt buộc)" required />
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x-octagon"></i> Hủy phiếu</button></form>
+                }
+            }
         </div>
     </div>
     <table class="table table-sm">

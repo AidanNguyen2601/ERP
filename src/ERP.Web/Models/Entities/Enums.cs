@@ -55,7 +55,8 @@ public enum DocOrigin
     [Display(Name = "Mua hàng")] Purchase = 2,
     [Display(Name = "Bán hàng")] Sales = 3,
     [Display(Name = "Sản xuất")] Production = 4,
-    [Display(Name = "Quản lý chất lượng")] Quality = 5
+    [Display(Name = "Quản lý chất lượng")] Quality = 5,
+    [Display(Name = "Hàng bán bị trả lại")] SalesReturn = 6
 }
 
 public enum PoStatus
@@ -179,4 +180,11 @@ public enum NcrStatus
 {
     [Display(Name = "Đang xử lý")] Open = 1,
     [Display(Name = "Đã đóng")] Closed = 2
+}
+
+/// <summary>Loại hóa đơn điều chỉnh giảm bán hàng</summary>
+public enum CreditNoteKind
+{
+    [Display(Name = "Hàng bán bị trả lại")] Return = 1,
+    [Display(Name = "Giảm giá hàng bán")] PriceReduction = 2
 }

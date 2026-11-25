@@ -35,6 +35,7 @@ public static class PostingCatalog
     public const string ScSurplus = "SC.Surplus", ScShortage = "SC.Shortage";
     public const string AdLoss = "AD.Loss", AdIncome = "AD.Income";
     public const string PcSummary = "PC.Summary", PcRetained = "PC.Retained";
+    public const string CnSalesReturn = "CN.SalesReturn", CnPriceReduction = "CN.PriceReduction";
     public const string QcScrap = "QC.Scrap", QcReturnPayable = "QC.ReturnPayable", QcReturnVariance = "QC.ReturnVariance";
 
     private const string Inventory = "TK hàng tồn kho theo loại hàng (cấu hình ở nhóm \"Hàng tồn kho\")";
@@ -56,6 +57,14 @@ public static class PostingCatalog
             new(SiRevenueProducts, "Có", "Doanh thu bán thành phẩm", "5112", new[] { "511" }),
             new(SiRevenueServices, "Có", "Doanh thu cung cấp dịch vụ", "5113", new[] { "511" }),
             new(SiVatOut, "Có", "Thuế GTGT đầu ra", "33311", new[] { "3331" }),
+        }),
+        new("sales-credit", "Hàng bán bị trả lại / giảm giá hàng bán", "bi-receipt", "Hóa đơn",
+            "Hóa đơn điều chỉnh giảm cho hóa đơn bán đã phát hành: giảm trừ doanh thu, hoàn thuế GTGT đầu ra, giảm công nợ phải thu (cấn trừ vào hóa đơn gốc). Hàng trả lại được nhập kho theo giá vốn lúc bán (Nợ 15x / Có TK giá vốn ở giao dịch \"Xuất kho giao hàng bán\").", new PostingLineDef[]
+        {
+            new(CnSalesReturn, "Nợ", "Hàng bán bị trả lại (giảm trừ doanh thu)", "5212", new[] { "521" }),
+            new(CnPriceReduction, "Nợ", "Giảm giá hàng bán (giảm trừ doanh thu)", "5213", new[] { "521" }),
+            new(null, "Nợ", "Thuế GTGT đầu ra được điều chỉnh giảm: TK cấu hình ở \"Phát hành hóa đơn bán ra\""),
+            new(null, "Có", "Phải thu khách hàng: TK cấu hình ở \"Phát hành hóa đơn bán ra\""),
         }),
         new("purchase-invoice", "Ghi sổ hóa đơn mua vào", "bi-file-earmark-text", "Hóa đơn",
             "Hóa đơn mua dịch vụ / chi phí trực tiếp và phần thuế GTGT của hóa đơn mua hàng theo đơn mua (giá trị hàng đã hạch toán khi nhập kho).", new PostingLineDef[]

@@ -52,7 +52,7 @@ public class ReconciliationService
             await ReceivableAsync(), await PayableAsync(),
             await CashAsync(), await AssetsCostAsync(), await AssetsDepAsync(), await WipAsync(),
             await VatAsync(), await RevenueAsync(), await CogsAsync(),
-            await OrderReceivedAsync(), await OrderDeliveredAsync(), await OrderInvoicedAsync(), await ProductionIssuedAsync(), await VendorReturnsAsync(),
+            await OrderReceivedAsync(), await OrderDeliveredAsync(), await OrderInvoicedAsync(), await ProductionIssuedAsync(), await VendorReturnsAsync(), await SalesCreditsAsync(),
         };
         return list;
     }
@@ -265,15 +265,18 @@ public class ReconciliationService
         var vouchers = await _db.CashVouchers.AsNoTracking().Where(v => v.Status == DocStatus.Posted && v.Purpose == CashPurpose.CustomerReceipt)
             .Select(v => new { v.PartnerId, v.Amount, Alloc = v.Allocations.Sum(a => a.Amount) }).ToListAsync();
         var unalloc = vouchers.GroupBy(v => v.PartnerId ?? 0).ToDictionary(g => g.Key, g => g.Sum(v => v.Amount - v.Alloc));
+        // Hóa đơn điều chỉnh giảm đã giảm TK 131 nhưng phần hóa đơn gốc đã thanh toán hết chưa cấn trừ được (khách còn được ghi có)
+        var creditUnapplied = (await _db.SalesCreditNotes.AsNoTracking().Where(n => n.Status == DocStatus.Posted && n.Unapplied > 0).Select(n => new { n.CustomerId, n.Unapplied }).ToListAsync())
+            .GroupBy(x => x.CustomerId).ToDictionary(g => g.Key, g => g.Sum(x => x.Unapplied));
         var names = await _db.Partners.AsNoTracking().ToDictionaryAsync(p => p.Id, p => p.Code + " – " + p.Name);
         var rows = new List<ReconRow>(); decimal lt = 0, rt = 0;
-        foreach (var p in gl.Keys.Union(inv.Keys).Union(unalloc.Keys).OrderBy(k => k))
+        foreach (var p in gl.Keys.Union(inv.Keys).Union(unalloc.Keys).Union(creditUnapplied.Keys).OrderBy(k => k))
         {
-            var sub = inv.GetValueOrDefault(p) - unalloc.GetValueOrDefault(p); // hóa đơn còn nợ − tiền thu chưa cấn trừ
+            var sub = inv.GetValueOrDefault(p) - unalloc.GetValueOrDefault(p) - creditUnapplied.GetValueOrDefault(p); // hóa đơn còn nợ − tiền thu chưa cấn trừ − điều chỉnh giảm chưa cấn trừ
             var led = gl.GetValueOrDefault(p);
             lt += sub; rt += led;
             if (Math.Abs(sub - led) >= Tolerance)
-                rows.Add(new ReconRow(p == 0 ? "—" : names.GetValueOrDefault(p, "#" + p), "Dư nợ phải thu theo hóa đơn ≠ TK 131", sub, led, $"Hóa đơn còn nợ {inv.GetValueOrDefault(p):N0} − thu chưa cấn trừ {unalloc.GetValueOrDefault(p):N0}", p == 0 ? null : $"/Debts/Statement/{p}?kind=ar"));
+                rows.Add(new ReconRow(p == 0 ? "—" : names.GetValueOrDefault(p, "#" + p), "Dư nợ phải thu theo hóa đơn ≠ TK 131", sub, led, $"Hóa đơn còn nợ {inv.GetValueOrDefault(p):N0} − thu chưa cấn trừ {unalloc.GetValueOrDefault(p):N0} − điều chỉnh giảm chưa cấn trừ {creditUnapplied.GetValueOrDefault(p):N0}", p == 0 ? null : $"/Debts/Statement/{p}?kind=ar"));
         }
         return new ReconCheck
         {
@@ -409,7 +412,8 @@ public class ReconciliationService
         var invs = await _db.Invoices.AsNoTracking().Where(i => i.Status == InvoiceStatus.Issued && i.Series != "DK").Select(i => new { i.Direction, i.VatAmount }).ToListAsync();
         var glOut = await _db.JournalLines.AsNoTracking().Where(l => l.JournalEntry!.Status == DocStatus.Posted && l.Account!.Code.StartsWith("3331")).SumAsync(l => l.Credit - l.Debit);
         var glIn = await _db.JournalLines.AsNoTracking().Where(l => l.JournalEntry!.Status == DocStatus.Posted && l.Account!.Code.StartsWith("133")).SumAsync(l => l.Debit - l.Credit);
-        var subOut = invs.Where(i => i.Direction == InvoiceDirection.Sales).Sum(i => i.VatAmount);
+        // Thuế đầu ra của bảng kê đã trừ thuế điều chỉnh giảm (hàng bán bị trả lại / giảm giá)
+        var subOut = invs.Where(i => i.Direction == InvoiceDirection.Sales).Sum(i => i.VatAmount) - (await _db.SalesCreditNotes.AsNoTracking().Where(n => n.Status == DocStatus.Posted).SumAsync(n => (decimal?)n.VatAmount) ?? 0);
         // Thuế đầu vào của bảng kê đã trừ thuế hoàn do trả hàng nhà cung cấp (điều chỉnh giảm)
         var subIn = invs.Where(i => i.Direction == InvoiceDirection.Purchase).Sum(i => i.VatAmount) - (await _db.PurchaseReturns.AsNoTracking().SumAsync(r => (decimal?)r.VatAmount) ?? 0);
         var rows = new List<ReconRow>();
@@ -438,14 +442,15 @@ public class ReconciliationService
     private async Task<ReconCheck> CogsAsync()
     {
         var docs = await _db.InventoryDocs.AsNoTracking().Where(d => d.Origin == DocOrigin.Sales && d.Type == InvDocType.Issue && d.Status == DocStatus.Posted).Select(d => d.Lines.Sum(l => l.Amount)).ToListAsync();
-        var sub = docs.Sum();
+        var returned = await _db.InventoryDocs.AsNoTracking().Where(d => d.Origin == DocOrigin.SalesReturn && d.Type == InvDocType.Receipt && d.Status == DocStatus.Posted).Select(d => d.Lines.Sum(l => l.Amount)).ToListAsync();
+        var sub = docs.Sum() - returned.Sum();   // giá vốn xuất bán − giá vốn hàng bán bị trả lại nhập lại kho
         var gl = await _db.JournalLines.AsNoTracking().Where(l => l.JournalEntry!.Status == DocStatus.Posted && l.JournalEntry.Source == JournalSource.Inventory && l.Account!.Code.StartsWith("632"))
             .SumAsync(l => l.Debit - l.Credit);
         var rows = Math.Abs(sub - gl) >= Tolerance ? new List<ReconRow> { new("632", "Giá vốn: Σ phiếu xuất bán ≠ phát sinh TK 632 từ nghiệp vụ kho", sub, gl) } : new();
         return new ReconCheck
         {
             Code = "C11", Group = "Số dư phân hệ ↔ sổ cái", Title = "Giá vốn phiếu xuất bán = TK 632", LeftLabel = "Phiếu xuất bán", RightLabel = "Sổ cái TK 632",
-            Description = "Tổng giá trị các phiếu xuất kho giao hàng bán phải bằng phát sinh Nợ TK 632 từ nghiệp vụ kho.", Rows = rows, Checked = docs.Count, LeftTotal = sub, RightTotal = gl
+            Description = "Tổng giá trị các phiếu xuất kho giao hàng bán (trừ hàng bán bị trả lại nhập lại kho) phải bằng phát sinh Nợ TK 632 từ nghiệp vụ kho.", Rows = rows, Checked = docs.Count, LeftTotal = sub, RightTotal = gl
         };
     }
 
@@ -492,6 +497,56 @@ public class ReconciliationService
         { n++; var q = byPo.GetValueOrDefault(l.Id); if (Math.Abs(l.InvoicedQty - q) >= 0.0005m) rows.Add(new ReconRow(l.PurchaseOrder!.Number, $"{l.Item?.Code}: SL đã lập hóa đơn trên đơn mua ≠ hóa đơn", l.InvoicedQty, q, null, $"/PurchaseOrders/Details/{l.PurchaseOrderId}")); }
         return new ReconCheck { Code = "D3", Group = "Đơn hàng ↔ chứng từ", Title = "Số lượng đã lập hóa đơn khớp dòng hóa đơn", Kind = ReconKind.Qty, LeftLabel = "Đơn hàng", RightLabel = "Hóa đơn",
             Description = "Số lượng đã xuất hóa đơn trên dòng đơn mua / bán phải bằng tổng số lượng các hóa đơn chưa hủy tham chiếu dòng đó.", Rows = rows, Checked = n };
+    }
+
+    private async Task<ReconCheck> SalesCreditsAsync()
+    {
+        var notes = await _db.SalesCreditNotes.AsNoTracking().Include(n => n.Lines).Include(n => n.Offsets).Include(n => n.InventoryDoc).ThenInclude(d => d!.Lines).ToListAsync();
+        var posted = notes.Where(n => n.Status == DocStatus.Posted).ToList();
+        var jids = posted.Where(n => n.JournalEntryId != null).Select(n => n.JournalEntryId!.Value).ToList();
+        var jl = (await _db.JournalLines.AsNoTracking().Include(l => l.Account).Where(l => jids.Contains(l.JournalEntryId)).ToListAsync()).GroupBy(l => l.JournalEntryId).ToDictionary(g => g.Key, g => g.ToList());
+        var reversed = (await _db.JournalEntries.AsNoTracking().Where(j => j.ReversalOfId != null).Select(j => j.ReversalOfId!.Value).ToListAsync()).ToHashSet();
+        var rows = new List<ReconRow>();
+        foreach (var n in notes)
+        {
+            var url = $"/SalesCreditNotes/Details/{n.Id}";
+            if (n.Status == DocStatus.Cancelled)
+            {
+                if (n.JournalEntryId != null && !reversed.Contains(n.JournalEntryId.Value)) rows.Add(new ReconRow(n.Number, "Chứng từ đã hủy nhưng bút toán chưa được đảo", n.Total, 0, null, url));
+                continue;
+            }
+            if (Math.Abs(n.Total - (n.Subtotal + n.VatAmount)) >= Tolerance || Math.Abs(n.Subtotal - n.Lines.Sum(l => l.Amount)) >= Tolerance || Math.Abs(n.VatAmount - n.Lines.Sum(l => l.VatAmount)) >= Tolerance)
+                rows.Add(new ReconRow(n.Number, "Tổng chứng từ ≠ tổng các dòng", n.Total, n.Lines.Sum(l => l.Amount + l.VatAmount), null, url));
+            if (n.JournalEntryId == null || !jl.TryGetValue(n.JournalEntryId.Value, out var lines)) { rows.Add(new ReconRow(n.Number, "Chưa có bút toán", n.Total, 0, null, url)); continue; }
+            var ar = lines.Where(l => l.Account!.Code.StartsWith("131")).Sum(l => l.Credit - l.Debit);
+            var rev = lines.Where(l => l.Account!.Code.StartsWith("521")).Sum(l => l.Debit - l.Credit);
+            var vat = lines.Where(l => l.Account!.Code.StartsWith("3331")).Sum(l => l.Debit - l.Credit);
+            if (Math.Abs(ar - n.Total) >= Tolerance) rows.Add(new ReconRow(n.Number, "Giảm phải thu trên bút toán ≠ tổng chứng từ", n.Total, ar, null, url));
+            else if (Math.Abs(rev - n.Subtotal) >= Tolerance) rows.Add(new ReconRow(n.Number, "Giảm trừ doanh thu trên bút toán ≠ tiền hàng chứng từ", n.Subtotal, rev, null, url));
+            else if (Math.Abs(vat - n.VatAmount) >= Tolerance) rows.Add(new ReconRow(n.Number, "Thuế đầu ra trên bút toán ≠ thuế chứng từ", n.VatAmount, vat, null, url));
+            var applied = n.Offsets.Sum(o => o.Amount) + n.Unapplied;
+            if (Math.Abs(n.Total - applied) >= Tolerance) rows.Add(new ReconRow(n.Number, "Giá trị điều chỉnh ≠ cấn trừ hóa đơn + chưa cấn trừ", n.Total, applied, null, url));
+            if (n.Kind == CreditNoteKind.Return)
+            {
+                var q = n.Lines.Sum(l => l.Quantity); var dq = n.InventoryDoc?.Status == DocStatus.Posted ? n.InventoryDoc.Lines.Sum(l => l.Quantity) : 0;
+                if (Math.Abs(q - dq) >= 0.0005m) rows.Add(new ReconRow(n.Number, "Số lượng trả lại ≠ phiếu nhập kho", q, dq, null, url));
+            }
+        }
+        // Tổng giảm trừ doanh thu trên sổ cái (không kể kết chuyển) = Σ chứng từ điều chỉnh
+        var subTotal = posted.Sum(n => n.Subtotal);
+        var glTotal = await _db.JournalLines.AsNoTracking().Where(l => l.JournalEntry!.Status == DocStatus.Posted && l.JournalEntry.Source != JournalSource.Closing && l.Account!.Code.StartsWith("521")).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0;
+        if (Math.Abs(subTotal - glTotal) >= Tolerance) rows.Add(new ReconRow("521", "Giảm trừ doanh thu: Σ chứng từ điều chỉnh ≠ phát sinh TK 521", subTotal, glTotal, "Không tính bút toán kết chuyển"));
+        // Hóa đơn bị điều chỉnh không vượt giá trị gốc
+        var invIds = notes.Select(n => n.InvoiceId).Distinct().ToList();
+        var inv = await _db.Invoices.AsNoTracking().Where(i => invIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id);
+        foreach (var g in posted.GroupBy(n => n.InvoiceId))
+            if (inv.TryGetValue(g.Key, out var i) && g.Sum(n => n.Total) - i.Total >= Tolerance) rows.Add(new ReconRow(i.InvoiceNo ?? i.Number, "Tổng điều chỉnh giảm vượt giá trị hóa đơn gốc", g.Sum(n => n.Total), i.Total, null, $"/Invoices/Details/{i.Id}"));
+        return new ReconCheck
+        {
+            Code = "D6", Group = "Đơn hàng ↔ chứng từ", Title = "Hóa đơn điều chỉnh giảm bán hàng: kho – doanh thu – thuế – công nợ khớp nhau", Kind = ReconKind.Money, LeftLabel = "Chứng từ điều chỉnh", RightLabel = "Sổ cái TK 521",
+            Description = "Mỗi hóa đơn điều chỉnh giảm phải có bút toán khớp (giảm phải thu, giảm trừ doanh thu, thuế đầu ra), phiếu nhập kho đúng số lượng khi trả hàng, cấn trừ đủ vào hóa đơn gốc, và tổng giảm trừ doanh thu khớp TK 521.",
+            Rows = rows, Checked = notes.Count, LeftTotal = subTotal, RightTotal = glTotal
+        };
     }
 
     private async Task<ReconCheck> VendorReturnsAsync()

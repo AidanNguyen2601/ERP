@@ -75,6 +75,7 @@ public static class Menu
             new() { Key = "inv-sales", Title = "Hóa đơn bán ra", Icon = "bi-receipt-cutoff", Controller = "Invoices", Route = new { direction = "Sales" }, Visible = Fin,
                     Active = m => m.Is("Invoices") && m.Action != "VatReport" && (m.QIs("direction", "Sales") || (m.Action == "Index" && m.Q("direction") == "")) },
             new() { Key = "inv-purchase", Title = "Hóa đơn mua vào", Icon = "bi-file-earmark-text", Controller = "Invoices", Route = new { direction = "Purchase" }, Visible = Fin, Active = m => m.Is("Invoices") && m.QIs("direction", "Purchase") },
+            new() { Key = "credit-notes", Title = "Hàng bán trả lại / giảm giá", Icon = "bi-arrow-return-left", Controller = "SalesCreditNotes", Visible = Fin, Active = m => m.Is("SalesCreditNotes") },
             new() { Key = "vat", Title = "Bảng kê thuế GTGT", Icon = "bi-percent", Controller = "Invoices", Action = "VatReport", Visible = Fin, Active = m => m.Is("Invoices", "VatReport") },
         }},
         new() { Key = "stock", Title = "Kho", Icon = "bi-box-seam", Tint = "#f0f9ff", Items = new MenuItem[]

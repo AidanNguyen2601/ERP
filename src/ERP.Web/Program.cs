@@ -59,6 +59,7 @@ builder.Services.AddScoped<ERP.Web.Services.ReportService>();
 builder.Services.AddScoped<ERP.Web.Services.PreferenceService>();
 builder.Services.AddScoped<ERP.Web.Services.CatalogService>();
 builder.Services.AddScoped<ERP.Web.Services.PurchaseReturnService>();
+builder.Services.AddScoped<ERP.Web.Services.SalesCreditService>();
 builder.Services.AddScoped<ERP.Web.Services.QualityService>();
 builder.Services.AddScoped<ERP.Web.Services.ReconciliationService>();
 // Lời gọi fetch() từ JavaScript gửi token chống giả mạo qua header

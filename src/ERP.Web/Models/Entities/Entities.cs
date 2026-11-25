@@ -793,3 +793,71 @@ public class InvoiceOffset
     public Invoice? Invoice { get; set; }
     public decimal Amount { get; set; }
 }
+
+// =====================================================================
+//  HÓA ĐƠN ĐIỀU CHỈNH GIẢM BÁN HÀNG (hàng bán bị trả lại / giảm giá hàng bán)
+// =====================================================================
+/// <summary>
+/// Điều chỉnh giảm một hóa đơn bán đã phát hành:
+///  – Hàng bán bị trả lại: nhập lại kho theo giá vốn lúc bán (Nợ 15x / Có 632), giảm trừ doanh thu (Nợ 5212 + Nợ 33311 / Có 131)
+///  – Giảm giá hàng bán: Nợ 5213 + Nợ 33311 / Có 131, không nhập kho
+/// Giá trị điều chỉnh được cấn trừ vào công nợ hóa đơn; phần hóa đơn đã thanh toán hết ghi nhận là khách còn được ghi có (Unapplied).
+/// </summary>
+public class SalesCreditNote
+{
+    public int Id { get; set; }
+    [Required, StringLength(30)][Display(Name = "Số chứng từ")] public string Number { get; set; } = string.Empty;
+    [DataType(DataType.Date)][Display(Name = "Ngày")] public DateTime Date { get; set; } = DateTime.Today;
+    [Display(Name = "Loại điều chỉnh")] public CreditNoteKind Kind { get; set; } = CreditNoteKind.Return;
+    public int CustomerId { get; set; }
+    public Partner? Customer { get; set; }
+    [Display(Name = "Hóa đơn gốc")] public int InvoiceId { get; set; }
+    public Invoice? Invoice { get; set; }
+    [Display(Name = "Kho nhận hàng trả lại")] public int? WarehouseId { get; set; }
+    public Warehouse? Warehouse { get; set; }
+    [Required(ErrorMessage = "Nhập lý do"), StringLength(500)][Display(Name = "Lý do")] public string Reason { get; set; } = string.Empty;
+    public decimal Subtotal { get; set; }
+    public decimal VatAmount { get; set; }
+    public decimal Total { get; set; }
+    public DocStatus Status { get; set; } = DocStatus.Posted;
+    public int? JournalEntryId { get; set; }
+    public int? InventoryDocId { get; set; }
+    public InventoryDoc? InventoryDoc { get; set; }
+    /// <summary>Phần chưa cấn trừ được vào hóa đơn (hóa đơn đã thanh toán hết): khách còn được ghi có</summary>
+    public decimal Unapplied { get; set; }
+    public int? CreatedById { get; set; }
+    public AppUser? CreatedBy { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public ICollection<SalesCreditLine> Lines { get; set; } = new List<SalesCreditLine>();
+    public ICollection<SalesCreditOffset> Offsets { get; set; } = new List<SalesCreditOffset>();
+}
+
+public class SalesCreditLine
+{
+    public int Id { get; set; }
+    public int SalesCreditNoteId { get; set; }
+    public SalesCreditNote? SalesCreditNote { get; set; }
+    public int InvoiceLineId { get; set; }
+    public InvoiceLine? InvoiceLine { get; set; }
+    public int? ItemId { get; set; }
+    public Item? Item { get; set; }
+    [StringLength(300)] public string Description { get; set; } = string.Empty;
+    /// <summary>Số lượng trả lại (0 với giảm giá)</summary>
+    public decimal Quantity { get; set; }
+    public decimal UnitPrice { get; set; }
+    public decimal Amount { get; set; }
+    public int VatRate { get; set; }
+    public decimal VatAmount { get; set; }
+    /// <summary>Giá vốn đơn vị khi nhập lại kho (giá vốn lúc bán)</summary>
+    public decimal UnitCost { get; set; }
+}
+
+public class SalesCreditOffset
+{
+    public int Id { get; set; }
+    public int SalesCreditNoteId { get; set; }
+    public SalesCreditNote? SalesCreditNote { get; set; }
+    public int InvoiceId { get; set; }
+    public Invoice? Invoice { get; set; }
+    public decimal Amount { get; set; }
+}

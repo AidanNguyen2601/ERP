@@ -23,6 +23,7 @@ public static class DbSeeder
         if (await db.Users.AnyAsync())
         {
             await SeedCatalogsAsync(db);
+            await EnsureAccountsAsync(db);
             await SeedQualityAsync(db);
             await SeedQcDemoAsync(sp, db);
             await BackfillPurchaseReturnsAsync(sp, db);
@@ -30,9 +31,22 @@ public static class DbSeeder
         }
         await SeedCoreAsync(sp, db);
         await SeedCatalogsAsync(db);
+        await EnsureAccountsAsync(db);
         await SeedQualityAsync(db);
         await SeedQcDemoAsync(sp, db);
         await BackfillPurchaseReturnsAsync(sp, db);
+    }
+
+    /// <summary>Tài khoản chi tiết của 521 (giảm trừ doanh thu) dùng cho hàng bán bị trả lại / giảm giá hàng bán; thêm vào hệ thống tài khoản đã có nếu thiếu</summary>
+    private static async Task EnsureAccountsAsync(ErpDbContext db)
+    {
+        var parent = await db.Accounts.FirstOrDefaultAsync(a => a.Code == "521");
+        if (parent == null) return;
+        foreach (var (code, name) in new[] { ("5211", "Chiết khấu thương mại"), ("5212", "Hàng bán bị trả lại"), ("5213", "Giảm giá hàng bán") })
+            if (!await db.Accounts.AnyAsync(a => a.Code == code)) db.Accounts.Add(new Account { Code = code, Name = name, Type = parent.Type });
+        // TK tổng hợp 521 không hạch toán trực tiếp nữa (nếu chưa có phát sinh)
+        if (parent.IsPostable && !await db.JournalLines.AnyAsync(l => l.AccountId == parent.Id)) parent.IsPostable = false;
+        await db.SaveChangesAsync();
     }
 
     /// <summary>
