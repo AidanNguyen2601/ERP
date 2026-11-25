@@ -24,11 +24,20 @@ public static class DbSeeder
         {
             await SeedCatalogsAsync(db);
             await SeedQualityAsync(db);
+            await SeedQcDemoAsync(sp, db);
             return;
         }
         await SeedCoreAsync(sp, db);
         await SeedCatalogsAsync(db);
         await SeedQualityAsync(db);
+        await SeedQcDemoAsync(sp, db);
+    }
+
+    /// <summary>Dữ liệu mẫu quản lý chất lượng (tắt bằng Database:SeedQcDemo = false)</summary>
+    private static async Task SeedQcDemoAsync(IServiceProvider sp, ErpDbContext db)
+    {
+        if (!sp.GetRequiredService<IConfiguration>().GetValue("Database:SeedQcDemo", true)) return;
+        await QcDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("QcDemoSeeder"));
     }
 
     /// <summary>
