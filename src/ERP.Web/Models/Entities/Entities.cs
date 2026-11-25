@@ -861,3 +861,21 @@ public class SalesCreditOffset
     public Invoice? Invoice { get; set; }
     public decimal Amount { get; set; }
 }
+
+// =====================================================================
+//  BÁO CÁO ĐỘNG ĐÃ LƯU
+// =====================================================================
+/// <summary>Định nghĩa báo cáo động do người dùng lưu (JSON ReportDef); có thể chia sẻ cho người cùng quyền xem nguồn dữ liệu</summary>
+public class SavedReport
+{
+    public int Id { get; set; }
+    [Required(ErrorMessage = "Nhập tên báo cáo"), StringLength(150)][Display(Name = "Tên báo cáo")] public string Name { get; set; } = string.Empty;
+    [StringLength(500)][Display(Name = "Mô tả")] public string? Description { get; set; }
+    [Required, StringLength(40)] public string DatasetKey { get; set; } = string.Empty;
+    [Required] public string DefinitionJson { get; set; } = "{}";
+    public int OwnerId { get; set; }
+    public AppUser? Owner { get; set; }
+    [Display(Name = "Chia sẻ cho mọi người")] public bool IsShared { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime UpdatedAt { get; set; } = DateTime.Now;
+}

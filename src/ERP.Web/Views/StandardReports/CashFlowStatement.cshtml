@@ -1,0 +1,41 @@
+@model CashFlowReport
+@inject Microsoft.Extensions.Options.IOptions<ErpSettings> Cfg
+@{
+    ViewData["Title"] = "Báo cáo lưu chuyển tiền tệ";
+    DateTime f = ViewBag.From, t = ViewBag.To;
+    string Money(decimal v) => v < 0 ? "(" + (-v).ToMoney() + ")" : v.ToMoney();
+    var sections = new[] { ("I", "I. Lưu chuyển tiền từ hoạt động kinh doanh"), ("II", "II. Lưu chuyển tiền từ hoạt động đầu tư"), ("III", "III. Lưu chuyển tiền từ hoạt động tài chính") };
+}
+<form class="toolbar no-print" method="get">
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@f.Iso()" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@t.Iso()" class="form-control form-control-sm" /></div>
+    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-funnel"></i> Xem</button>
+    <button class="btn btn-sm btn-success ms-auto" name="export" value="true"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+    <button type="button" class="btn btn-sm btn-light border" onclick="window.print()"><i class="bi bi-printer"></i> In</button>
+</form>
+<div class="print-paper">
+    <div class="small fw-semibold">@Cfg.Value.CompanyName</div>
+    <h4 class="text-center mb-0">BÁO CÁO LƯU CHUYỂN TIỀN TỆ</h4>
+    <div class="text-center small mb-3">(Theo phương pháp trực tiếp) · Từ ngày @f.ToDate() đến ngày @t.ToDate()</div>
+    <table class="table table-sm report-table" data-grid="off">
+        <thead><tr><th>Chỉ tiêu</th><th>TK đối ứng</th><th class="num">Số tiền</th></tr></thead>
+        <tbody>
+        <tr class="bold"><td>Tiền và tương đương tiền đầu kỳ (TK 111, 112)</td><td></td><td class="num">@Money(Model.Opening)</td></tr>
+        @foreach (var (key, title) in sections)
+        {
+            <tr class="group"><td>@title</td><td></td><td class="num">@Money(Model.Section(key))</td></tr>
+            foreach (var l in Model.Lines.Where(x => x.Section == key))
+            {
+                <tr><td class="ind-1">@l.Label</td><td class="small text-muted">@l.Accounts</td><td class="num @(l.Amount < 0 ? "bad" : "")">@Money(l.Amount)</td></tr>
+            }
+        }
+        <tr class="bold"><td>Lưu chuyển tiền thuần trong kỳ (I + II + III)</td><td></td><td class="num">@Money(Model.Net)</td></tr>
+        </tbody>
+        <tfoot><tr class="total"><td>Tiền và tương đương tiền cuối kỳ</td><td></td><td class="num">@Money(Model.Closing)</td></tr></tfoot>
+    </table>
+    <div class="small @(Model.Diff == 0 ? "good" : "bad")">
+        @if (Model.Diff == 0) { <span><i class="bi bi-check-circle-fill"></i> Khớp số dư sổ cái TK 111, 112 cuối kỳ (@Model.GlClosing.ToMoney()).</span> }
+        else { <span><i class="bi bi-exclamation-triangle-fill"></i> Chênh lệch @Model.Diff.ToMoney() so với số dư sổ cái cuối kỳ (@Model.GlClosing.ToMoney()) – kiểm tra bút toán có TK tiền ghi nhận ngoài các nghiệp vụ thông thường.</span> }
+    </div>
+    <div class="small text-muted mt-2 no-print">Phân loại theo tài khoản đối ứng của bút toán có phát sinh tiền: 131, 511 → thu bán hàng; 331, 15x, 6xx → chi cho người cung cấp; 334 → người lao động; 133, 333 → thuế; 211, 213, 241 → đầu tư; 341, 411 → tài chính; còn lại → khác.</div>
+</div>

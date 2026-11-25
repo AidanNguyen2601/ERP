@@ -56,6 +56,7 @@ public class ErpDbContext : DbContext
     public DbSet<QcNonconformance> QcNonconformances => Set<QcNonconformance>();
     public DbSet<PurchaseReturn> PurchaseReturns => Set<PurchaseReturn>();
     public DbSet<InvoiceOffset> InvoiceOffsets => Set<InvoiceOffset>();
+    public DbSet<SavedReport> SavedReports => Set<SavedReport>();
     public DbSet<SalesCreditNote> SalesCreditNotes => Set<SalesCreditNote>();
     public DbSet<SalesCreditLine> SalesCreditLines => Set<SalesCreditLine>();
     public DbSet<SalesCreditOffset> SalesCreditOffsets => Set<SalesCreditOffset>();
@@ -103,6 +104,7 @@ public class ErpDbContext : DbContext
         modelBuilder.Entity<PurchaseReturn>().HasIndex(x => x.PurchaseOrderLineId);
         modelBuilder.Entity<SalesCreditNote>().HasIndex(x => x.Number).IsUnique();
         modelBuilder.Entity<SalesCreditNote>().HasIndex(x => x.InvoiceId);
+        modelBuilder.Entity<SavedReport>().HasIndex(x => new { x.OwnerId, x.Name });
         modelBuilder.Entity<QcPlanLine>().HasOne(l => l.QcPlan).WithMany(p => p.Lines).HasForeignKey(l => l.QcPlanId);
         modelBuilder.Entity<QcInspectionLine>().HasOne(l => l.QcInspection).WithMany(p => p.Lines).HasForeignKey(l => l.QcInspectionId);
 

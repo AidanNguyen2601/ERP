@@ -1,0 +1,51 @@
+@model List<StockSumRow>
+@inject Microsoft.Extensions.Options.IOptions<ErpSettings> Cfg
+@{
+    ViewData["Title"] = "Tổng hợp nhập – xuất – tồn kho";
+    DateTime f = ViewBag.From, t = ViewBag.To; var type = ViewBag.Type as ItemType?;
+    decimal? gl = ViewBag.GlBalance as decimal?;
+    var closeVal = Model.Sum(r => r.CloseVal);
+}
+<form class="toolbar no-print" method="get">
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@f.Iso()" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@t.Iso()" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Kho</label><select name="warehouseId" asp-items="ViewBag.Whs" class="form-select form-select-sm"><option value="">-- Tất cả --</option></select></div>
+    <div><label class="form-label small mb-0">Loại hàng</label><select name="type" class="form-select form-select-sm"><option value="">-- Tất cả --</option>
+        @foreach (ItemType x in Enum.GetValues<ItemType>().Where(x => x != ItemType.Service)) { <option value="@x" selected="@(type == x)">@x.GetDisplayName()</option> }</select></div>
+    <div><label class="form-label small mb-0">Tìm</label><input name="q" value="@ViewBag.Q" class="form-control form-control-sm" placeholder="Mã / tên hàng" /></div>
+    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-funnel"></i> Xem</button>
+    <button class="btn btn-sm btn-success ms-auto" name="export" value="true"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+    <button type="button" class="btn btn-sm btn-light border" onclick="window.print()"><i class="bi bi-printer"></i> In</button>
+</form>
+<div class="print-paper" style="max-width:none">
+    <div class="small fw-semibold">@Cfg.Value.CompanyName</div>
+    <h4 class="text-center mb-0">BÁO CÁO TỔNG HỢP NHẬP – XUẤT – TỒN KHO</h4>
+    <div class="text-center small mb-3">Từ ngày @f.ToDate() đến ngày @t.ToDate()</div>
+    <div class="table-responsive"><table class="table table-sm report-table" data-grid="off">
+        <thead>
+            <tr><th rowspan="2">Mã hàng</th><th rowspan="2">Tên hàng</th><th rowspan="2">ĐVT</th><th colspan="2" class="text-center">Tồn đầu kỳ</th><th colspan="2" class="text-center">Nhập trong kỳ</th><th colspan="2" class="text-center">Xuất trong kỳ</th><th colspan="2" class="text-center">Tồn cuối kỳ</th></tr>
+            <tr><th class="num">SL</th><th class="num">Giá trị</th><th class="num">SL</th><th class="num">Giá trị</th><th class="num">SL</th><th class="num">Giá trị</th><th class="num">SL</th><th class="num">Giá trị</th></tr>
+        </thead>
+        <tbody>
+        @foreach (var g in Model.GroupBy(r => r.Type))
+        {
+            <tr class="group"><td colspan="3">@g.Key.GetDisplayName()</td><td></td><td class="num">@g.Sum(r => r.OpenVal).ToMoney()</td><td></td><td class="num">@g.Sum(r => r.InVal).ToMoney()</td><td></td><td class="num">@g.Sum(r => r.OutVal).ToMoney()</td><td></td><td class="num">@g.Sum(r => r.CloseVal).ToMoney()</td></tr>
+            foreach (var r in g)
+            {
+                <tr><td><a asp-controller="Inventory" asp-action="StockCard" asp-route-itemId="@r.ItemId">@r.Code</a></td><td>@r.Name</td><td>@r.Unit</td>
+                    <td class="num">@r.OpenQty.ToQty()</td><td class="num">@r.OpenVal.ToMoney()</td><td class="num">@r.InQty.ToQty()</td><td class="num">@r.InVal.ToMoney()</td>
+                    <td class="num">@r.OutQty.ToQty()</td><td class="num">@r.OutVal.ToMoney()</td><td class="num">@r.CloseQty.ToQty()</td><td class="num">@r.CloseVal.ToMoney()</td></tr>
+            }
+        }
+        @if (!Model.Any()) { <tr><td colspan="11" class="text-center text-muted py-3">Không có phát sinh trong kỳ.</td></tr> }
+        </tbody>
+        <tfoot><tr class="total"><td colspan="3">Tổng cộng</td><td></td><td class="num">@Model.Sum(r => r.OpenVal).ToMoney()</td><td></td><td class="num">@Model.Sum(r => r.InVal).ToMoney()</td><td></td><td class="num">@Model.Sum(r => r.OutVal).ToMoney()</td><td></td><td class="num">@closeVal.ToMoney()</td></tr></tfoot>
+    </table></div>
+    @if (gl.HasValue)
+    {
+        <div class="small @(gl == closeVal ? "good" : "bad")">
+            @if (gl == closeVal) { <span><i class="bi bi-check-circle-fill"></i> Giá trị tồn cuối kỳ khớp số dư sổ cái TK 152, 155, 156 (@gl.Value.ToMoney()).</span> }
+            else { <span><i class="bi bi-exclamation-triangle-fill"></i> Giá trị tồn cuối kỳ @closeVal.ToMoney() khác số dư sổ cái TK 152, 155, 156 @gl.Value.ToMoney() (chênh @((closeVal - gl.Value).ToMoney())) – xem <a asp-controller="Reconciliation" asp-action="Index">Đối chiếu phân hệ – kế toán</a>.</span> }
+        </div>
+    }
+</div>

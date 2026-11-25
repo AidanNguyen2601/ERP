@@ -102,6 +102,15 @@ public static class Menu
             new() { Key = "qc-plans", Title = "Kế hoạch & tiêu chí kiểm tra", Icon = "bi-list-check", Controller = "QcPlans", Active = m => m.Is("QcPlans") },
             new() { Key = "qc-reports", Title = "Báo cáo chất lượng", Icon = "bi-bar-chart-line", Controller = "QcReports", Active = m => m.Is("QcReports") },
         }},
+        new() { Key = "reportcenter", Title = "Báo cáo", Icon = "bi-bar-chart-line", Tint = "#eff6ff", Items = new MenuItem[]
+        {
+            new() { Key = "report-center", Title = "Trung tâm báo cáo", Icon = "bi-grid-1x2", Controller = "ReportCenter", Active = m => m.Is("ReportCenter") },
+            new() { Key = "report-dynamic", Title = "Báo cáo động", Icon = "bi-magic", Controller = "DynamicReports", Active = m => m.Is("DynamicReports") },
+            new() { Key = "report-gj", Title = "Sổ nhật ký chung", Icon = "bi-journal-text", Controller = "StandardReports", Action = "GeneralJournal", Visible = Fin, Active = m => m.Is("StandardReports", "GeneralJournal") },
+            new() { Key = "report-cf", Title = "Lưu chuyển tiền tệ", Icon = "bi-cash-stack", Controller = "StandardReports", Action = "CashFlowStatement", Visible = Fin, Active = m => m.Is("StandardReports", "CashFlowStatement") },
+            new() { Key = "report-nxt", Title = "Nhập – xuất – tồn kho", Icon = "bi-arrow-left-right", Controller = "StandardReports", Action = "StockSummary",
+                    Visible = u => u.InAny(AppRoles.FinanceView + "," + AppRoles.Warehouse + "," + AppRoles.Purchasing + "," + AppRoles.Production), Active = m => m.Is("StandardReports", "StockSummary") },
+        }},
         new() { Key = "catalogs", Title = "Danh mục", Icon = "bi-collection", Tint = "#f5f3ff", Items = new MenuItem[]
         {
             new() { Key = "items", Title = "Hàng hóa, vật tư", Icon = "bi-tags", Controller = "Items", Active = m => m.Is("Items") },

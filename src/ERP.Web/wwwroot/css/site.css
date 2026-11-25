@@ -315,3 +315,24 @@ body.grid-compact .table > :not(caption) > * > * { padding-top: .2rem; padding-b
 .sc-chip.action { border-style: dashed; border-color: #93c5fd; color: #1d4ed8; }
 .sc-chip.action b { font-weight: 400; }
 @media (max-width: 991px) { .scenario-nav { position: static; } }
+
+/* ===================================================================== BÁO CÁO ĐỘNG / TRUNG TÂM BÁO CÁO */
+.print-only { display: none; }
+.rpt-meas, .rpt-flt { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.rpt-meas > select { width: auto; min-width: 130px; flex: 0 1 auto; } .rpt-meas > input { width: 170px; flex: 0 1 auto; }
+.rpt-flt > select { width: auto; min-width: 150px; flex: 0 1 auto; } .rpt-flt > input { width: 180px; flex: 0 1 auto; }
+.rpt-cols { display: flex; flex-wrap: wrap; gap: 2px 4px; max-height: 190px; overflow-y: auto; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fafbfd; }
+.rpt-table thead th { position: sticky; top: 0; z-index: 1; }
+.rpt-table tfoot td { font-weight: 700; border-top: 2px solid #334155; background: #f1f5f9; }
+.rpt-chart-box { border: 1px solid #eef0f6; border-radius: 10px; padding: 8px 12px; background: #fff; }
+.rpt-chart { width: 100%; height: auto; max-height: 460px; }
+.rpt-chart .rc-title { font-size: 13px; font-weight: 600; fill: #334155; }
+.rpt-chart .rc-label { font-size: 11px; fill: #475569; } .rpt-chart .rc-val { font-size: 11px; fill: #0f172a; font-variant-numeric: tabular-nums; }
+.rpt-chart .rc-bar { fill: var(--accent); } .rpt-chart .rc-bar.neg { fill: #dc2626; } .rpt-chart .rc-axis { stroke: #94a3b8; }
+.rpt-chart .rc-grid { stroke: #e2e8f0; stroke-dasharray: 3 3; } .rpt-chart .rc-line { stroke: var(--accent); stroke-width: 2.5; } .rpt-chart .rc-dot { fill: #fff; stroke: var(--accent); stroke-width: 2; }
+.rpt-card { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; height: 100%; border: 1px solid #e4e6f0; border-radius: 10px; background: #fff; text-decoration: none; color: #1f2937; transition: box-shadow .15s, border-color .15s; }
+.rpt-card:hover { border-color: var(--accent); box-shadow: 0 4px 14px rgba(16,24,40,.08); color: #1f2937; }
+.rpt-card .rc-ico { flex: 0 0 38px; height: 38px; border-radius: 10px; background: var(--accent-soft); color: var(--accent-dark); display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; }
+.rpt-card .rc-body { display: flex; flex-direction: column; min-width: 0; } .rpt-card .rc-body small { color: #64748b; line-height: 1.3; margin-top: 2px; }
+.rpt-card .fav-toggle { margin-left: auto; opacity: .0; } .rpt-card:hover .fav-toggle, .rpt-card .fav-toggle.on { opacity: 1; }
+@media print { .print-only { display: block !important; margin-bottom: 8px; } .rpt-form .modal, .rpt-chart-box { break-inside: avoid; } .rpt-table thead th { position: static; } }
