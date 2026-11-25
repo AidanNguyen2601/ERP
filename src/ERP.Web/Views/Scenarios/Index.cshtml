@@ -1,0 +1,110 @@
+@using ERP.Web.Controllers
+@{
+    ViewData["Title"] = "Kịch bản nghiệp vụ";
+    var flows = (List<ScFlow>)ViewBag.Flows;
+    var demo = (List<DemoAccount>)ViewBag.Demo;
+    var pwd = (string)ViewBag.SamplePassword;
+}
+<div class="row g-3 scenario-page">
+    <div class="col-lg-4 col-xl-3">
+        <div class="scenario-nav" id="scNav">
+            <div class="list-group shadow-sm">
+                @foreach (var f in flows)
+                {
+                    <a class="list-group-item list-group-item-action" href="#flow-@f.Key" data-target="flow-@f.Key"><i class="bi @f.Icon"></i><span>@f.Title</span></a>
+                }
+                <a class="list-group-item list-group-item-action" href="#flow-accounts" data-target="flow-accounts"><i class="bi bi-shield-check"></i><span>Tài khoản dùng thử</span></a>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8 col-xl-9">
+        <p class="text-muted mb-3">Mỗi luồng gồm các bước theo thứ tự; nhãn cạnh tên bước là tài khoản nên đăng nhập để làm bước đó (mật khẩu mẫu ở mục <a href="#flow-accounts">Tài khoản dùng thử</a>).
+            Bấm vào số chứng từ để mở chứng từ đang ở đúng bước; chip nét đứt là lối tắt thao tác.</p>
+        @foreach (var f in flows)
+        {
+            <div class="card mb-3 scenario-flow" id="flow-@f.Key">
+                <div class="card-header d-flex align-items-center gap-2"><span class="sc-ico"><i class="bi @f.Icon"></i></span><span>@f.Title</span></div>
+                <div class="card-body">
+                    <p class="small text-muted">@f.Intro</p>
+                    <div class="sc-steps">
+                        @for (var i = 0; i < f.Steps.Count; i++)
+                        {
+                            var s = f.Steps[i];
+                            <div class="sc-step">
+                                <div class="sc-num">@(i + 1)</div>
+                                <div class="sc-body">
+                                    <div class="sc-head"><span class="sc-title">@s.Title</span>
+                                        @foreach (var r in s.Roles)
+                                        {
+                                            <span class="sc-role" title="@(r.Username != null ? "Đăng nhập: " + r.Username : "Chưa có tài khoản vai trò này")">@(r.Username != null ? r.Username + " (" + r.Label + ")" : r.Label)</span>
+                                        }
+                                    </div>
+                                    <div class="sc-desc">@s.Desc</div>
+                                    @if (s.Chips.Count > 0)
+                                    {
+                                        <div class="sc-chips">
+                                            @foreach (var c in s.Chips)
+                                            {
+                                                <a class="sc-chip @(c.IsAction ? "action" : "")" href="@c.Url"><b>@c.Text</b>@if (!string.IsNullOrEmpty(c.Sub)) { <small>@c.Sub</small> }</a>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="card mb-3 scenario-flow" id="flow-accounts">
+            <div class="card-header d-flex align-items-center gap-2"><span class="sc-ico"><i class="bi bi-shield-check"></i></span><span>Tài khoản dùng thử</span></div>
+            <div class="card-body">
+                @if (demo.Count == 0)
+                {
+                    <p class="text-muted mb-0">Các tài khoản đã đổi mật khẩu nên không còn hiển thị ở đây. Quản trị viên tạo hoặc đặt lại mật khẩu trong <a asp-controller="Users" asp-action="Index">Người dùng & phân quyền</a>.</p>
+                }
+                else
+                {
+                    <p class="small text-muted">Mật khẩu mẫu của các tài khoản dưới đây: <code>@pwd</code>. Tài khoản đã đổi mật khẩu sẽ tự ẩn khỏi danh sách. Đăng xuất rồi đăng nhập bằng tài khoản phù hợp với bước cần làm.</p>
+                    <div class="table-responsive"><table class="table table-sm mb-0" data-grid="off">
+                        <thead><tr><th>Tên đăng nhập</th><th>Họ tên</th><th>Vai trò</th><th>Phòng ban</th></tr></thead>
+                        <tbody>
+                        @foreach (var u in demo)
+                        {
+                            <tr><td><code>@u.Username</code></td><td>@u.FullName</td><td>@AppRoles.DisplayName(u.Role)</td><td>@u.Department</td></tr>
+                        }
+                        </tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+<script>
+(function () {
+    const links = [...document.querySelectorAll('#scNav a')];
+    const byId = Object.fromEntries(links.map(a => [a.dataset.target, a]));
+    function mark(id) { links.forEach(a => a.classList.toggle('active', a.dataset.target === id)); }
+    mark(links[0]?.dataset.target);
+    links.forEach(a => a.addEventListener('click', e => {
+        e.preventDefault();
+        const t = document.getElementById(a.dataset.target);
+        t.scrollIntoView({ behavior: 'smooth', block: 'start' }); history.replaceState(null, '', '#' + a.dataset.target); mark(a.dataset.target);
+    }));
+    // Đánh dấu mục menu theo vị trí cuộn
+    const sections = [...document.querySelectorAll('.scenario-flow')];
+    if ('IntersectionObserver' in window) {
+        const vis = new Map();
+        const io = new IntersectionObserver(es => {
+            es.forEach(e => vis.set(e.target.id, e.isIntersecting ? e.boundingClientRect.top : null));
+            const cur = sections.find(s => vis.get(s.id) !== null && vis.get(s.id) !== undefined);
+            if (cur) mark(cur.id);
+        }, { rootMargin: '-80px 0px -60% 0px', threshold: 0 });
+        sections.forEach(s => io.observe(s));
+    }
+    if (location.hash && byId[location.hash.slice(1)]) { mark(location.hash.slice(1)); }
+})();
+</script>
+}

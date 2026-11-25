@@ -115,6 +115,7 @@ public static class Menu
         new() { Key = "system", Title = "Hệ thống", Icon = "bi-shield-lock", Tint = "#f1f5f9", Items = new MenuItem[]
         {
             new() { Key = "users", Title = "Người dùng & phân quyền", Icon = "bi-person-gear", Controller = "Users", Visible = Admin, Active = m => m.Is("Users") },
+            new() { Key = "scenarios", Title = "Kịch bản nghiệp vụ", Icon = "bi-signpost-split", Controller = "Scenarios", Active = m => m.Is("Scenarios") },
             new() { Key = "ui", Title = "Cấu hình giao diện", Icon = "bi-palette", Controller = "Preferences", Active = m => m.Is("Preferences") },
         }},
     };
