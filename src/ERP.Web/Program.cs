@@ -104,6 +104,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseMiddleware<ERP.Web.Infrastructure.TranslationMiddleware>();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();

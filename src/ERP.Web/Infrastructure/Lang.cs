@@ -11,7 +11,7 @@ public static class Lang
     public static string Current(HttpContext? ctx) => ctx?.Request.Cookies[Cookie] == "en" ? "en" : "vi";
     public static bool IsEn(HttpContext? ctx) => Current(ctx) == "en";
 
-    public static string T(HttpContext? ctx, string vi) => IsEn(ctx) && En.TryGetValue(vi, out var en) ? en : vi;
+    public static string T(HttpContext? ctx, string vi) => !IsEn(ctx) ? vi : En.TryGetValue(vi, out var en) ? en : Translator.Translate(vi);
 
     private static readonly Dictionary<string, string> En = new(StringComparer.Ordinal)
     {
