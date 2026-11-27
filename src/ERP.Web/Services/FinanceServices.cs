@@ -249,7 +249,8 @@ public class ProductionService
     private readonly AccountingService _acc;
     private readonly InventoryService _inv;
     private readonly CurrentUser _user;
-    public ProductionService(ErpDbContext db, AccountingService acc, InventoryService inv, CurrentUser user) { _db = db; _acc = acc; _inv = inv; _user = user; }
+    private readonly WorkflowService _wf;
+    public ProductionService(ErpDbContext db, AccountingService acc, InventoryService inv, CurrentUser user, WorkflowService wf) { _db = db; _acc = acc; _inv = inv; _user = user; _wf = wf; }
 
     public static decimal Required(BomLine b, decimal outputQty, decimal qty) =>
         Math.Round(b.Quantity * qty / outputQty * (100 + b.ScrapPct) / 100, 3);
@@ -257,7 +258,7 @@ public class ProductionService
     /// <summary>Tạo lệnh sản xuất, nhu cầu vật tư tính từ định mức</summary>
     public async Task<ProductionOrder> CreateAsync(ProductionOrder po)
     {
-        var bom = await _db.Boms.Include(b => b.Lines).FirstOrDefaultAsync(b => b.Id == po.BomId) ?? throw new BusinessException("Chọn định mức.");
+        var bom = await _db.Boms.Include(b => b.Lines).Include(b => b.Operations).FirstOrDefaultAsync(b => b.Id == po.BomId) ?? throw new BusinessException("Chọn định mức.");
         if (!bom.IsActive) throw new BusinessException("Định mức đã ngưng áp dụng.");
         if (po.Quantity <= 0) throw new BusinessException("Số lượng sản xuất phải lớn hơn 0.");
         po.ItemId = bom.FinishedItemId!.Value;
@@ -265,14 +266,41 @@ public class ProductionService
         po.CreatedById = _user.Id;
         po.Status = ProductionStatus.Draft;
         foreach (var b in bom.Lines) po.Lines.Add(new ProductionOrderLine { ItemId = b.ItemId, RequiredQty = Required(b, bom.OutputQuantity, po.Quantity) });
+        if (po.SalesOrderId != null) po.OrderType = ProductionType.MakeToOrder;
+        foreach (var op in bom.Operations.OrderBy(x => x.Seq))
+            po.Operations.Add(new ProductionOperation { Seq = op.Seq, Name = op.Name, WorkCenterId = op.WorkCenterId, PlannedMinutes = Math.Round(op.SetupMinutes + op.RunMinutesPerUnit * po.Quantity, 1) });
         _db.ProductionOrders.Add(po);
         await _db.SaveChangesAsync();
         return po;
     }
 
+    /// <summary>Gửi duyệt theo quy tắc phê duyệt (giá trị = giá vốn NVL dự kiến). Trả về thông báo nếu phải chờ duyệt, null nếu được duyệt ngay (không có quy tắc áp dụng)</summary>
+    public async Task<string?> SubmitAsync(ProductionOrder po)
+    {
+        if (po.Status != ProductionStatus.Draft) throw new BusinessException("Chỉ gửi duyệt lệnh nháp.");
+        if (await _wf.HasRulesAsync(ApprovalDocType.ProductionOrder))
+        {
+            var ids = po.Lines.Select(l => l.ItemId).ToList();
+            var avg = await _db.Items.Where(i => ids.Contains(i.Id)).ToDictionaryAsync(i => i.Id, i => i.AvgCost);
+            var amount = po.Lines.Sum(l => l.RequiredQty * avg.GetValueOrDefault(l.ItemId));
+            var req = await _wf.StartAsync(ApprovalDocType.ProductionOrder, po.Id, po.Number, amount, $"Lệnh sản xuất {po.Number} – {po.Quantity.ToQty()} {po.Item?.Name}", po.BranchId);
+            if (req != null) { po.Status = ProductionStatus.PendingApproval; await _db.SaveChangesAsync(); return $"Lệnh {po.Number} đã gửi duyệt – {WorkflowService.Describe(req)}."; }
+        }
+        po.Status = ProductionStatus.Approved; po.ApprovedById = _user.Id; po.ApprovedAt = DateTime.Now;
+        await _db.SaveChangesAsync();
+        return null;
+    }
+
+    /// <summary>Phát lệnh: lệnh nháp phải qua bước duyệt (tự duyệt nếu không có quy tắc nào áp dụng)</summary>
     public async Task ReleaseAsync(ProductionOrder po)
     {
-        if (po.Status != ProductionStatus.Draft) throw new BusinessException("Chỉ phát lệnh với lệnh nháp.");
+        if (po.Status == ProductionStatus.PendingApproval) throw new PendingApprovalException($"Lệnh {po.Number} đang chờ duyệt.");
+        if (po.Status == ProductionStatus.Draft)
+        {
+            var msg = await SubmitAsync(po);
+            if (msg != null) throw new PendingApprovalException(msg);
+        }
+        if (po.Status != ProductionStatus.Approved) throw new BusinessException("Chỉ phát lệnh với lệnh nháp hoặc đã duyệt.");
         po.Status = ProductionStatus.Released;
         await _db.SaveChangesAsync();
     }
@@ -319,6 +347,7 @@ public class ProductionService
             $"Nhập kho thành phẩm lệnh {po.Number}", new[] { (po.ItemId, completedQty, po.TotalCost / completedQty) }, _user.Id);
         po.Status = ProductionStatus.Completed;
         po.CompletedDate = date;
+        foreach (var op in po.Operations.Where(x => x.Status != OperationStatus.Done)) { op.Status = OperationStatus.Done; op.FinishedAt = date; }
         await _db.SaveChangesAsync();
     }
 }

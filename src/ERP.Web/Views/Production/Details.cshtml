@@ -2,40 +2,71 @@
 @{
     ViewData["Title"] = $"Lệnh sản xuất {Model.Number}";
     var stock = (Dictionary<int, decimal>)ViewBag.Stock; var docs = (List<InventoryDoc>)ViewBag.Docs; var avg = (Dictionary<int, decimal>)ViewBag.Avg;
+    var children = (List<ProductionOrder>)ViewBag.Children; var parent = (ProductionOrder?)ViewBag.Parent; var childQty = (Dictionary<int, decimal>)ViewBag.ChildQty;
+    var centers = (List<WorkCenter>)ViewBag.Centers; var tickets = (List<ScaleTicket>)ViewBag.Tickets; var outsourced = (List<OutsourceOrder>)ViewBag.Outsourced;
+    var approval = (ApprovalRequest?)ViewBag.Approval; var recorded = (decimal)ViewBag.RecordedGood;
     var can = (bool)ViewBag.CanEdit; var canIssue = User.InAny(AppRoles.ProductionTeam + "," + AppRoles.Warehouse);
-    var steps = new[] { ProductionStatus.Draft, ProductionStatus.Released, ProductionStatus.InProgress, ProductionStatus.Completed };
-    var cur = Array.IndexOf(steps, Model.Status);
+    var steps = new[] { ProductionStatus.Draft, ProductionStatus.Approved, ProductionStatus.Released, ProductionStatus.InProgress, ProductionStatus.Completed, ProductionStatus.Closed };
+    var cur = Model.Status == ProductionStatus.PendingApproval ? 1 : Array.IndexOf(steps, Model.Status);
     var shortage = Model.Lines.Where(l => l.RequiredQty - l.IssuedQty > stock.GetValueOrDefault(l.ItemId)).ToList();
     var bom = Model.Bom!;
+    var progress = ManufacturingService.Progress(Model);
+    var running = Model.Status is ProductionStatus.Released or ProductionStatus.InProgress;
+    var preApproved = Model.Status is ProductionStatus.Draft or ProductionStatus.PendingApproval or ProductionStatus.Approved;
 }
-<div class="flow mb-3">@for (var i = 0; i < steps.Length; i++) { if (i > 0) { <span class="arrow">›</span> } <span class="step @(i < cur ? "done" : i == cur ? "current" : "")">@steps[i].GetDisplayName()</span> }
+<partial name="_MfgNav" model="@("mo")" />
+<div class="flow mb-3">@for (var i = 0; i < steps.Length; i++) { if (i > 0) { <span class="arrow">›</span> } <span class="step @(Model.Status == ProductionStatus.Cancelled ? "" : i < cur ? "done" : i == cur ? "current" : "")">@(i == 1 && Model.Status == ProductionStatus.PendingApproval ? "Chờ duyệt" : steps[i].GetDisplayName())</span> }
     @if (Model.Status == ProductionStatus.Cancelled) { <span class="badge bg-dark ms-2">Đã hủy</span> }</div>
+@if (Model.Status == ProductionStatus.PendingApproval && approval != null)
+{
+    <div class="alert alert-warning py-2">@WorkflowService.Describe(approval) <a asp-controller="Approvals" asp-action="Index">Mở hộp duyệt →</a></div>
+}
 <div class="card mb-3"><div class="card-body">
     <div class="doc-head">
-        <div><div class="fs-5 fw-semibold">@Model.Number – @Model.Item?.Name × @Model.Quantity.ToQty() @Model.Item?.Unit <partial name="_Badge" model="Model.Status" /></div>
-            <div class="meta">Định mức <a asp-controller="Boms" asp-action="Details" asp-route-id="@Model.BomId">@bom.Code</a> · NVL từ @Model.MaterialWarehouse?.Name → TP vào @Model.FinishedWarehouse?.Name · @Model.StartDate.ToDate() → @Model.DueDate.ToDate()
-                @(Model.SalesOrder != null ? " · Phục vụ đơn " + Model.SalesOrder.Number : "") · Lập bởi @(Model.CreatedBy?.FullName ?? "Hệ thống")</div>
+        <div><div class="fs-5 fw-semibold">@Model.Number – @Model.Item?.Name × @Model.Quantity.ToQty() @Model.Item?.Unit <partial name="_Badge" model="Model.Status" /> <span class="badge @(Model.OrderType == ProductionType.MakeToOrder ? "bg-primary" : "bg-secondary")">@(Model.OrderType == ProductionType.MakeToOrder ? "MTO" : "MTS")</span></div>
+            <div class="meta">Định mức <a asp-controller="Boms" asp-action="Details" asp-route-id="@Model.BomId">@bom.Code</a> (v@(bom.VersionNo)) · NVL từ @Model.MaterialWarehouse?.Name → TP vào @Model.FinishedWarehouse?.Name · @Model.StartDate.ToDate() → @Model.DueDate.ToDate()
+                @(Model.SalesOrder != null ? " · Phục vụ đơn " + Model.SalesOrder.Number : "") · Lập bởi @(Model.CreatedBy?.FullName ?? "Hệ thống")@(Model.ApprovedAt != null ? $" · Duyệt {Model.ApprovedAt.ToDate()}" : "")@(Model.ClosedDate != null ? $" · Đóng {Model.ClosedDate.ToDate()}" : "")</div>
+            @if (parent != null) { <div class="meta">Bán thành phẩm cho lệnh <a asp-action="Details" asp-route-id="@parent.Id">@parent.Number</a></div> }
             @if (!string.IsNullOrWhiteSpace(Model.Note)) { <div>@Model.Note</div> }</div>
         <div class="actions">
-            @if (Model.Status is ProductionStatus.InProgress or ProductionStatus.Completed)
+            @if (Model.Status is ProductionStatus.InProgress or ProductionStatus.Completed or ProductionStatus.Closed)
             { <partial name="_QcButton" model="@(new QcLink("productionId", Model.Id, Model.Number, new List<(int, string)> { (Model.ItemId, Model.Item?.Name ?? "") }))" /> }
-            @if (can && Model.Status == ProductionStatus.Draft) { <form asp-action="Release" asp-route-id="@Model.Id" method="post"><button class="btn btn-sm btn-primary">Phát lệnh</button></form> }
-            @if (canIssue && Model.Status is ProductionStatus.Released or ProductionStatus.InProgress && Model.Lines.Any(l => l.IssuedQty < l.RequiredQty))
+            @if (can && Model.Status == ProductionStatus.Draft) { <form asp-action="Submit" asp-route-id="@Model.Id" method="post"><button class="btn btn-sm btn-outline-primary">Gửi duyệt</button></form> }
+            @if (can && Model.Status is ProductionStatus.Draft or ProductionStatus.Approved) { <form asp-action="Release" asp-route-id="@Model.Id" method="post"><button class="btn btn-sm btn-primary">Phát lệnh</button></form> }
+            @if (canIssue && running && Model.Lines.Any(l => l.IssuedQty < l.RequiredQty))
             { <form asp-action="IssueMaterials" asp-route-id="@Model.Id" method="post"><button class="btn btn-sm btn-primary" @(shortage.Any() ? "disabled title='Thiếu nguyên vật liệu'" : "")>Xuất nguyên vật liệu</button></form> }
-            @if (can && Model.Status is ProductionStatus.Draft or ProductionStatus.Released) { <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" data-confirm="Hủy lệnh sản xuất?"><button class="btn btn-sm btn-outline-danger">Hủy lệnh</button></form> }
+            @if (can && Model.Status == ProductionStatus.Completed) { <form asp-action="Close" asp-route-id="@Model.Id" method="post" data-confirm="Đóng lệnh? Lệnh đã đóng không ghi nhận thêm sản lượng."><button class="btn btn-sm btn-outline-success">Đóng lệnh</button></form> }
+            @if (can && Model.Status is ProductionStatus.Draft or ProductionStatus.PendingApproval or ProductionStatus.Approved or ProductionStatus.Released) { <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" data-confirm="Hủy lệnh sản xuất?"><button class="btn btn-sm btn-outline-danger">Hủy lệnh</button></form> }
         </div>
     </div>
-    @if (shortage.Any() && Model.Status is ProductionStatus.Draft or ProductionStatus.Released)
+    @if (Model.Status != ProductionStatus.Cancelled && !preApproved)
+    {
+        <div class="d-flex align-items-center gap-2 mb-2"><span class="small text-muted">Tiến độ</span><div class="progress flex-grow-1" style="height:14px"><div class="progress-bar bg-success" style="width:@progress%">@progress%</div></div></div>
+    }
+    @if (shortage.Any() && preApproved || shortage.Any() && Model.Status == ProductionStatus.Released)
     {
         <div class="alert alert-warning py-2">Thiếu nguyên vật liệu: @string.Join("; ", shortage.Select(l => $"{l.Item?.Code} thiếu {(l.RequiredQty - l.IssuedQty - stock.GetValueOrDefault(l.ItemId)).ToQty()} {l.Item?.Unit}")). <a asp-action="Mrp">Xem hoạch định vật tư →</a></div>
     }
     <table class="table table-sm">
-        <thead><tr><th>Nguyên vật liệu</th><th class="num">Nhu cầu</th><th class="num">Đã xuất</th><th class="num">Tồn kho NVL</th><th class="num">Chi phí đã xuất</th><th class="num">Dự kiến (giá BQ)</th></tr></thead>
+        <thead><tr><th>Nguyên vật liệu / bán thành phẩm</th><th class="num">Nhu cầu</th><th class="num">Đã xuất</th><th class="num">Tồn kho NVL</th><th class="num">Chi phí đã xuất</th><th class="num">Dự kiến (giá BQ)</th>@if (running || can) { <th style="min-width:260px">Xuất bổ sung / trả lại</th> }</tr></thead>
         <tbody>@foreach (var l in Model.Lines)
         {
             var s = stock.GetValueOrDefault(l.ItemId); var rem = l.RequiredQty - l.IssuedQty;
-            <tr><td>@l.Item?.Code – @l.Item?.Name</td><td class="num">@l.RequiredQty.ToQty() @l.Item?.Unit</td><td class="num @(l.IssuedQty >= l.RequiredQty ? "good" : "")">@l.IssuedQty.ToQty()</td>
-                <td class="num @(rem > s ? "bad" : "")">@s.ToQty()</td><td class="num">@l.Cost.ToMoney()</td><td class="num text-muted">@((l.RequiredQty * avg.GetValueOrDefault(l.ItemId)).ToMoney())</td></tr>
+            var semi = l.Item?.Type == ItemType.SemiFinished; var made = childQty.GetValueOrDefault(l.ItemId); var lack = l.RequiredQty - l.IssuedQty - s - made;
+            <tr><td>@l.Item?.Code – @l.Item?.Name @if (semi) { <span class="badge bg-warning text-dark">Bán thành phẩm</span> }
+                    @if (semi && can && lack > 0 && preApproved || semi && can && lack > 0 && running) { <form asp-action="CreateChild" asp-route-id="@Model.Id" method="post" class="d-inline"><input type="hidden" name="lineId" value="@l.Id" /><button class="btn btn-sm btn-outline-warning py-0">Tạo lệnh SX BTP (@Math.Ceiling(lack).ToQty())</button></form> }</td>
+                <td class="num">@l.RequiredQty.ToQty() @l.Item?.Unit</td><td class="num @(l.IssuedQty >= l.RequiredQty ? "good" : "")">@l.IssuedQty.ToQty()@(l.IssuedQty > l.RequiredQty ? " (+" + (l.IssuedQty - l.RequiredQty).ToQty() + ")" : "")</td>
+                <td class="num @(rem > s ? "bad" : "")">@s.ToQty()</td><td class="num">@l.Cost.ToMoney()</td><td class="num text-muted">@((l.RequiredQty * avg.GetValueOrDefault(l.ItemId)).ToMoney())</td>
+                @if (running || can)
+                {
+                    <td>@if (canIssue && running)
+                    {
+                        <form asp-action="ExtraIssue" asp-route-id="@Model.Id" method="post" class="d-inline-flex gap-1"><input type="hidden" name="lineId" value="@l.Id" /><input type="number" step="0.001" min="0.001" name="qty" class="form-control form-control-sm" style="width:90px" placeholder="SL" /><button class="btn btn-sm btn-outline-primary">Xuất thêm</button></form>
+                        @if (Model.Status == ProductionStatus.InProgress && l.IssuedQty > 0)
+                        { <form asp-action="ReturnMaterial" asp-route-id="@Model.Id" method="post" class="d-inline-flex gap-1"><input type="hidden" name="lineId" value="@l.Id" /><input type="number" step="0.001" min="0.001" max="@l.IssuedQty.Raw()" name="qty" class="form-control form-control-sm" style="width:90px" placeholder="SL" /><button class="btn btn-sm btn-outline-secondary">Trả lại</button></form> }
+                    }</td>
+                }
+            </tr>
         }</tbody>
     </table>
     <div class="row g-3">
@@ -44,22 +75,91 @@
             <tr><td>Chi phí nhân công trực tiếp (kết chuyển 622 → 154)</td><td class="num">@Model.LaborCost.ToMoney()</td></tr>
             <tr><td>Chi phí sản xuất chung (kết chuyển 627 → 154)</td><td class="num">@Model.OverheadCost.ToMoney()</td></tr>
             <tr class="fw-bold"><td>Tổng giá thành</td><td class="num">@Model.TotalCost.ToMoney()</td></tr>
-            @if (Model.Status == ProductionStatus.Completed) { <tr class="fw-bold"><td>Giá thành đơn vị (@Model.CompletedQty.ToQty() @Model.Item?.Unit nhập kho @Model.CompletedDate.ToDate())</td><td class="num">@Model.UnitCost.ToMoney()</td></tr> }
+            @if (Model.Status is ProductionStatus.Completed or ProductionStatus.Closed) { <tr class="fw-bold"><td>Giá thành đơn vị (@Model.CompletedQty.ToQty() @Model.Item?.Unit nhập kho @Model.CompletedDate.ToDate())</td><td class="num">@Model.UnitCost.ToMoney()</td></tr> }
         </table></div>
         @if (can && Model.Status == ProductionStatus.InProgress)
         {
-            <div class="col-md-6"><div class="border rounded p-3"><div class="fw-semibold mb-2">Hoàn thành & nhập kho thành phẩm</div>
-                <form asp-action="Complete" asp-route-id="@Model.Id" method="post" class="row g-2" data-confirm="Hoàn thành lệnh và nhập kho thành phẩm?">
+            <div class="col-md-6"><div class="border rounded p-3"><div class="fw-semibold mb-2">Hoàn thành & nhập kho @(Model.Item?.Type == ItemType.SemiFinished ? "bán thành phẩm" : "thành phẩm")</div>
+                <form asp-action="Complete" asp-route-id="@Model.Id" method="post" class="row g-2" data-confirm="Hoàn thành lệnh và nhập kho?">
                     <div class="col-6"><label class="form-label small">Ngày hoàn thành</label><input type="date" name="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
-                    <div class="col-6"><label class="form-label small">SL thành phẩm đạt</label><input type="number" step="0.001" name="completedQty" value="@Model.Quantity.Raw()" class="form-control form-control-sm" /></div>
-                    <div class="col-6"><label class="form-label small">Chi phí nhân công</label><input type="number" step="1000" name="labor" value="@((bom.LaborCostPerUnit * Model.Quantity).Raw())" class="form-control form-control-sm" /></div>
-                    <div class="col-6"><label class="form-label small">Chi phí SX chung</label><input type="number" step="1000" name="overhead" value="@((bom.OverheadPerUnit * Model.Quantity).Raw())" class="form-control form-control-sm" /></div>
-                    <div class="col-12"><button class="btn btn-sm btn-success">Hoàn thành</button> <span class="small text-muted">Mặc định theo định mức, sửa theo thực tế.</span></div>
+                    <div class="col-6"><label class="form-label small">SL đạt (đã ghi nhận @recorded.ToQty())</label><input type="number" step="0.001" name="completedQty" value="@((recorded > 0 ? recorded : Model.Quantity).Raw())" class="form-control form-control-sm" /></div>
+                    <div class="col-6"><label class="form-label small">Chi phí nhân công</label><input type="number" step="1000" name="labor" value="@(((decimal)ViewBag.StdLabor).Raw())" class="form-control form-control-sm" /></div>
+                    <div class="col-6"><label class="form-label small">Chi phí SX chung</label><input type="number" step="1000" name="overhead" value="@(((decimal)ViewBag.StdOverhead).Raw())" class="form-control form-control-sm" /></div>
+                    <div class="col-12"><button class="btn btn-sm btn-success">Hoàn thành</button> <span class="small text-muted">Mặc định theo @(bom.Operations.Any() ? "quy trình (routing)" : "định mức"), sửa theo thực tế.</span></div>
                 </form></div></div>
         }
     </div>
 </div></div>
+
+@if (Model.Operations.Any() || Model.Outputs.Any() || running)
+{
+    <div class="card mb-3"><div class="card-header">Công đoạn & sản lượng</div><div class="card-body p-0">
+        @if (Model.Operations.Any())
+        {
+            <table class="table table-sm mb-0">
+                <thead><tr><th>#</th><th>Công đoạn</th><th>Trung tâm</th><th class="num">Phút kế hoạch</th><th class="num">Phút thực tế</th><th class="num">SL đạt</th><th class="num">SL lỗi</th><th style="width:150px">Tiến độ</th><th>Trạng thái</th></tr></thead>
+                <tbody>@foreach (var o in Model.Operations.OrderBy(x => x.Seq))
+                {
+                    var pct = Model.Quantity == 0 ? 0 : (int)Math.Min(100, o.GoodQty * 100 / Model.Quantity);
+                    <tr><td>@o.Seq</td><td>@o.Name</td><td>@o.WorkCenter?.Code</td><td class="num">@o.PlannedMinutes.ToQty()</td><td class="num @(o.ActualMinutes > o.PlannedMinutes && o.PlannedMinutes > 0 ? "warn" : "")">@o.ActualMinutes.ToQty()</td><td class="num">@o.GoodQty.ToQty()</td><td class="num @(o.ScrapQty > 0 ? "bad" : "")">@o.ScrapQty.ToQty()</td>
+                        <td><div class="progress"><div class="progress-bar" style="width:@pct%"></div></div></td><td>@o.Status.GetDisplayName()</td></tr>
+                }</tbody>
+            </table>
+        }
+        @if (can && running)
+        {
+            <form asp-action="AddOutput" asp-route-id="@Model.Id" method="post" class="row g-2 p-3 border-top align-items-end">
+                <div class="col-md-2"><label class="form-label small">Ngày</label><input type="date" name="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+                <div class="col-md-1"><label class="form-label small">Ca</label><select name="shift" class="form-select form-select-sm">@foreach (var s in ManufacturingService.Shifts) { <option>@s</option> }</select></div>
+                <div class="col-md-2"><label class="form-label small">Công đoạn</label><select name="operationId" class="form-select form-select-sm"><option value="">--</option>@foreach (var o in Model.Operations.OrderBy(x => x.Seq)) { <option value="@o.Id">@o.Seq – @o.Name</option> }</select></div>
+                <div class="col-md-2"><label class="form-label small">Chuyền / trung tâm</label><select name="workCenterId" class="form-select form-select-sm"><option value="">(theo công đoạn)</option>@foreach (var w in centers) { <option value="@w.Id">@w.Code</option> }</select></div>
+                <div class="col-md-1"><label class="form-label small">SL đạt</label><input type="number" step="0.001" min="0" name="good" value="0" class="form-control form-control-sm" /></div>
+                <div class="col-md-1"><label class="form-label small">SL lỗi</label><input type="number" step="0.001" min="0" name="scrap" value="0" class="form-control form-control-sm" /></div>
+                <div class="col-md-1"><label class="form-label small">Phút làm</label><input type="number" step="1" min="0" name="minutes" value="0" class="form-control form-control-sm" /></div>
+                <div class="col-md-1"><label class="form-label small">Công nhân</label><input type="number" min="1" name="workers" value="1" class="form-control form-control-sm" /></div>
+                <div class="col-md-1"><button class="btn btn-sm btn-primary w-100">Ghi nhận</button></div>
+                <div class="col-12"><input name="note" class="form-control form-control-sm" placeholder="Ghi chú (không bắt buộc)" /></div>
+            </form>
+        }
+        @if (can && running && tickets.Any())
+        {
+            <div class="p-3 border-top"><div class="fw-semibold small mb-2">Phiếu cân chưa ghi nhận sản lượng (tham chiếu @Model.Number)</div>
+            @foreach (var t in tickets)
+            {
+                <form asp-action="OutputFromTicket" asp-route-id="@Model.Id" method="post" class="d-flex gap-2 align-items-center mb-1"><input type="hidden" name="ticketId" value="@t.Id" />
+                    <span class="small" style="min-width:320px">@t.TicketNo · @t.WeighedAt.ToDateTime() · @t.Device · <b>@t.NetKg.ToQty() kg</b></span>
+                    <select name="shift" class="form-select form-select-sm" style="width:110px">@foreach (var s in ManufacturingService.Shifts) { <option>@s</option> }</select>
+                    <select name="operationId" class="form-select form-select-sm" style="width:200px"><option value="">-- công đoạn --</option>@foreach (var o in Model.Operations.OrderBy(x => x.Seq)) { <option value="@o.Id">@o.Seq – @o.Name</option> }</select>
+                    <button class="btn btn-sm btn-outline-primary">Ghi nhận</button></form>
+            }</div>
+        }
+        @if (Model.Outputs.Any())
+        {
+            <table class="table table-sm mb-0 border-top"><thead><tr><th>Ngày</th><th>Ca</th><th>Chuyền</th><th>Công đoạn</th><th class="num">Đạt</th><th class="num">Lỗi</th><th class="num">Phút</th><th>Nguồn</th><th>Ghi chú</th></tr></thead>
+            <tbody>@foreach (var o in Model.Outputs.OrderByDescending(x => x.Date).ThenByDescending(x => x.Id)) { var op = Model.Operations.FirstOrDefault(x => x.Id == o.ProductionOperationId); var wc = centers.FirstOrDefault(x => x.Id == o.WorkCenterId);
+                <tr><td>@o.Date.ToDate()</td><td>@o.Shift</td><td>@wc?.Code</td><td>@op?.Name</td><td class="num">@o.GoodQty.ToQty()</td><td class="num">@o.ScrapQty.ToQty()</td><td class="num">@o.Minutes.ToQty()</td><td>@o.Source</td><td class="small">@o.Note</td></tr> }</tbody></table>
+        }
+    </div></div>
+}
+
+@if (children.Any() || outsourced.Any())
+{
+    <div class="row g-3 mb-3">
+        @if (children.Any())
+        {
+            <div class="col-lg-6"><div class="card h-100"><div class="card-header">Lệnh sản xuất bán thành phẩm</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+                @foreach (var c in children) { <tr><td><a asp-action="Details" asp-route-id="@c.Id">@c.Number</a></td><td>@c.Item?.Name × @c.Quantity.ToQty()</td><td>@c.DueDate.ToDate()</td><td><partial name="_Badge" model="c.Status" /></td></tr> }
+            </tbody></table></div></div></div>
+        }
+        @if (outsourced.Any())
+        {
+            <div class="col-lg-6"><div class="card h-100"><div class="card-header">Gia công ngoài</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+                @foreach (var o in outsourced) { <tr><td><a asp-controller="Outsource" asp-action="Details" asp-route-id="@o.Id">@o.Number</a></td><td class="num">@o.Quantity.ToQty()</td><td>@o.ExpectedDate.ToDate()</td><td>@o.Status.GetDisplayName()</td></tr> }
+            </tbody></table></div></div></div>
+        }
+    </div>
+}
 <div class="card"><div class="card-header">Phiếu kho của lệnh</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
-    @foreach (var d in docs) { <tr><td>@d.Date.ToDate()</td><td><a asp-controller="Inventory" asp-action="Details" asp-route-id="@d.Id">@d.Number</a></td><td><partial name="_Badge" model="d.Type" /></td><td class="num">@d.TotalAmount.ToMoney()</td></tr> }
+    @foreach (var d in docs) { <tr><td>@d.Date.ToDate()</td><td><a asp-controller="Inventory" asp-action="Details" asp-route-id="@d.Id">@d.Number</a></td><td><partial name="_Badge" model="d.Type" /></td><td class="small">@d.Reason</td><td class="num">@d.TotalAmount.ToMoney()</td></tr> }
     @if (!docs.Any()) { <tr><td class="text-muted text-center py-3">Chưa có phiếu kho.</td></tr> }
 </tbody></table></div></div>

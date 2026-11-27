@@ -4223,3 +4223,366 @@ SL	Qty
 STT	No.
 SXC	Overhead
 TK	Account
+% lỗi	% defects
+(bán thành phẩm)	(semi-finished)
+(không chuyền)	(no line)
+(ngưng)	(inactive)
+(theo công đoạn)	(per operation)
++ Phiếu gia công	+ Outsourcing order
+-- công đoạn --	-- operation --
+30 ngày qua	Last 30 days
+Ban Giám đốc duyệt lệnh sản xuất lớn	Board approves large production orders
+Bàn làm việc phiên bản 2 dùng khung bàn bán thành phẩm	Desk version 2 using the semi-finished frame
+Bán thành phẩm	Semi-finished goods
+Bán thành phẩm & phiên bản định mức	Semi-finished goods & BOM versions
+Bán thành phẩm cho lệnh	Semi-finished goods for order
+Bán thành phẩm cho lệnh {0}	Semi-finished goods for order {0}
+Bán thành phẩm khung bàn cho lệnh bàn làm việc	Semi-finished desk frames for the desk production order
+Bán thành phẩm tự sản xuất – lập lệnh sản xuất, không đặt mua.	Semi-finished goods are made in-house – create a production order, do not purchase.
+Bán thành phẩm – tự sản xuất	Semi-finished – made in-house
+Bán thành phẩm: khung chân bàn	Semi-finished: desk leg frame
+Bật "Tính từ routing" khi sửa định mức để cập nhật.	Turn on "Calculate from routing" when editing the BOM to update.
+Chi tiết ghi nhận	Recorded details
+Chuyền	Line
+Chuyền / trung tâm	Line / work center
+Chuyền lắp ráp	Assembly line
+Chuyền sơn PU	PU painting line
+Chuẩn bị (phút / lô)	Setup (min / batch)
+Chênh lệch NVL	Material variance
+Chưa có kế hoạch.	No plans yet.
+Chưa có phiếu gia công.	No outsourcing orders yet.
+Chưa có sản lượng trong kỳ. Ghi nhận sản lượng tại trang lệnh sản xuất hoặc từ phiếu cân.	No output in the period. Record output on the production order page or from weighbridge tickets.
+Chưa có định mức đang áp dụng cho {0}.	No active BOM for {0}.
+Chưa khai báo quy trình – nhân công / SXC định mức nhập tay.	No routing declared – standard labor / overhead is entered manually.
+Chưa khai báo trung tâm sản xuất / quy trình sản xuất cho định mức.	No work centers / routing declared for the BOMs.
+Chưa khai báo trung tâm sản xuất.	No work centers declared.
+Chưa làm	Not started
+Chạy máy (phút / SP)	Run time (min / unit)
+Chỉ ghi nhận sản lượng cho lệnh đã phát và chưa hoàn thành.	Output can only be recorded for released orders that are not yet completed.
+Chỉ giao NVL cho phiếu nháp.	Materials can only be sent for draft orders.
+Chỉ gửi duyệt lệnh nháp.	Only draft orders can be submitted for approval.
+Chỉ phát lệnh với lệnh nháp hoặc đã duyệt.	Only draft or approved orders can be released.
+Chỉ trả NVL cho lệnh đang sản xuất.	Materials can only be returned for orders in production.
+Chỉ đóng lệnh đã hoàn thành.	Only completed orders can be closed.
+Chọn các dòng có số lượng kế hoạch và chưa lập lệnh.	Select lines that have a planned quantity and no order yet.
+Chọn kho xuất NVL	Select the material issuing warehouse
+Chọn đơn bán liên quan thì lệnh là sản xuất theo đơn hàng (MTO); để trống là sản xuất bổ sung tồn kho (MTS). Lệnh nháp cần qua bước duyệt theo quy tắc phê duyệt trước khi phát lệnh (tự duyệt nếu không có quy tắc áp dụng). Công đoạn của quy trình (routing) được sao vào lệnh để theo dõi tiến độ.	Choosing a related sales order makes this a make-to-order (MTO) order; leave blank to replenish stock (MTS). Draft orders go through approval per the approval rules before release (auto-approved when no rule applies). Routing operations are copied into the order to track progress.
+Chọn đơn vị gia công	Select the subcontractor
+Chọn đơn vị gia công.	Select the subcontractor.
+Các lần nhận hàng	Goods receipts
+Cân đếm chuyền lắp ráp	Assembly line counting scale
+Còn lệnh sản xuất bán thành phẩm chưa hoàn thành.	There are semi-finished production orders not yet completed.
+Công nhân	Workers
+Công nhân / ca	Workers / shift
+Công suất / tháng	Capacity / month
+Công suất / tháng (giờ)	Capacity / month (hours)
+Công suất tháng = giờ / ngày × hiệu suất × 22 ngày. Đơn giá giờ dùng để tính nhân công, SXC định mức theo quy trình; năng suất chuẩn dùng so sánh với năng suất thực tế trong Thống kê sản lượng.	Monthly capacity = hours / day × efficiency × 22 days. Hourly rates are used to calculate standard labor and overhead from routing; standard productivity is compared with actual productivity in Output statistics.
+Công đoạn & sản lượng	Operations & output
+Công đoạn không thuộc lệnh.	The operation does not belong to the order.
+Cảnh báo khi lệch ≥ (%)	Warn when variance ≥ (%)
+Cần mua / sản xuất thêm	To buy / make
+Cần mua thêm = nhu cầu còn lại + tồn tối thiểu − tồn kho − đang đặt mua (đơn nháp, chờ duyệt, đã duyệt chưa nhận). Bán thành phẩm còn thiếu (sau khi trừ tồn và lệnh sản xuất đang mở) được bung tiếp xuống nguyên vật liệu theo định mức của chúng; bán thành phẩm tự sản xuất nên không đặt mua.	To buy = remaining demand + minimum stock − stock − on order (draft, pending, approved not received). Missing semi-finished goods (after stock and open production orders) are exploded further into materials per their BOM; semi-finished goods are made in-house so they are not purchased.
+Cắt gỗ sồi	Cut oak
+Cắt ván	Cut boards
+Dòng này không phải bán thành phẩm.	This line is not a semi-finished good.
+Dữ liệu mẫu: dự báo + đơn hàng đã xác nhận	Sample data: forecast + confirmed orders
+Dự báo	Forecast
+Ghi chú (không bắt buộc)	Note (optional)
+Ghi nhận	Record
+Gia công lắp ráp & sơn kệ sách đợt tháng này	Outsourced assembly & painting of bookshelves this month
+Gia công ngoài	Outsourcing
+Gia công {0}	Outsourcing {0}
+Giai đoạn	Period
+Giao NVL gia công ngoài {0}	Materials sent for outsourcing {0}
+Giao nguyên vật liệu	Send materials
+Giao nguyên vật liệu cho đơn vị gia công và ghi sổ xuất kho?	Send materials to the subcontractor and post the stock issue?
+Giá thành nhập kho dự kiến / {0}	Expected stock-in cost / {0}
+Giá trị NVL giao đơn vị gia công	Value of materials sent to subcontractor
+Giá trị đã giao	Value sent
+Giờ / SP	Hours / unit
+Giờ / ngày	Hours / day
+Giờ làm việc	Working hours
+Hiệu lực {0} → {1}	Effective {0} → {1}
+Hiệu suất	Efficiency
+Hiệu suất %	Efficiency %
+Hiệu suất (%)	Efficiency (%)
+Hoàn thiện & đóng gói	Finishing & packing
+Hoàn thành & nhập kho {0}	Complete & receive {0}
+Hoàn thành lệnh và nhập kho?	Complete the order and receive into stock?
+Hình thức	Type
+Hình thức sản xuất	Production type
+Hóa đơn mua phí gia công được lập nháp, nhập số hóa đơn rồi ghi sổ.	The processing-fee purchase invoice is created as a draft; enter the invoice number, then post.
+Hóa đơn phí	Fee invoice
+Hạn nhận	Due
+Hạn nhận hàng	Expected receipt date
+Hủy phiếu gia công?	Cancel the outsourcing order?
+Kho xuất NVL	Material issuing warehouse
+Khung bàn gỗ sồi (bán thành phẩm)	Oak desk frame (semi-finished)
+Không có lệnh hoàn thành trong kỳ.	No completed orders in the period.
+Không có thành phẩm / bán thành phẩm nào có định mức đang áp dụng.	No finished / semi-finished goods have an active BOM.
+Không tìm thấy dòng NVL.	Material line not found.
+Không tìm thấy dòng.	Line not found.
+Không tìm thấy kế hoạch.	Plan not found.
+Không tìm thấy phiếu cân.	Weighbridge ticket not found.
+Không tìm thấy định mức.	BOM not found.
+Ký hiệu hóa đơn NCC	Vendor invoice series
+Kế hoạch sản xuất quý (mẫu)	Quarterly production plan (sample)
+Kế hoạch sản xuất tổng thể (MPS)	Master production schedule (MPS)
+Kế hoạch theo mặt hàng và tháng	Plan by item and month
+Kế hoạch tổng thể (MPS)	Master schedule (MPS)
+Kế hoạch {0}	Plan {0}
+Kế hoạch {0} · hoàn thành {1}	Plan {0} · completed {1}
+Kết thúc hiệu lực bản cũ	End the old version's validity
+Kỳ có đơn bán đã xác nhận sẽ tạo lệnh theo đơn hàng (MTO), ngược lại theo kho (MTS). Lệnh tạo ở trạng thái nháp.	Periods with confirmed sales orders create make-to-order (MTO) orders, otherwise make-to-stock (MTS). Orders are created as drafts.
+Lập kế hoạch	Create plan
+Lập kế hoạch mới	New plan
+Lập lệnh SX theo đơn	Create MTO production order
+Lập lệnh SX →	Create production order →
+Lắp khung	Assemble frame
+Lắp ráp	Assembly
+Lệnh	Order
+Lệnh sản xuất bán thành phẩm	Semi-finished production orders
+Lệnh sản xuất liên quan	Related production order
+Lệnh sản xuất {0} – {1} {2}	Production order {0} – {1} {2}
+Lệnh {0} không cần duyệt theo quy tắc, đã được duyệt tự động.	Order {0} needs no approval under the rules and was auto-approved.
+Lệnh {0} đang chờ duyệt.	Order {0} is pending approval.
+Lệnh {0} đã gửi duyệt – {1}.	Order {0} submitted for approval – {1}.
+Lệnh {0} đã được duyệt hoàn tất, có thể phát lệnh.	Order {0} is fully approved and can be released.
+MPS lập theo tháng cho thành phẩm / bán thành phẩm: nhu cầu = đơn bán đã xác nhận chưa giao (theo ngày giao) + dự báo; đề xuất sản xuất trừ tồn kho và lệnh đang mở, cộng tồn tối thiểu; công suất kiểm tra theo quy trình (routing) của định mức so với giờ khả dụng của trung tâm sản xuất.	The MPS is monthly for finished / semi-finished goods: demand = confirmed undelivered sales orders (by delivery date) + forecast; suggested production deducts stock and open orders and adds minimum stock; capacity is checked from the BOM routing against available hours of the work centers.
+Mã trung tâm đã tồn tại.	The work center code already exists.
+Mặc định theo {0}, sửa theo thực tế.	Defaults per {0}; edit to actual.
+Mặt hàng (bỏ trống = tất cả có định mức)	Items (blank = all with a BOM)
+Mọi hình thức	All types
+Mở hộp duyệt →	Open approval inbox →
+NS chuẩn (SP/giờ)	Std productivity (units/h)
+NVL thực tế	Actual materials
+NVL định mức	Standard materials
+Nguyên vật liệu & bán thành phẩm	Materials & semi-finished goods
+Nguyên vật liệu / bán thành phẩm	Materials / semi-finished goods
+Nguyên vật liệu giao gia công	Materials sent for outsourcing
+Nguyên vật liệu giao đi được tính theo định mức × số lượng gia công. Giao NVL: Nợ 154 / Có 152 (hoặc 155 với bán thành phẩm). Nhận hàng: nhập kho Nợ 155 / Có 154 theo giá trị NVL + phí gia công; phí gia công hạch toán qua hóa đơn mua Nợ 154 / Có 331.	Materials sent are calculated as BOM × outsourced quantity. Sending materials: Dr 154 / Cr 152 (or 155 for semi-finished goods). Receiving goods: stock-in Dr 155 / Cr 154 at material value + processing fee; the processing fee is posted through a purchase invoice Dr 154 / Cr 331.
+Ngày nhận	Receipt date
+Nhu cầu nguyên vật liệu từ {0} lệnh sản xuất đang mở (bung nhiều cấp qua bán thành phẩm)	Material demand from {0} open production orders (multi-level through semi-finished goods)
+Nhu cầu đơn hàng	Order demand
+Nhân công / giờ	Labor / hour
+Nhân công TT	Actual labor
+Nhân công ĐM	Standard labor
+Nhận hàng & nhập kho	Receive goods & stock in
+Nhận hàng gia công	Receive outsourced goods
+Nhận hàng gia công ngoài {0}	Receipt of outsourced goods {0}
+Nhận hàng và nhập kho?	Receive goods and stock in?
+Nhập mã và tên trung tâm sản xuất.	Enter the work center code and name.
+Nhập số lượng đạt hoặc số lượng lỗi.	Enter a good or defect quantity.
+Nhập trả NVL thừa từ lệnh sản xuất {0}	Return of surplus materials from production order {0}
+Nhập tên kế hoạch	Enter the plan name
+Nhập tên kế hoạch.	Enter the plan name.
+Năng suất chuẩn (SP / giờ)	Standard productivity (units / hour)
+Phiên bản	Version
+Phiên bản 1 – dùng gỗ sồi trực tiếp	Version 1 – uses oak directly
+Phiên bản 2 – dùng bán thành phẩm khung bàn (định mức nhiều cấp)	Version 2 – uses the semi-finished desk frame (multi-level BOM)
+Phiên bản này đã có – dùng "Tạo phiên bản mới".	This version already exists – use "Create new version".
+Phiên bản {0}	Version {0}
+Phiên bản {0} – sao chép từ {1}	Version {0} – copied from {1}
+Phiếu chưa giao NVL hoặc đã nhận đủ.	Materials not sent yet or fully received.
+Phiếu cân	Weighbridge ticket
+Phiếu cân chưa ghi nhận sản lượng (tham chiếu {0})	Weighbridge tickets not yet recorded as output (reference {0})
+Phiếu cân không tham chiếu lệnh này.	The weighbridge ticket does not reference this order.
+Phiếu cân {0} ({1})	Weighbridge ticket {0} ({1})
+Phiếu cân đã được ghi nhận.	The weighbridge ticket has already been recorded.
+Phiếu gia công ngoài	Outsourcing order
+Phiếu nhập	Receipt
+Phí gia công	Processing fee
+Phí gia công ({0} × {1})	Processing fee ({0} × {1})
+Phí gia công / đơn vị	Processing fee / unit
+Phí gia công ngoài theo phiếu {0}	Outsourcing processing fee per order {0}
+Phí gia công {0}	Processing fee {0}
+Phút	Minutes
+Phút kế hoạch	Planned minutes
+Phút làm	Minutes worked
+Phút thực tế	Actual minutes
+Quy trình sản xuất (routing)	Production routing
+Quy tắc duyệt	Approval rules
+SL đạt (đã ghi nhận {0})	Good qty (recorded {0})
+SP / giờ	Units / hour
+SP / giờ chuẩn	Std units / hour
+SP / giờ thực tế	Actual units / hour
+SXC / giờ	Overhead / hour
+SXC ĐM	Standard overhead
+So sánh định mức và thực tế	Standard vs. actual comparison
+Sơn PU	PU painting
+Sản lượng đạt	Good output
+Sản lượng định mức {0} {1} · Hiệu lực {2} → {3} · {4}	Standard output {0} {1} · Effective {2} → {3} · {4}
+Sản xuất theo kho (MTS)	Make to stock (MTS)
+Sản xuất theo đơn hàng (MTO)	Make to order (MTO)
+Sản xuất theo đơn hàng (MTO) phải chọn đơn bán liên quan.	A make-to-order (MTO) order must have a related sales order.
+Số công nhân / ca	Workers / shift
+Số giờ làm / ngày	Working hours / day
+Số giờ làm 0–24, hiệu suất > 0, đơn giá không âm.	Working hours 0–24, efficiency > 0, non-negative rates.
+Số lượng gia công	Outsourced quantity
+Số lượng gia công phải lớn hơn 0.	The outsourced quantity must be greater than 0.
+Số lượng nhận (còn {0})	Received qty (remaining {0})
+Số lượng nhận phải từ 0 đến {0} (còn lại).	The received quantity must be between 0 and {0} (remaining).
+Số lượng trả phải từ 0 đến {0} (đã xuất).	The return quantity must be between 0 and {0} (issued).
+Số lượng và thời gian không âm.	Quantities and time must not be negative.
+Số tháng	Months
+Theo chuyền / trung tâm (so với năng suất chuẩn)	By line / work center (vs. standard productivity)
+Theo ngày	By day
+Theo routing: {0} giờ / SP · nhân công {1} · SXC {2} / SP	Per routing: {0} h / unit · labor {1} · overhead {2} / unit
+Thuế GTGT {0}%	VAT {0}%
+Thêm trung tâm sản xuất	Add work center
+Thống kê sản lượng	Output statistics
+Thống kê sản lượng & năng suất	Output & productivity statistics
+Thời gian công đoạn không âm, số công nhân ≥ 1.	Operation times must not be negative, workers ≥ 1.
+Tiến độ	Progress
+Trung tâm	Work center
+Trung tâm & routing	Work centers & routing
+Trung tâm sản xuất	Work centers
+Tên trung tâm / chuyền	Work center / line name
+Tính nhân công, SXC định mức từ quy trình sản xuất (theo đơn giá giờ của trung tâm)	Calculate standard labor and overhead from the production routing (using the work centers' hourly rates)
+Tính từ routing	Calculate from routing
+Tạo lệnh SX BTP ({0})	Create semi-finished order ({0})
+Tạo lệnh sản xuất cho các dòng đã chọn	Create production orders for the selected lines
+Tạo phiên bản mới	Create new version
+Tạo phiên bản mới từ định mức này?	Create a new version from this BOM?
+Tải công suất theo trung tâm sản xuất (giờ)	Capacity load by work center (hours)
+Tất cả phiên bản	All versions
+Tồn dự kiến cuối kỳ	Projected closing stock
+Tồn đầu kỳ + đang SX	Opening stock + in production
+Tổ cắt ván CNC	CNC board cutting team
+Tổ hoàn thiện & đóng gói	Finishing & packing team
+Tổng thực tế	Total actual
+Tổng ĐM	Total standard
+Tủ hồ sơ cho đơn dự án	Filing cabinets for a project order
+Tủ hồ sơ số lượng lớn – chờ duyệt	Filing cabinets, large quantity – pending approval
+Từ kế hoạch tổng thể {0}	From master schedule {0}
+Từ tháng	From month
+VD: Cắt ván	E.g. Cut boards
+VD: Kế hoạch sản xuất quý 1/2027	E.g. Production plan Q1/2027
+Xuất bổ sung / trả lại	Extra issue / return
+Xuất bổ sung NVL cho lệnh sản xuất {0}	Additional material issue for production order {0}
+Xuất thêm	Issue more
+Xóa kế hoạch	Delete plan
+Xóa kế hoạch? Lệnh sản xuất đã tạo được giữ nguyên.	Delete the plan? Production orders already created are kept.
+bán thành phẩm	semi-finished goods
+thành phẩm	finished goods
+quy trình (routing)	routing
+định mức	BOM
+{0} Sản xuất theo đơn {1}	{0} Make-to-order for sales order {1}
+{0} chưa có định mức.	{0} has no BOM.
+{0} giờ · {1} SP	{0} h · {1} units
+{0} lệnh	{0} orders
+{0} thiếu {1}	{0} short {1}
+{0}: còn {1} chưa có lệnh sản xuất	{0}: {1} remaining without a production order
+· Duyệt {0}	· Approved {0}
+· Lệnh	· Order
+· Đóng {0}	· Closed {0}
+Áp dụng từ ngày	Effective from
+Áp dụng đến ngày	Effective until
+Đang làm	In progress
+Đang đặt mua / đang SX	On order / in production
+Đã ghi nhận sản lượng {0} đạt, {1} lỗi ({2}).	Recorded output of {0} good, {1} defective ({2}).
+Đã ghi nhận {0} từ phiếu cân {1}.	Recorded {0} from weighbridge ticket {1}.
+Đã giao NVL	Materials sent
+Đã giao NVL phiếu kho {0}, trị giá {1} đ (Nợ 154 / Có 15x).	Materials sent on stock document {0}, value {1} VND (Dr 154 / Cr 15x).
+Đã giao NVL, không hủy được.	Materials already sent; cannot be cancelled.
+Đã lưu kế hoạch.	Plan saved.
+Đã lưu trung tâm sản xuất {0}.	Work center {0} saved.
+Đã lập hóa đơn mua phí gia công ở trạng thái nháp – nhập số hóa đơn và ghi sổ.	A draft purchase invoice for the processing fee was created – enter the invoice number and post it.
+Đã lập kế hoạch {0}. Nhập dự báo, bấm "Đề xuất" để tính số lượng sản xuất theo đơn hàng và tồn kho.	Plan {0} created. Enter forecasts, then click "Suggest" to calculate production quantities from orders and stock.
+Đã lập lệnh	Order created
+Đã lập phiếu gia công {0}. Giao nguyên vật liệu cho đơn vị gia công để bắt đầu.	Outsourcing order {0} created. Send materials to the subcontractor to start.
+Đã nhận / đặt	Received / ordered
+Đã nhận {0} {1} nhập kho, giá trị {2} đ (NVL {3} + phí gia công {4}).	Received {0} {1} into stock, value {2} VND (materials {3} + processing fee {4}).
+Đã nhập trả NVL thừa phiếu {0}, trị giá {1} đ.	Surplus materials returned on document {0}, value {1} VND.
+Đã tạo lệnh sản xuất bán thành phẩm {0} ({1}). Phát lệnh và sản xuất xong thì bán thành phẩm nhập kho để lệnh này xuất dùng.	Semi-finished production order {0} ({1}) created. Once released and produced, the semi-finished goods are received into stock for this order to issue.
+Đã tạo lệnh sản xuất {0} và phát lệnh.	Production order {0} created and released.
+Đã tạo lệnh sản xuất {0}.	Production order {0} created.
+Đã tạo phiên bản {0} ({1}) hiệu lực từ {2}. Chỉnh sửa định mức rồi lưu.	Version {0} ({1}) created, effective from {2}. Edit the BOM and save.
+Đã tạo {0} lệnh sản xuất nháp: {1}	Created {0} draft production orders: {1}
+Đã từ chối lệnh {0}, trở về nháp.	Order {0} rejected, back to draft.
+Đã xuất bổ sung NVL phiếu {0}, trị giá {1} đ.	Additional materials issued on document {0}, value {1} VND.
+Đã xóa kế hoạch {0} (lệnh sản xuất đã tạo được giữ nguyên).	Plan {0} deleted (production orders already created are kept).
+Đã đóng lệnh	Order closed
+Đã đóng lệnh {0}.	Order {0} closed.
+Đã đề xuất số lượng sản xuất = nhu cầu (đơn hàng + dự báo) + tồn tối thiểu − tồn dự kiến − lệnh đang mở. Điều chỉnh rồi lưu.	Suggested production quantity = demand (orders + forecast) + minimum stock − projected stock − open orders. Adjust, then save.
+Đã đủ tồn / đã có lệnh sản xuất bán thành phẩm cho dòng này.	Stock is sufficient / a semi-finished production order already exists for this line.
+Đóng lệnh	Close order
+Đóng lệnh? Lệnh đã đóng không ghi nhận thêm sản lượng.	Close the order? A closed order accepts no more output.
+Đơn vị gia công	Subcontractor
+Đơn vị gia công phải là nhà cung cấp.	The subcontractor must be a vendor.
+Đạt chuẩn	Meets standard
+Đếm sản lượng ca chiều	Afternoon shift output count
+Đếm sản lượng ca sáng	Morning shift output count
+Đề xuất	Suggested
+Đề xuất số lượng	Suggest quantities
+Để trống tên công đoạn để bỏ dòng. Thời gian chuẩn bị tính cho cả lô; thời gian chạy máy tính cho 1 đơn vị sản phẩm. Công đoạn được sao vào lệnh sản xuất để theo dõi tiến độ.	Leave the operation name blank to skip the row. Setup time is per batch; run time is per unit of product. Operations are copied into the production order to track progress.
+Định mức bị lặp vòng: bán thành phẩm trong định mức lại chứa chính thành phẩm này.	The BOM is circular: a semi-finished good in the BOM contains this finished good itself.
+Định mức tính cho "Sản lượng định mức" thành phẩm. Nhu cầu NVL của lệnh = định mức × SL sản xuất / sản lượng định mức × (1 + hao hụt%). Có thể chọn bán thành phẩm (có định mức riêng) để định mức nhiều cấp.	The BOM is for "Standard output" finished goods. Order material demand = BOM × production qty / standard output × (1 + scrap%). You can choose semi-finished goods (with their own BOM) for a multi-level BOM.
+Định mức tính theo số lượng hoàn thành thực tế (gồm tỷ lệ hao hụt định mức), nhân công / SXC theo quy trình (routing) nếu có, ngược lại theo định mức nhập tay. Chênh lệch dương (đỏ) là chi phí vượt định mức; nguyên nhân thường là xuất bổ sung NVL, hao hụt vượt định mức hoặc nhân công thực tế cao hơn.	Standards are based on the actual completed quantity (including the standard scrap rate); labor / overhead per routing if available, otherwise manually entered standards. A positive (red) variance is cost above standard, usually due to extra material issues, scrap above standard or higher actual labor.
+Định mức vs thực tế	Standard vs. actual
+← Danh sách kế hoạch	← Plan list
+↳ Định mức	↳ BOM
+Lệnh sản xuất	Production orders
+Chờ duyệt	Pending approval
+Đã duyệt	Approved
+Đã đóng lệnh	Order closed
+Chờ duyệt cấp {0}/{1}: {2}	Pending approval level {0}/{1}: {2}
+Chưa làm	Not started
+Gia công ngoài	Outsourcing
+Hoàn thành	Completed
+Tổ trưởng	Team leader
+Đã nhận đủ	Fully received
+Sản xuất theo đơn {0}	Make-to-order for sales order {0}
+Ngưng	Inactive
+Tất cả mặt hàng	All items
+Đang áp dụng	Active
+Định mức {0}	BOM {0}
+Phiên bản mới nhất	Latest version
+Bán thành phẩm (BTP)	Semi-finished (SFG)
+BTP	SFG
+Nhu cầu còn lại	Remaining demand
+Tạo đơn mua nháp cho số lượng trên, nhà cung cấp:	Create a draft purchase order for the quantities above, vendor:
+Lập lệnh SX	Create production order
+Tồn tối thiểu	Minimum stock
+Quá tải công suất: {0}. Giảm số lượng, tăng ca hoặc chuyển bớt sang gia công ngoài.	Capacity overload: {0}. Reduce quantities, add shifts or move some work to outsourcing.
+Quá tải công suất: {0}	Capacity overload: {0}
+Thiếu NVL trong kho xuất: {0}	Material shortage in the issuing warehouse: {0}
+Thiếu nguyên vật liệu	Material shortage
+Mã	Code
+Đã tạo yêu cầu	Request created
+Nhân công trực tiếp	Direct labor
+Chi phí sản xuất chung	Manufacturing overhead
+Chi phí NVL trực tiếp	Direct material cost
+Giá thành định mức / 1 SP	Standard cost / unit
+Gửi duyệt	Submit for approval
+Phát lệnh	Release order
+Hủy lệnh	Cancel order
+Hủy	Cancel
+Duyệt	Approve
+Khung bàn	Desk frame
+Kiểm tra chất lượng	Quality inspection
+Lệnh đang chờ duyệt	Order pending approval
+Lệnh sản xuất đang mở	Open production orders
+Sản xuất theo đơn hàng (MTO) – {0}	Make-to-order (MTO) – {0}
+Số lượng kế hoạch	Planned quantity
+SL kế hoạch	Planned qty
+Tồn kho xuất	Issuing stock
+Mặt hàng	Item
+Tháng	Month
+Lập kế hoạch tổng thể	Create master schedule
+Lập kế hoạch mới (MPS)	New master schedule (MPS)
+Công đoạn	Operation
+Trung tâm sản xuất / chuyền	Work center / line
+Mô tả	Description
+Tên kế hoạch	Plan name
+Tên	Name
+Ghi chú	Note
+Các phiên bản:	Versions:
+Năng suất {0} SP / giờ	Productivity {0} units / hour
+Quy trình: {0} · {1} giờ / SP	Routing: {0} · {1} h / unit
+Kho xuất NVL {0} → nhận hàng vào {1}	Issuing warehouse {0} → receiving into {1}
+Hạn nhận {0}	Due {0}
+Cần mua / sản xuất thêm	To buy / make
+Duyệt {0}	Approved {0}
+Ca	Shift
+Đóng {0}	Closed {0}

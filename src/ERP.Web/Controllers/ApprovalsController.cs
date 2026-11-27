@@ -27,6 +27,7 @@ public class ApprovalsController : ErpControllerBase
         ApprovalDocType.JournalEntry => url.Action("Details", "Journals", new { id }),
         ApprovalDocType.Payroll => url.Action("Details", "Payroll", new { id }),
         ApprovalDocType.PurchaseRequisition => url.Action("Details", "Requisitions", new { id }),
+        ApprovalDocType.ProductionOrder => url.Action("Details", "Production", new { id }),
         _ => null
     };
 
@@ -60,6 +61,14 @@ public class ApprovalsController : ErpControllerBase
                 if (prSt == ApprovalStatus.Approved) pr.Status = RequestStatus.Approved; else if (prSt == ApprovalStatus.Rejected) pr.Status = RequestStatus.Draft;
                 await Db.SaveChangesAsync();
                 msg = prSt == ApprovalStatus.Pending ? $"Đã duyệt cấp của bạn – {WorkflowService.Describe(req)}." : prSt == ApprovalStatus.Rejected ? $"Đã từ chối đề nghị {req.DocNumber}, trở về nháp." : $"Đề nghị {req.DocNumber} đã được duyệt hoàn tất.";
+                break;
+            case ApprovalDocType.ProductionOrder:
+                var mo = await Db.ProductionOrders.FirstAsync(p => p.Id == req.DocId);
+                var moSt = await _wf.ActAsync(req, approve, comment);
+                if (moSt == ApprovalStatus.Approved) { mo.Status = ProductionStatus.Approved; mo.ApprovedById = Me; mo.ApprovedAt = DateTime.Now; }
+                else if (moSt == ApprovalStatus.Rejected) mo.Status = ProductionStatus.Draft;
+                await Db.SaveChangesAsync();
+                msg = moSt == ApprovalStatus.Pending ? $"Đã duyệt cấp của bạn – {WorkflowService.Describe(req)}." : moSt == ApprovalStatus.Rejected ? $"Đã từ chối lệnh {req.DocNumber}, trở về nháp." : $"Lệnh {req.DocNumber} đã được duyệt hoàn tất, có thể phát lệnh.";
                 break;
             default:
                 var st = await _wf.ActAsync(req, approve, comment);

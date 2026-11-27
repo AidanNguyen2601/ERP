@@ -70,6 +70,7 @@ public enum ApprovalDocType
     [Display(Name = "Chứng từ kế toán thủ công")] JournalEntry = 3,
     [Display(Name = "Bảng lương")] Payroll = 4,
     [Display(Name = "Đề nghị mua hàng")] PurchaseRequisition = 5,
+    [Display(Name = "Lệnh sản xuất")] ProductionOrder = 6,
 }
 
 public enum ApprovalStatus

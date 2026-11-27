@@ -59,9 +59,9 @@ public class QcInspectionsController : ErpControllerBase
             if (mo == null) return NotFound();
             var done = await InspectedAsync(DocOrigin.Production, mo.Id, mo.ItemId);
             var basis = mo.CompletedQty > 0 ? mo.CompletedQty : mo.Quantity;
-            var st = mo.Status == ProductionStatus.Completed ? QcStage.Final : QcStage.InProcess;
+            var st = mo.Status is ProductionStatus.Completed or ProductionStatus.Closed ? QcStage.Final : QcStage.InProcess;
             draft = await _qc.DraftAsync(st, mo.Item!, lotQty ?? Math.Max(basis - done, 0), DocOrigin.Production, mo.Number, mo.Id, null,
-                mo.Status == ProductionStatus.Completed ? mo.FinishedWarehouseId : mo.MaterialWarehouseId, qcPlanId);
+                mo.Status is ProductionStatus.Completed or ProductionStatus.Closed ? mo.FinishedWarehouseId : mo.MaterialWarehouseId, qcPlanId);
         }
         else if (soId.HasValue)
         {

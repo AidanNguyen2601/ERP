@@ -8,7 +8,7 @@
 <form class="toolbar" method="get">
     <div><label class="form-label small mb-0">Kho</label><select name="warehouseId" class="form-select form-select-sm"><option value="">-- Tất cả --</option>@foreach (var w in whs) { <option value="@w.Id" selected="@((int?)ViewBag.WarehouseId == w.Id)">@w.Name</option> }</select></div>
     <div><label class="form-label small mb-0">Loại</label><select name="type" class="form-select form-select-sm"><option value="">-- Tất cả --</option>
-        @foreach (var t in new[] { ItemType.Material, ItemType.FinishedGood, ItemType.Merchandise }) { <option value="@t" selected="@(ViewBag.Type is ItemType x && x == t)">@t.GetDisplayName()</option> }</select></div>
+        @foreach (var t in new[] { ItemType.Material, ItemType.SemiFinished, ItemType.FinishedGood, ItemType.Merchandise }) { <option value="@t" selected="@(ViewBag.Type is ItemType x && x == t)">@t.GetDisplayName()</option> }</select></div>
     <div class="form-check mb-1"><input type="checkbox" name="low" value="true" class="form-check-input" id="low" checked="@((bool)ViewBag.Low)" /><label for="low" class="form-check-label small">Dưới tồn tối thiểu</label></div>
     <button class="btn btn-sm btn-outline-primary">Lọc</button>
     <div class="ms-auto fw-semibold">Giá trị tồn: @value.ToMoney() đ</div>

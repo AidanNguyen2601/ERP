@@ -32,6 +32,7 @@ public static class DbSeeder
             await GroupDemoSeeder.SeedInvestmentAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("GroupDemoSeeder"));
             await TradeDemoSeeder.SeedAsync(db);
             await ProcessDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("ProcessDemoSeeder"));
+            await ManufacturingDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("ManufacturingDemoSeeder"));
             await BackfillPurchaseReturnsAsync(sp, db);
             return;
         }
@@ -46,6 +47,7 @@ public static class DbSeeder
         await GroupDemoSeeder.SeedInvestmentAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("GroupDemoSeeder"));
         await TradeDemoSeeder.SeedAsync(db);
         await ProcessDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("ProcessDemoSeeder"));
+        await ManufacturingDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("ManufacturingDemoSeeder"));
         await BackfillPurchaseReturnsAsync(sp, db);
     }
 
@@ -114,12 +116,14 @@ public static class DbSeeder
             var ix = indexRx.Match(b);
             if (ix.Success && created.Contains(ix.Groups[1].Value)) await db.Database.ExecuteSqlRawAsync(b);
         }
+        // Lệnh sản xuất gắn đơn bán là sản xuất theo đơn hàng (MTO) – đồng bộ cho dữ liệu cũ
+        await db.Database.ExecuteSqlRawAsync("UPDATE dbo.ProductionOrders SET OrderType = 2 WHERE SalesOrderId IS NOT NULL AND OrderType <> 2");
     }
 
     /// <summary>Giá trị mặc định cho cột mới NOT NULL thêm vào bảng đã có dữ liệu</summary>
     private static readonly Dictionary<string, string> ColumnDefaults = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["AllBranches"] = "1", ["ExchangeRate"] = "1", ["CurrencyCode"] = "N'VND'", ["ExpiryAlertDays"] = "30",
+        ["AllBranches"] = "1", ["ExchangeRate"] = "1", ["CurrencyCode"] = "N'VND'", ["ExpiryAlertDays"] = "30", ["VersionNo"] = "1", ["OrderType"] = "1",
     };
 
     /// <summary>Thêm các cột có trong model nhưng chưa có trong bảng (dựa trên lệnh CREATE TABLE do EF sinh). Không sửa / xóa cột cũ.</summary>

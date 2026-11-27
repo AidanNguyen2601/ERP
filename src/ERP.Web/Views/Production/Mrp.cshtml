@@ -1,20 +1,21 @@
 @model List<(Item Item, decimal Need, string Orders, decimal Stock, decimal Incoming, decimal Shortage)>
 @{ ViewData["Title"] = "Hoạch định nhu cầu vật tư (MRP)"; var orders = (List<ProductionOrder>)ViewBag.Orders; var canBuy = (bool)ViewBag.CanBuy; }
-<div class="subnav"><a asp-action="Index">Lệnh sản xuất</a><a asp-controller="Boms" asp-action="Index">Định mức (BOM)</a><a class="active" asp-action="Mrp">Hoạch định vật tư</a></div>
+<partial name="_MfgNav" model="@("mrp")" />
 <form asp-action="CreatePurchase" method="post">
-<div class="card mb-3"><div class="card-header">Nhu cầu nguyên vật liệu từ @orders.Count lệnh sản xuất đang mở</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0">
-    <thead><tr><th>Mã</th><th>Vật tư</th><th>Cho lệnh</th><th class="num">Nhu cầu còn lại</th><th class="num">Tồn kho</th><th class="num">Đang đặt mua</th><th class="num">Tồn tối thiểu</th><th class="num">Cần mua thêm</th>@if (canBuy) { <th style="width:140px" class="text-end">SL đặt mua</th> }</tr></thead>
+<div class="card mb-3"><div class="card-header">Nhu cầu nguyên vật liệu từ @orders.Count lệnh sản xuất đang mở (bung nhiều cấp qua bán thành phẩm)</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0">
+    <thead><tr><th>Mã</th><th>Vật tư</th><th>Cho lệnh</th><th class="num">Nhu cầu còn lại</th><th class="num">Tồn kho</th><th class="num">Đang đặt mua / đang SX</th><th class="num">Tồn tối thiểu</th><th class="num">Cần mua / sản xuất thêm</th>@if (canBuy) { <th style="width:140px" class="text-end">SL đặt mua</th> }</tr></thead>
     <tbody>
     @foreach (var r in Model)
     {
-        <tr class="@(r.Shortage > 0 ? "table-warning" : "")"><td>@r.Item.Code</td><td>@r.Item.Name</td><td class="small">@r.Orders</td><td class="num">@r.Need.ToQty() @r.Item.Unit</td><td class="num">@r.Stock.ToQty()</td>
+        var semi = r.Item.Type == ItemType.SemiFinished;
+        <tr class="@(r.Shortage > 0 ? "table-warning" : "")"><td>@r.Item.Code</td><td>@r.Item.Name @if (semi) { <span class="badge bg-warning text-dark">Bán thành phẩm – tự sản xuất</span> }</td><td class="small">@r.Orders</td><td class="num">@r.Need.ToQty() @r.Item.Unit</td><td class="num">@r.Stock.ToQty()</td>
             <td class="num">@(r.Incoming > 0 ? r.Incoming.ToQty() : "")</td><td class="num">@r.Item.MinStock.ToQty()</td><td class="num fw-bold @(r.Shortage > 0 ? "bad" : "good")">@(r.Shortage > 0 ? r.Shortage.ToQty() : "Đủ")</td>
-            @if (canBuy) { <td><input type="number" step="1" min="0" name="qty[@r.Item.Id]" value="@Math.Ceiling(r.Shortage).Raw()" class="form-control form-control-sm text-end" /></td> }</tr>
+            @if (canBuy) { <td>@if (!semi) { <input type="number" step="1" min="0" name="qty[@r.Item.Id]" value="@Math.Ceiling(r.Shortage).Raw()" class="form-control form-control-sm text-end" /> } else if (r.Shortage > 0) { <a class="small" asp-action="Create" asp-route-itemId="@r.Item.Id" asp-route-qty="@Math.Ceiling(r.Shortage).Raw()">Lập lệnh SX →</a> }</td> }</tr>
     }
     @if (!Model.Any()) { <tr><td colspan="9" class="text-center text-muted py-4">Không có nhu cầu vật tư.</td></tr> }
     </tbody>
 </table></div></div>
-@if (canBuy && Model.Any(r => r.Shortage > 0))
+@if (canBuy && Model.Any(r => r.Shortage > 0 && r.Item.Type != ItemType.SemiFinished))
 {
     <div class="card-footer d-flex gap-2 align-items-center"><span>Tạo đơn mua nháp cho số lượng trên, nhà cung cấp:</span>
         <select name="vendorId" class="form-select form-select-sm" style="width:320px" asp-items="ViewBag.Vendors" required><option value="">-- Chọn --</option></select>
@@ -25,4 +26,4 @@
 <div class="card"><div class="card-header">Lệnh sản xuất đang mở</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
     @foreach (var o in orders) { <tr><td><a asp-action="Details" asp-route-id="@o.Id">@o.Number</a></td><td>@o.Item?.Name × @o.Quantity.ToQty()</td><td>@o.StartDate.ToDate() → @o.DueDate.ToDate()</td><td><partial name="_Badge" model="o.Status" /></td></tr> }
 </tbody></table></div></div>
-<div class="small text-muted mt-2">Cần mua thêm = nhu cầu còn lại + tồn tối thiểu − tồn kho − đang đặt mua (đơn nháp, chờ duyệt, đã duyệt chưa nhận).</div>
+<div class="small text-muted mt-2">Cần mua thêm = nhu cầu còn lại + tồn tối thiểu − tồn kho − đang đặt mua (đơn nháp, chờ duyệt, đã duyệt chưa nhận). Bán thành phẩm còn thiếu (sau khi trừ tồn và lệnh sản xuất đang mở) được bung tiếp xuống nguyên vật liệu theo định mức của chúng; bán thành phẩm tự sản xuất nên không đặt mua.</div>

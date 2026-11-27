@@ -1,5 +1,10 @@
 @model BomForm
-@{ ViewData["Title"] = Model.Id == 0 ? "Định mức mới" : $"Sửa định mức {Model.Code}"; }
+@{
+    ViewData["Title"] = Model.Id == 0 ? "Định mức mới" : $"Sửa định mức {Model.Code}";
+    var centers = (List<WorkCenter>)ViewBag.Centers;
+    var ops = Model.Ops.OrderBy(o => o.Seq).ToList();
+    for (var i = 0; i < 3; i++) ops.Add(new BomOpInput());
+}
 <form asp-action="Save" method="post"><input type="hidden" asp-for="Id" />
 <div class="card mb-3"><div class="card-body">
     <div asp-validation-summary="All" class="alert alert-danger py-2 empty-hide"></div>
@@ -8,12 +13,33 @@
         <div class="col-md-5"><label asp-for="FinishedItemId" class="form-label"></label><select asp-for="FinishedItemId" class="form-select" asp-items="ViewBag.Finished"><option value="">-- Chọn --</option></select></div>
         <div class="col-md-2"><label asp-for="OutputQuantity" class="form-label"></label><input asp-for="OutputQuantity" type="number" step="0.001" class="form-control" /></div>
         <div class="col-md-2 pt-4"><div class="form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div></div>
+        <div class="col-md-2"><label asp-for="VersionNo" class="form-label"></label><input asp-for="VersionNo" type="number" min="1" class="form-control" /><span asp-validation-for="VersionNo" class="text-danger small"></span></div>
+        <div class="col-md-3"><label asp-for="EffectiveFrom" class="form-label"></label><input asp-for="EffectiveFrom" type="date" class="form-control" /></div>
+        <div class="col-md-3"><label asp-for="EffectiveTo" class="form-label"></label><input asp-for="EffectiveTo" type="date" class="form-control" /></div>
+        <div class="col-md-4"><label asp-for="Note" class="form-label"></label><input asp-for="Note" class="form-control" /></div>
         <div class="col-md-3"><label asp-for="LaborCostPerUnit" class="form-label"></label><input asp-for="LaborCostPerUnit" type="number" step="1000" class="form-control" /></div>
         <div class="col-md-3"><label asp-for="OverheadPerUnit" class="form-label"></label><input asp-for="OverheadPerUnit" type="number" step="1000" class="form-control" /></div>
-        <div class="col-md-6"><label asp-for="Note" class="form-label"></label><input asp-for="Note" class="form-control" /></div>
+        <div class="col-md-6 pt-4"><div class="form-check"><input asp-for="AutoFromRouting" class="form-check-input" /><label asp-for="AutoFromRouting" class="form-check-label">Tính nhân công, SXC định mức từ quy trình sản xuất (theo đơn giá giờ của trung tâm)</label></div></div>
     </div>
 </div></div>
-<div class="card mb-3"><div class="card-body"><partial name="_ItemLines" model="(LineEditorOptions)ViewBag.LineOptions" />
-    <div class="small text-muted">Định mức tính cho "Sản lượng định mức" thành phẩm. Nhu cầu NVL của lệnh = định mức × SL sản xuất / sản lượng định mức × (1 + hao hụt%).</div></div></div>
+<div class="card mb-3"><div class="card-header">Nguyên vật liệu & bán thành phẩm</div><div class="card-body"><partial name="_ItemLines" model="(LineEditorOptions)ViewBag.LineOptions" />
+    <div class="small text-muted">Định mức tính cho "Sản lượng định mức" thành phẩm. Nhu cầu NVL của lệnh = định mức × SL sản xuất / sản lượng định mức × (1 + hao hụt%). Có thể chọn bán thành phẩm (có định mức riêng) để định mức nhiều cấp.</div></div></div>
+<div class="card mb-3"><div class="card-header">Quy trình sản xuất (routing)</div><div class="card-body p-0"><div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+        <thead><tr><th style="width:70px">Thứ tự</th><th style="min-width:200px">Công đoạn</th><th style="min-width:200px">Trung tâm sản xuất</th><th class="num" style="width:130px">Chuẩn bị (phút / lô)</th><th class="num" style="width:130px">Chạy máy (phút / SP)</th><th class="num" style="width:100px">Công nhân</th><th>Ghi chú</th></tr></thead>
+        <tbody>
+        @for (var i = 0; i < ops.Count; i++)
+        {
+            <tr><td><input name="Ops[@i].Seq" value="@(ops[i].Seq == 0 ? "" : ops[i].Seq.ToString())" class="form-control form-control-sm" /></td>
+                <td><input name="Ops[@i].Name" value="@ops[i].Name" class="form-control form-control-sm" placeholder="VD: Cắt ván" /></td>
+                <td><select name="Ops[@i].WorkCenterId" class="form-select form-select-sm"><option value="">--</option>@foreach (var w in centers) { <option value="@w.Id" selected="@(ops[i].WorkCenterId == w.Id)">@w.Code – @w.Name</option> }</select></td>
+                <td><input name="Ops[@i].SetupMinutes" type="number" step="0.1" min="0" value="@ops[i].SetupMinutes.Raw()" class="form-control form-control-sm text-end" /></td>
+                <td><input name="Ops[@i].RunMinutesPerUnit" type="number" step="0.1" min="0" value="@ops[i].RunMinutesPerUnit.Raw()" class="form-control form-control-sm text-end" /></td>
+                <td><input name="Ops[@i].Workers" type="number" min="1" value="@ops[i].Workers" class="form-control form-control-sm text-end" /></td>
+                <td><input name="Ops[@i].Note" value="@ops[i].Note" class="form-control form-control-sm" /></td></tr>
+        }
+        </tbody>
+    </table></div>
+    <div class="small text-muted p-2">Để trống tên công đoạn để bỏ dòng. Thời gian chuẩn bị tính cho cả lô; thời gian chạy máy tính cho 1 đơn vị sản phẩm. Công đoạn được sao vào lệnh sản xuất để theo dõi tiến độ.</div></div></div>
 <button class="btn btn-primary">Lưu</button> <a class="btn btn-light" asp-action="Index">Hủy</a>
 </form>

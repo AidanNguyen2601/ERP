@@ -1,0 +1,61 @@
+@model OutsourceOrder
+@{
+    ViewData["Title"] = $"Gia công {Model.Number}"; var stock = (Dictionary<int, decimal>)ViewBag.Stock; var docs = (List<InventoryDoc>)ViewBag.Docs;
+    var can = (bool)ViewBag.CanEdit; var canStock = (bool)ViewBag.CanStock;
+    var steps = new[] { OutsourceStatus.Draft, OutsourceStatus.Sent, OutsourceStatus.Received }; var cur = Array.IndexOf(steps, Model.Status);
+    var lack = Model.Materials.Where(m => m.Quantity > stock.GetValueOrDefault(m.ItemId)).ToList();
+    var remaining = Model.Quantity - Model.ReceivedQty;
+}
+<partial name="_MfgNav" model="@("os")" />
+<div class="flow mb-3">@for (var i = 0; i < steps.Length; i++) { if (i > 0) { <span class="arrow">›</span> } <span class="step @(i < cur ? "done" : i == cur ? "current" : "")">@steps[i].GetDisplayName()</span> }
+    @if (Model.Status == OutsourceStatus.Cancelled) { <span class="badge bg-dark ms-2">Đã hủy</span> }</div>
+<div class="card mb-3"><div class="card-body">
+    <div class="doc-head">
+        <div><div class="fs-5 fw-semibold">@Model.Number – @Model.Item?.Name × @Model.Quantity.ToQty() @Model.Item?.Unit <partial name="_Badge" model="Model.Status" /></div>
+            <div class="meta">Đơn vị gia công <b>@Model.Vendor?.Name</b> · Định mức @Model.Bom?.Code · Kho xuất NVL @Model.MaterialWarehouse?.Name → nhận hàng vào @Model.ReceiveWarehouse?.Name · Hạn nhận @Model.ExpectedDate.ToDate()
+                @(Model.ProductionOrder != null ? " · Lệnh " + Model.ProductionOrder.Number : "")</div>
+            @if (!string.IsNullOrWhiteSpace(Model.Note)) { <div>@Model.Note</div> }</div>
+        <div class="actions">
+            @if (canStock && Model.Status == OutsourceStatus.Draft) { <form asp-action="Send" asp-route-id="@Model.Id" method="post" data-confirm="Giao nguyên vật liệu cho đơn vị gia công và ghi sổ xuất kho?"><button class="btn btn-sm btn-primary" @(lack.Any() ? "disabled title='Thiếu nguyên vật liệu'" : "")>Giao nguyên vật liệu</button></form> }
+            @if (can && Model.Status == OutsourceStatus.Draft) { <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" data-confirm="Hủy phiếu gia công?"><button class="btn btn-sm btn-outline-danger">Hủy</button></form> }
+        </div>
+    </div>
+    @if (lack.Any() && Model.Status == OutsourceStatus.Draft) { <div class="alert alert-warning py-2">Thiếu NVL trong kho xuất: @string.Join("; ", lack.Select(m => $"{m.Item?.Code} thiếu {(m.Quantity - stock.GetValueOrDefault(m.ItemId)).ToQty()}"))</div> }
+    <table class="table table-sm">
+        <thead><tr><th>Nguyên vật liệu giao gia công</th><th class="num">Số lượng</th><th class="num">Tồn kho xuất</th><th class="num">Giá trị đã giao</th></tr></thead>
+        <tbody>@foreach (var m in Model.Materials) { <tr><td>@m.Item?.Code – @m.Item?.Name</td><td class="num">@m.Quantity.ToQty() @m.Item?.Unit</td><td class="num @(m.Quantity > stock.GetValueOrDefault(m.ItemId) ? "bad" : "")">@stock.GetValueOrDefault(m.ItemId).ToQty()</td><td class="num">@(m.Cost > 0 ? m.Cost.ToMoney() : "")</td></tr> }</tbody>
+    </table>
+    <div class="row g-3">
+        <div class="col-md-6"><table class="table table-sm mb-0">
+            <tr><td>Giá trị NVL giao đơn vị gia công</td><td class="num">@Model.MaterialCost.ToMoney()</td></tr>
+            <tr><td>Phí gia công (@Model.FeePerUnit.ToMoney() × @Model.Quantity.ToQty())</td><td class="num">@Model.FeeTotal.ToMoney()</td></tr>
+            <tr><td>Thuế GTGT @Model.VatRate%</td><td class="num">@Math.Round(Model.FeeTotal * Model.VatRate / 100m, 0).ToMoney()</td></tr>
+            <tr class="fw-bold"><td>Giá thành nhập kho dự kiến / @Model.Item?.Unit</td><td class="num">@((Model.MaterialCost / Model.Quantity + Model.FeePerUnit).ToMoney())</td></tr>
+            <tr><td>Đã nhận / đặt</td><td class="num">@Model.ReceivedQty.ToQty() / @Model.Quantity.ToQty()</td></tr>
+        </table></div>
+        @if (canStock && Model.Status == OutsourceStatus.Sent)
+        {
+            <div class="col-md-6"><div class="border rounded p-3"><div class="fw-semibold mb-2">Nhận hàng gia công</div>
+                <form asp-action="Receive" asp-route-id="@Model.Id" method="post" class="row g-2" data-confirm="Nhận hàng và nhập kho?">
+                    <div class="col-6"><label class="form-label small">Ngày nhận</label><input type="date" name="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+                    <div class="col-6"><label class="form-label small">Số lượng nhận (còn @remaining.ToQty())</label><input type="number" step="0.001" name="qty" value="@remaining.Raw()" class="form-control form-control-sm" /></div>
+                    <div class="col-6"><label class="form-label small">Ký hiệu hóa đơn NCC</label><input name="series" class="form-control form-control-sm" /></div>
+                    <div class="col-6"><label class="form-label small">Số hóa đơn NCC</label><input name="invoiceNo" class="form-control form-control-sm" /></div>
+                    <div class="col-12"><button class="btn btn-sm btn-success">Nhận hàng & nhập kho</button> <span class="small text-muted">Hóa đơn mua phí gia công được lập nháp, nhập số hóa đơn rồi ghi sổ.</span></div>
+                </form></div></div>
+        }
+    </div>
+</div></div>
+<div class="row g-3">
+    <div class="col-lg-7"><div class="card h-100"><div class="card-header">Các lần nhận hàng</div><div class="card-body p-0"><table class="table table-sm mb-0">
+        <thead><tr><th>Ngày</th><th class="num">Số lượng</th><th class="num">NVL</th><th class="num">Phí gia công</th><th>Phiếu nhập</th><th>Hóa đơn phí</th></tr></thead><tbody>
+        @foreach (var r in Model.Receipts.OrderBy(x => x.Date)) { <tr><td>@r.Date.ToDate()</td><td class="num">@r.Quantity.ToQty()</td><td class="num">@r.MaterialAmount.ToMoney()</td><td class="num">@r.FeeAmount.ToMoney()</td>
+            <td>@if (r.InventoryDoc != null) { <a asp-controller="Inventory" asp-action="Details" asp-route-id="@r.InventoryDocId">@r.InventoryDoc.Number</a> }</td>
+            <td>@if (r.Invoice != null) { <a asp-controller="Invoices" asp-action="Details" asp-route-id="@r.InvoiceId">@r.Invoice.Number</a> <partial name="_Badge" model="r.Invoice.Status" /> }</td></tr> }
+        @if (!Model.Receipts.Any()) { <tr><td colspan="6" class="text-muted text-center py-3">Chưa nhận hàng.</td></tr> }
+    </tbody></table></div></div></div>
+    <div class="col-lg-5"><div class="card h-100"><div class="card-header">Phiếu kho</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+        @foreach (var d in docs) { <tr><td>@d.Date.ToDate()</td><td><a asp-controller="Inventory" asp-action="Details" asp-route-id="@d.Id">@d.Number</a></td><td><partial name="_Badge" model="d.Type" /></td></tr> }
+        @if (!docs.Any()) { <tr><td class="text-muted text-center py-3">Chưa có phiếu kho.</td></tr> }
+    </tbody></table></div></div></div>
+</div>

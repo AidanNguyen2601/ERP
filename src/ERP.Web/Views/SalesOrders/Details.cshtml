@@ -63,6 +63,21 @@
         @if (!invs.Any()) { <tr><td class="text-muted text-center py-3">Chưa xuất hóa đơn.</td></tr> }
     </tbody></table></div></div></div>
 </div>
+@{ var mos = (List<ProductionOrder>)ViewBag.Mos; var makeBoms = (Dictionary<int, int>)ViewBag.MakeBoms; var madeQty = (Dictionary<int, decimal>)ViewBag.MadeQty; }
+@if (mos.Any() || (User.InAny(AppRoles.ProductionTeam) && Model.Status is SoStatus.Draft or SoStatus.Confirmed or SoStatus.PartiallyDelivered && Model.Lines.Any(l => makeBoms.ContainsKey(l.ItemId))))
+{
+    <div class="card mt-3"><div class="card-header">Sản xuất theo đơn hàng (MTO)</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+        @foreach (var p in mos) { <tr><td><a asp-controller="Production" asp-action="Details" asp-route-id="@p.Id">@p.Number</a></td><td>@p.Item?.Name</td><td class="num">@p.Quantity.ToQty()</td><td>@p.DueDate.ToDate()</td><td><partial name="_Badge" model="p.Status" /></td></tr> }
+        @if (User.InAny(AppRoles.ProductionTeam) && Model.Status is SoStatus.Draft or SoStatus.Confirmed or SoStatus.PartiallyDelivered)
+        {
+            @foreach (var l in Model.Lines.Where(l => makeBoms.ContainsKey(l.ItemId) && l.Item?.Type is ItemType.FinishedGood))
+            {
+                var need = l.Quantity - l.DeliveredQty - madeQty.GetValueOrDefault(l.ItemId);
+                if (need > 0) { <tr class="table-light"><td colspan="5">@l.Item?.Name: còn @need.ToQty() chưa có lệnh sản xuất <a class="btn btn-sm btn-outline-primary ms-2" asp-controller="Production" asp-action="Create" asp-route-bomId="@makeBoms[l.ItemId]" asp-route-qty="@need.Raw()" asp-route-salesOrderId="@Model.Id">Lập lệnh SX theo đơn</a></td></tr> }
+            }
+        }
+    </tbody></table></div></div>
+}
 @{ var ships = (List<Shipment>)ViewBag.Shipments; }
 @if (ships.Any())
 {

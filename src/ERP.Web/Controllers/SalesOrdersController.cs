@@ -42,6 +42,11 @@ public class SalesOrdersController : ErpControllerBase
         if (so == null) return NotFound();
         ViewBag.Deliveries = await Db.InventoryDocs.Include(d => d.Lines).Where(d => d.Origin == DocOrigin.Sales && d.OriginId == id).OrderBy(d => d.Date).ToListAsync();
         ViewBag.Invoices = await Db.Invoices.Where(i => i.SalesOrderId == id).OrderBy(i => i.Date).ToListAsync();
+        ViewBag.Mos = await Db.ProductionOrders.Include(p => p.Item).Where(p => p.SalesOrderId == id && p.Status != ProductionStatus.Cancelled).OrderBy(p => p.Number).ToListAsync();
+        var madeByItem = ((List<ProductionOrder>)ViewBag.Mos).GroupBy(p => p.ItemId).ToDictionary(g => g.Key, g => g.Sum(p => p.Quantity));
+        var boms = await Db.Boms.Where(b => b.IsActive).Select(b => new { b.FinishedItemId, b.Id, b.VersionNo }).ToListAsync();
+        ViewBag.MakeBoms = boms.Where(b => b.FinishedItemId != null).GroupBy(b => b.FinishedItemId!.Value).ToDictionary(g => g.Key, g => g.OrderByDescending(b => b.VersionNo).First().Id);
+        ViewBag.MadeQty = madeByItem;
         ViewBag.Shipments = await Db.Shipments.Include(s => s.InventoryDoc).Where(s => s.SalesOrderId == id).OrderBy(s => s.Id).ToListAsync();
         ViewBag.Stock = await _inv.OnHandAsync(so.WarehouseId!.Value, so.Lines.Select(l => l.ItemId));
         ViewBag.CanEdit = CanEdit; ViewBag.CanDeliver = CanDeliver; ViewBag.CanOverride = CanOverride;

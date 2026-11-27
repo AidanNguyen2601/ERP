@@ -80,11 +80,12 @@ public class AccountingService
     {
         ItemType.Material => Material,
         ItemType.FinishedGood => Finished,
+        ItemType.SemiFinished => Finished,
         _ => Goods
     };
     public static string RevenueAccount(ItemType? t) => t switch
     {
-        ItemType.FinishedGood => RevenueProducts,
+        ItemType.FinishedGood or ItemType.SemiFinished => RevenueProducts,
         ItemType.Merchandise or ItemType.Material => RevenueGoods,
         _ => RevenueServices
     };

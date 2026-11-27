@@ -2,14 +2,14 @@
 @{
     var css = Model switch
     {
-        DocStatus.Draft or InvoiceStatus.Draft or PoStatus.Draft or SoStatus.Draft or ProductionStatus.Draft => "bg-secondary",
+        DocStatus.Draft or InvoiceStatus.Draft or PoStatus.Draft or SoStatus.Draft or ProductionStatus.Draft or OutsourceStatus.Draft => "bg-secondary",
         DocStatus.Posted or InvoiceStatus.Issued => "bg-success",
-        DocStatus.Cancelled or InvoiceStatus.Cancelled or PoStatus.Cancelled or SoStatus.Cancelled or ProductionStatus.Cancelled => "bg-dark",
-        PoStatus.PendingApproval => "bg-warning text-dark",
-        PoStatus.Approved or SoStatus.Confirmed or ProductionStatus.Released => "bg-info text-dark",
-        PoStatus.PartiallyReceived or SoStatus.PartiallyDelivered or ProductionStatus.InProgress => "bg-primary",
+        DocStatus.Cancelled or InvoiceStatus.Cancelled or PoStatus.Cancelled or SoStatus.Cancelled or ProductionStatus.Cancelled or OutsourceStatus.Cancelled => "bg-dark",
+        PoStatus.PendingApproval or ProductionStatus.PendingApproval => "bg-warning text-dark",
+        PoStatus.Approved or SoStatus.Confirmed or ProductionStatus.Released or ProductionStatus.Approved => "bg-info text-dark",
+        PoStatus.PartiallyReceived or SoStatus.PartiallyDelivered or ProductionStatus.InProgress or OutsourceStatus.Sent => "bg-primary",
         PoStatus.Received or SoStatus.Delivered => "bg-teal",
-        PoStatus.Completed or SoStatus.Completed or ProductionStatus.Completed => "bg-success",
+        PoStatus.Completed or SoStatus.Completed or ProductionStatus.Completed or ProductionStatus.Closed or OutsourceStatus.Received => "bg-success",
         AssetStatus.InUse => "bg-success", AssetStatus.FullyDepreciated => "bg-secondary", AssetStatus.Disposed => "bg-dark",
         InvoiceDirection.Sales => "bg-primary", InvoiceDirection.Purchase => "bg-warning text-dark",
         CashVoucherType.Receipt => "bg-success", CashVoucherType.Payment => "bg-danger", CashVoucherType.Transfer => "bg-info text-dark",

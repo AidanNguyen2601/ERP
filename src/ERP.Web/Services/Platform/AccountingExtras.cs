@@ -357,7 +357,7 @@ public class CostingService
     public async Task<List<CostRow>> ReportAsync(DateTime from, DateTime to, string by)
     {
         var orders = await _db.ProductionOrders.Include(p => p.Item).Include(p => p.SalesOrder).Include(p => p.Bom).ThenInclude(b => b!.Lines).ThenInclude(l => l.Item)
-            .Where(p => p.Status == ProductionStatus.Completed && p.CompletedDate >= from && p.CompletedDate <= to).ToListAsync();
+            .Where(p => (p.Status == ProductionStatus.Completed || p.Status == ProductionStatus.Closed) && p.CompletedDate >= from && p.CompletedDate <= to).ToListAsync();
         var rows = orders.Select(o =>
         {
             var q = o.CompletedQty; var b = o.Bom!; var ratio = b.OutputQuantity == 0 ? 0 : q / b.OutputQuantity;

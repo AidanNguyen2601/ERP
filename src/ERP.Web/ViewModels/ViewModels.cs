@@ -150,8 +150,25 @@ public class BomForm
     [Range(0, 100_000_000_000)][Display(Name = "Nhân công định mức / đơn vị")] public decimal LaborCostPerUnit { get; set; }
     [Range(0, 100_000_000_000)][Display(Name = "Chi phí SXC định mức / đơn vị")] public decimal OverheadPerUnit { get; set; }
     [Display(Name = "Đang áp dụng")] public bool IsActive { get; set; } = true;
+    [Display(Name = "Phiên bản")] public int VersionNo { get; set; } = 1;
+    [DataType(DataType.Date)][Display(Name = "Áp dụng từ ngày")] public DateTime? EffectiveFrom { get; set; }
+    [DataType(DataType.Date)][Display(Name = "Áp dụng đến ngày")] public DateTime? EffectiveTo { get; set; }
+    /// <summary>Tính nhân công, SXC định mức từ quy trình sản xuất (routing)</summary>
+    public bool AutoFromRouting { get; set; }
+    public List<BomOpInput> Ops { get; set; } = new();
     [StringLength(500)][Display(Name = "Ghi chú")] public string? Note { get; set; }
     public List<LineInput> Lines { get; set; } = new();
+}
+
+public class BomOpInput
+{
+    public int Seq { get; set; }
+    public string? Name { get; set; }
+    public int? WorkCenterId { get; set; }
+    public decimal SetupMinutes { get; set; }
+    public decimal RunMinutesPerUnit { get; set; }
+    public int Workers { get; set; } = 1;
+    public string? Note { get; set; }
 }
 
 public class CashVoucherForm

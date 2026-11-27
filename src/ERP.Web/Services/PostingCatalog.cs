@@ -23,7 +23,7 @@ public record PostingTxDef(string Code, string Title, string Icon, string Module
 public static class PostingCatalog
 {
     // ---- Khóa cấu hình (dùng trong các service hạch toán)
-    public const string InvMaterial = "Inv.Material", InvFinished = "Inv.FinishedGood", InvGoods = "Inv.Merchandise";
+    public const string InvMaterial = "Inv.Material", InvFinished = "Inv.FinishedGood", InvGoods = "Inv.Merchandise", InvSemi = "Inv.SemiFinished";
     public const string SiReceivable = "SI.Receivable", SiRevenueGoods = "SI.RevenueGoods", SiRevenueProducts = "SI.RevenueProducts",
         SiRevenueServices = "SI.RevenueServices", SiVatOut = "SI.VatOut";
     public const string PiExpense = "PI.Expense", PiVatIn = "PI.VatIn", PiPayable = "PI.Payable";
@@ -47,6 +47,7 @@ public static class PostingCatalog
         {
             new(InvMaterial, "Nợ / Có", "Nguyên vật liệu", "152", new[] { "152" }),
             new(InvFinished, "Nợ / Có", "Thành phẩm", "155", new[] { "155" }),
+            new(InvSemi, "Nợ / Có", "Bán thành phẩm", "155", new[] { "155", "154" }),
             new(InvGoods, "Nợ / Có", "Hàng hóa", "156", new[] { "156" }),
         }),
         new("sales-invoice", "Phát hành hóa đơn bán ra", "bi-receipt-cutoff", "Hóa đơn",
@@ -152,12 +153,13 @@ public static class PostingCatalog
     {
         ItemType.Material => InvMaterial,
         ItemType.FinishedGood => InvFinished,
+        ItemType.SemiFinished => InvSemi,
         _ => InvGoods
     };
 
     public static string RevenueKey(ItemType? t) => t switch
     {
-        ItemType.FinishedGood => SiRevenueProducts,
+ItemType.FinishedGood or ItemType.SemiFinished => SiRevenueProducts,
         ItemType.Merchandise or ItemType.Material => SiRevenueGoods,
         _ => SiRevenueServices
     };

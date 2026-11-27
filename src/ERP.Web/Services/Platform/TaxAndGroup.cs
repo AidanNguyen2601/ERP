@@ -248,7 +248,7 @@ public class ConsolidationService
         if (icExpense.Values.Sum() > icRevenue) res.Notes.Add($"Chi phí mua nội bộ ({icExpense.Values.Sum().ToMoney()}) lớn hơn doanh thu bán nội bộ ({icRevenue.ToMoney()}) – kiểm tra hóa đơn nội bộ hai bên.");
         // ---- Lãi chưa thực hiện trong hàng tồn kho mua nội bộ
         var invKeys = rows.Keys.ToList();
-        string Inv(ItemType t) { var p = t switch { ItemType.Material => "152", ItemType.FinishedGood => "155", _ => "156" }; return invKeys.Where(k => k.StartsWith(p)).OrderBy(k => k.Length).FirstOrDefault() ?? p; }
+        string Inv(ItemType t) { var p = t switch { ItemType.Material => "152", ItemType.FinishedGood or ItemType.SemiFinished => "155", _ => "156" }; return invKeys.Where(k => k.StartsWith(p)).OrderBy(k => k.Length).FirstOrDefault() ?? p; }
         var cogsKey = rows.Keys.Where(k => k.StartsWith("632")).OrderBy(k => k.Length).FirstOrDefault() ?? "632";
         res.Unrealized = await UnrealizedAsync(companies, groupPartners, from, to);
         foreach (var g in res.Unrealized.GroupBy(u => Inv(u.Item.Type)))

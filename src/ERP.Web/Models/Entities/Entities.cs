@@ -515,7 +515,7 @@ public class DepreciationLine
 //  SẢN XUẤT
 // =====================================================================
 /// <summary>Định mức nguyên vật liệu (Bill of Materials)</summary>
-public class Bom
+public partial class Bom
 {
     public int Id { get; set; }
     [Required(ErrorMessage = "Nhập mã"), StringLength(30)][Display(Name = "Mã định mức")] public string Code { get; set; } = string.Empty;

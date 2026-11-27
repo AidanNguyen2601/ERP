@@ -1,24 +1,65 @@
 @model Bom
 @{
     ViewData["Title"] = $"Định mức {Model.Code}";
-    var orders = (List<ProductionOrder>)ViewBag.Orders;
+    var orders = (List<ProductionOrder>)ViewBag.Orders; var versions = (List<Bom>)ViewBag.Versions; var centers = (Dictionary<int, WorkCenter>)ViewBag.Centers;
+    var subs = (Dictionary<int, Bom>)ViewBag.SubBoms; var can = (bool)ViewBag.CanEdit;
     decimal Need(BomLine l) => l.Quantity * (100 + l.ScrapPct) / 100 / Model.OutputQuantity;
     var mat = Model.Lines.Sum(l => Need(l) * (l.Item?.AvgCost ?? 0));
+    var rt = BomService.RoutingPerUnit(Model, centers);
 }
+<partial name="_MfgNav" model="@("bom")" />
 <div class="subnav"><a asp-action="Index">← Danh sách định mức</a>
-    @if ((bool)ViewBag.CanEdit) { <a asp-action="Edit" asp-route-id="@Model.Id">Sửa</a><a asp-controller="Production" asp-action="Create" asp-route-bomId="@Model.Id">+ Lập lệnh sản xuất</a> }</div>
+    @if (can) { <a asp-action="Edit" asp-route-id="@Model.Id">Sửa</a><a asp-controller="Production" asp-action="Create" asp-route-bomId="@Model.Id">+ Lập lệnh sản xuất</a> }</div>
 <div class="card mb-3"><div class="card-body">
-    <div class="fs-5 fw-semibold">@Model.FinishedItem?.Code – @Model.FinishedItem?.Name</div>
-    <div class="meta mb-2">Sản lượng định mức @Model.OutputQuantity.ToQty() @Model.FinishedItem?.Unit · @Model.Note</div>
+    <div class="d-flex justify-content-between flex-wrap">
+        <div><div class="fs-5 fw-semibold">@Model.FinishedItem?.Code – @Model.FinishedItem?.Name <span class="badge bg-info text-dark">Phiên bản @Model.VersionNo</span> @if (!Model.IsActive) { <span class="badge bg-secondary">Ngưng áp dụng</span> }</div>
+            <div class="meta mb-2">Sản lượng định mức @Model.OutputQuantity.ToQty() @Model.FinishedItem?.Unit · Hiệu lực @(Model.EffectiveFrom?.ToDate() ?? "không giới hạn") → @(Model.EffectiveTo?.ToDate() ?? "không giới hạn") · @Model.Note</div></div>
+        @if (can)
+        {
+            <form asp-action="NewVersion" asp-route-id="@Model.Id" method="post" class="d-flex gap-2 align-items-start" data-confirm="Tạo phiên bản mới từ định mức này?">
+                <input type="date" name="effectiveFrom" value="@DateTime.Today.Iso()" class="form-control form-control-sm" style="width:150px" />
+                <div class="form-check small mt-1"><input class="form-check-input" type="checkbox" name="retireOld" value="true" id="ro" checked /><label class="form-check-label" for="ro">Kết thúc hiệu lực bản cũ</label></div>
+                <button class="btn btn-sm btn-outline-primary">Tạo phiên bản mới</button>
+            </form>
+        }
+    </div>
+    @if (versions.Count > 1)
+    {
+        <div class="small mb-2">Các phiên bản: @foreach (var v in versions) { <a class="me-2 @(v.Id == Model.Id ? "fw-bold" : "")" asp-action="Details" asp-route-id="@v.Id">v@(v.VersionNo)@(v.IsActive ? "" : " (ngưng)")</a> }</div>
+    }
     <table class="table table-sm">
         <thead><tr><th>Nguyên vật liệu</th><th class="num">Định mức</th><th class="num">Hao hụt</th><th class="num">Nhu cầu / 1 SP</th><th class="num">Giá vốn BQ</th><th class="num">Chi phí / 1 SP</th></tr></thead>
-        <tbody>@foreach (var l in Model.Lines) { <tr><td>@l.Item?.Code – @l.Item?.Name</td><td class="num">@l.Quantity.ToQty() @l.Item?.Unit</td><td class="num">@l.ScrapPct.ToPct()</td><td class="num">@Need(l).ToQty()</td><td class="num">@l.Item?.AvgCost.ToMoney()</td><td class="num">@((Need(l) * (l.Item?.AvgCost ?? 0)).ToMoney())</td></tr> }</tbody>
+        <tbody>@foreach (var l in Model.Lines)
+        {
+            <tr><td>@l.Item?.Code – @l.Item?.Name @if (l.Item?.Type == ItemType.SemiFinished) { <span class="badge bg-warning text-dark">Bán thành phẩm</span> }</td><td class="num">@l.Quantity.ToQty() @l.Item?.Unit</td><td class="num">@l.ScrapPct.ToPct()</td><td class="num">@Need(l).ToQty()</td><td class="num">@l.Item?.AvgCost.ToMoney()</td><td class="num">@((Need(l) * (l.Item?.AvgCost ?? 0)).ToMoney())</td></tr>
+            @if (subs.TryGetValue(l.ItemId, out var sb))
+            {
+                <tr class="table-light small"><td colspan="6" class="ps-4">↳ Định mức <a asp-action="Details" asp-route-id="@sb.Id">@sb.Code</a> (v@(sb.VersionNo)): @string.Join("; ", sb.Lines.Select(x => $"{x.Item?.Name} {x.Quantity.ToQty()} {x.Item?.Unit}")) / @sb.OutputQuantity.ToQty() @sb.FinishedItem?.Unit</td></tr>
+            }
+        }</tbody>
         <tfoot>
             <tr><td colspan="5" class="text-end">Chi phí NVL trực tiếp</td><td class="num">@mat.ToMoney()</td></tr>
             <tr><td colspan="5" class="text-end">Nhân công trực tiếp</td><td class="num">@Model.LaborCostPerUnit.ToMoney()</td></tr>
             <tr><td colspan="5" class="text-end">Chi phí sản xuất chung</td><td class="num">@Model.OverheadPerUnit.ToMoney()</td></tr>
             <tr class="fw-bold"><td colspan="5" class="text-end">Giá thành định mức / 1 SP</td><td class="num">@((mat + Model.LaborCostPerUnit + Model.OverheadPerUnit).ToMoney())</td></tr>
         </tfoot>
+    </table>
+</div></div>
+<div class="card mb-3"><div class="card-header">Quy trình sản xuất (routing)</div><div class="card-body p-0">
+    <table class="table table-sm mb-0">
+        <thead><tr><th>#</th><th>Công đoạn</th><th>Trung tâm sản xuất</th><th class="num">Chuẩn bị (phút / lô)</th><th class="num">Chạy máy (phút / SP)</th><th class="num">Công nhân</th><th class="num">Giờ / SP</th><th>Ghi chú</th></tr></thead>
+        <tbody>
+        @foreach (var o in Model.Operations.OrderBy(x => x.Seq))
+        {
+            <tr><td>@o.Seq</td><td>@o.Name</td><td>@o.WorkCenter?.Code @o.WorkCenter?.Name</td><td class="num">@o.SetupMinutes.ToQty()</td><td class="num">@o.RunMinutesPerUnit.ToQty()</td><td class="num">@o.Workers</td>
+                <td class="num">@(((o.SetupMinutes + o.RunMinutesPerUnit * Model.OutputQuantity) / Model.OutputQuantity / 60).ToQty())</td><td>@o.Note</td></tr>
+        }
+        @if (!Model.Operations.Any()) { <tr><td colspan="8" class="text-muted text-center py-3">Chưa khai báo quy trình – nhân công / SXC định mức nhập tay.</td></tr> }
+        </tbody>
+        @if (Model.Operations.Any())
+        {
+            <tfoot><tr class="fw-bold"><td colspan="6" class="text-end">Theo routing: @rt.Hours.ToQty() giờ / SP · nhân công @rt.Labor.ToMoney() · SXC @rt.Overhead.ToMoney() / SP</td><td colspan="2" class="text-muted small">Bật "Tính từ routing" khi sửa định mức để cập nhật.</td></tr></tfoot>
+        }
     </table>
 </div></div>
 <div class="card"><div class="card-header">Lệnh sản xuất theo định mức này</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>

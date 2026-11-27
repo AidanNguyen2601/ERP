@@ -1,0 +1,17 @@
+@model List<OutsourceOrder>
+@{ ViewData["Title"] = "Gia công ngoài"; var counts = (Dictionary<OutsourceStatus, int>)ViewBag.Counts; var st = ViewBag.Status as OutsourceStatus?; }
+<partial name="_MfgNav" model="@("os")" />
+<div class="toolbar">
+    @if ((bool)ViewBag.CanEdit) { <a class="btn btn-sm btn-primary order-last ms-auto" asp-action="Create">+ Phiếu gia công</a> }
+    <a class="btn btn-sm @(st == null ? "btn-secondary" : "btn-light border")" asp-action="Index">Tất cả</a>
+    @foreach (OutsourceStatus s in Enum.GetValues<OutsourceStatus>()) { if (counts.ContainsKey(s)) { <a class="btn btn-sm @(st == s ? "btn-secondary" : "btn-light border")" asp-action="Index" asp-route-status="@s">@s.GetDisplayName() (@counts[s])</a> } }
+</div>
+<div class="card"><div class="card-body p-0"><table class="table table-hover mb-0">
+    <thead><tr><th>Số phiếu</th><th>Ngày</th><th>Đơn vị gia công</th><th>Sản phẩm</th><th class="num">Số lượng</th><th class="num">Đã nhận</th><th class="num">Phí gia công</th><th>Hạn nhận</th><th>Trạng thái</th></tr></thead><tbody>
+    @foreach (var o in Model)
+    {
+        <tr><td><a asp-action="Details" asp-route-id="@o.Id">@o.Number</a></td><td>@o.Date.ToDate()</td><td>@o.Vendor?.Name</td><td>@o.Item?.Name</td><td class="num">@o.Quantity.ToQty()</td><td class="num">@o.ReceivedQty.ToQty()</td><td class="num">@o.FeeTotal.ToMoney()</td>
+            <td class="@(o.Status == OutsourceStatus.Sent && o.ExpectedDate < DateTime.Today ? "overdue" : "")">@o.ExpectedDate.ToDate()</td><td><partial name="_Badge" model="o.Status" /></td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="9" class="text-center text-muted py-4">Chưa có phiếu gia công.</td></tr> }
+</tbody></table></div></div>
