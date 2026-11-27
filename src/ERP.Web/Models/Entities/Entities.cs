@@ -627,7 +627,7 @@ public class PostingRule
 //  QUẢN LÝ CHẤT LƯỢNG
 // =====================================================================
 /// <summary>Kế hoạch kiểm tra: bộ tiêu chí áp dụng cho một công đoạn, một mặt hàng hoặc một loại hàng</summary>
-public class QcPlan
+public partial class QcPlan
 {
     public int Id { get; set; }
     [Required(ErrorMessage = "Nhập mã"), StringLength(20)][Display(Name = "Mã kế hoạch")] public string Code { get; set; } = string.Empty;
@@ -660,7 +660,7 @@ public class QcPlanLine
 }
 
 /// <summary>Phiếu kiểm tra chất lượng (KCS) cho một lô hàng</summary>
-public class QcInspection
+public partial class QcInspection
 {
     public int Id { get; set; }
     [Required, StringLength(30)][Display(Name = "Số phiếu")] public string Number { get; set; } = string.Empty;
@@ -715,7 +715,7 @@ public class QcInspectionLine
 }
 
 /// <summary>Báo cáo không phù hợp (NCR): xử lý số lượng hàng không đạt</summary>
-public class QcNonconformance
+public partial class QcNonconformance
 {
     public int Id { get; set; }
     [Required, StringLength(30)][Display(Name = "Số NCR")] public string Number { get; set; } = string.Empty;

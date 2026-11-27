@@ -142,6 +142,7 @@ public class ErpDbContext : DbContext
     public DbSet<QcPlan> QcPlans => Set<QcPlan>();
     public DbSet<QcPlanLine> QcPlanLines => Set<QcPlanLine>();
     public DbSet<QcInspection> QcInspections => Set<QcInspection>();
+    public DbSet<QcNcrAction> QcNcrActions => Set<QcNcrAction>();
     public DbSet<QcInspectionLine> QcInspectionLines => Set<QcInspectionLine>();
     public DbSet<QcNonconformance> QcNonconformances => Set<QcNonconformance>();
     public DbSet<PurchaseReturn> PurchaseReturns => Set<PurchaseReturn>();

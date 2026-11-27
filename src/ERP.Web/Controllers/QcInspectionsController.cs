@@ -12,7 +12,8 @@ namespace ERP.Web.Controllers;
 public class QcInspectionsController : ErpControllerBase
 {
     private readonly QualityService _qc;
-    public QcInspectionsController(ErpDbContext db, QualityService qc) : base(db) => _qc = qc;
+    private readonly Microsoft.Extensions.Options.IOptions<ErpSettings> _cfg;
+    public QcInspectionsController(ErpDbContext db, QualityService qc, Microsoft.Extensions.Options.IOptions<ErpSettings> cfg) : base(db) { _qc = qc; _cfg = cfg; }
     private bool CanWrite => User.InAny(AppRoles.QcInspectors);
 
     public async Task<IActionResult> Index(QcStage? stage, QcResult? result, QcStatus? status, DateTime? from, DateTime? to, string? q)
@@ -40,7 +41,7 @@ public class QcInspectionsController : ErpControllerBase
     /// Lập phiếu: từ đơn mua (poId + itemId), lệnh sản xuất (productionId), đơn bán (soId + itemId) hoặc thủ công (stage + itemId + lotQty).
     /// </summary>
     public async Task<IActionResult> Create(QcStage stage = QcStage.Incoming, int? poId = null, int? productionId = null, int? soId = null,
-        int? itemId = null, decimal? lotQty = null, int? warehouseId = null, int? partnerId = null, int? qcPlanId = null)
+        int? itemId = null, decimal? lotQty = null, int? warehouseId = null, int? partnerId = null, int? qcPlanId = null, int? operationId = null, string? lotNo = null)
     {
         if (!CanWrite) return Denied();
         QcInspection? draft = null;
@@ -57,11 +58,13 @@ public class QcInspectionsController : ErpControllerBase
         {
             var mo = await Db.ProductionOrders.Include(p => p.Item).FirstOrDefaultAsync(p => p.Id == productionId);
             if (mo == null) return NotFound();
+            var op = operationId == null ? null : await Db.ProductionOperations.FirstOrDefaultAsync(o => o.Id == operationId && o.ProductionOrderId == mo.Id);
             var done = await InspectedAsync(DocOrigin.Production, mo.Id, mo.ItemId);
             var basis = mo.CompletedQty > 0 ? mo.CompletedQty : mo.Quantity;
-            var st = mo.Status is ProductionStatus.Completed or ProductionStatus.Closed ? QcStage.Final : QcStage.InProcess;
+            var st = op == null && mo.Status is ProductionStatus.Completed or ProductionStatus.Closed ? QcStage.Final : QcStage.InProcess;
             draft = await _qc.DraftAsync(st, mo.Item!, lotQty ?? Math.Max(basis - done, 0), DocOrigin.Production, mo.Number, mo.Id, null,
-                mo.Status is ProductionStatus.Completed or ProductionStatus.Closed ? mo.FinishedWarehouseId : mo.MaterialWarehouseId, qcPlanId);
+                mo.Status is ProductionStatus.Completed or ProductionStatus.Closed ? mo.FinishedWarehouseId : mo.MaterialWarehouseId, qcPlanId, lotNo, op?.Id, op?.Name);
+            if (op != null) { draft.Stage = QcStage.InProcess; if (lotQty == null) draft.LotQty = Math.Max(op.GoodQty, 0); }
         }
         else if (soId.HasValue)
         {
@@ -110,6 +113,8 @@ public class QcInspectionsController : ErpControllerBase
         i.Origin = model.Origin; i.OriginRef = model.OriginRef; i.OriginId = model.OriginId; i.QcPlanId = model.QcPlanId;
         i.LotQty = model.LotQty; i.SampleQty = model.SampleQty; i.AcceptedQty = model.AcceptedQty; i.RejectedQty = model.RejectedQty;
         i.Result = model.Result; i.Note = model.Note;
+        i.LotNo = string.IsNullOrWhiteSpace(model.LotNo) ? null : model.LotNo.Trim(); i.DefectQty = model.DefectQty; i.AcceptNumber = model.AcceptNumber; i.RejectNumber = model.RejectNumber;
+        i.ProductionOperationId = model.ProductionOperationId; i.OperationName = model.OperationName;
         if (existing != null) Db.QcInspectionLines.RemoveRange(existing.Lines.ToList());
         i.Lines = model.Lines.Where(l => !string.IsNullOrWhiteSpace(l.Name)).Select((l, n) =>
         {
@@ -141,6 +146,28 @@ public class QcInspectionsController : ErpControllerBase
         }
         Success($"Đã lưu nháp phiếu {i.Number}.");
         return RedirectToAction(nameof(Edit), new { id = i.Id });
+    }
+
+    /// <summary>Cấp giấy chứng nhận chất lượng cho lô đạt (kiểm tra thành phẩm / trước khi giao hàng)</summary>
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> IssueCertificate(int id)
+    {
+        if (!User.InAny(AppRoles.QcManagers)) return Denied();
+        var i = await Load(id);
+        if (i == null) return NotFound();
+        var no = await _qc.IssueCertificateAsync(i);
+        Success($"Đã cấp giấy chứng nhận chất lượng {no}.");
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    public async Task<IActionResult> Certificate(int id)
+    {
+        var i = await Load(id);
+        if (i == null) return NotFound();
+        if (string.IsNullOrEmpty(i.CertificateNo)) { Error("Phiếu chưa được cấp giấy chứng nhận."); return RedirectToAction(nameof(Details), new { id }); }
+        ViewBag.Company = _cfg.Value;
+        ViewBag.IssuedBy = i.CertificateById == null ? null : (await Db.Users.FindAsync(i.CertificateById))?.FullName;
+        return View(i);
     }
 
     [HttpPost, ValidateAntiForgeryToken]

@@ -59,6 +59,9 @@ public class QcPlansController : ErpControllerBase
         if (await Db.QcPlans.AnyAsync(p => p.Code == model.Code && p.Id != model.Id)) ModelState.AddModelError(nameof(model.Code), "Mã kế hoạch đã tồn tại");
         if (!lines.Any()) ModelState.AddModelError("", "Nhập ít nhất một tiêu chí kiểm tra.");
         if (model.ItemId.HasValue) model.ItemType = null;
+        if (model.SamplingMethod == QcSamplingMethod.Aql) { model.AqlValue ??= 1.0m; if (!Services.QualityService.AqlOptions.Contains(model.AqlValue.Value)) ModelState.AddModelError(nameof(model.AqlValue), "AQL chọn 0,65 / 1,0 / 1,5 / 2,5 / 4,0."); }
+        if (model.SamplingMethod == QcSamplingMethod.Fixed && model.FixedSampleQty <= 0) ModelState.AddModelError(nameof(model.FixedSampleQty), "Nhập số lượng mẫu cố định > 0.");
+        if (model.Stage != QcStage.InProcess) model.OperationName = null;
         foreach (var l in lines)
         {
             l.Name = l.Name.Trim();
@@ -79,6 +82,8 @@ public class QcPlansController : ErpControllerBase
         var target = existing ?? new QcPlan();
         target.Code = model.Code; target.Name = model.Name.Trim(); target.Stage = model.Stage; target.ItemId = model.ItemId; target.ItemType = model.ItemType;
         target.SamplePct = model.SamplePct; target.Note = model.Note; target.IsActive = model.IsActive;
+        target.SamplingMethod = model.SamplingMethod; target.AqlValue = model.SamplingMethod == QcSamplingMethod.Aql ? model.AqlValue : null; target.FixedSampleQty = model.FixedSampleQty;
+        target.MaxDefectPct = model.MaxDefectPct; target.OperationName = string.IsNullOrWhiteSpace(model.OperationName) ? null : model.OperationName.Trim();
         // Phiếu kiểm tra đã lập giữ bản sao tiêu chí riêng nên thay toàn bộ dòng kế hoạch không ảnh hưởng lịch sử
         if (existing != null) Db.QcPlanLines.RemoveRange(existing.Lines.ToList());
         target.Lines = lines.Select((l, i) => new QcPlanLine

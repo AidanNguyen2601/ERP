@@ -4586,3 +4586,118 @@ Cần mua / sản xuất thêm	To buy / make
 Duyệt {0}	Approved {0}
 Ca	Shift
 Đóng {0}	Closed {0}
+(lô kiểm tra {0}, mẫu {1})	(inspected lot {0}, sample {1})
+AQL chọn 0,65 / 1,0 / 1,5 / 2,5 / 4,0.	Choose AQL 0.65 / 1.0 / 1.5 / 2.5 / 4.0.
+AQL: chấp nhận ≤ {0}, loại từ {1} lỗi	AQL: accept ≤ {0}, reject from {1} defects
+Chuyển số lượng không phù hợp sang kho cách ly (phiếu chuyển kho) để không bị xuất dùng hoặc giao nhầm trong khi chờ quyết định.	Move the nonconforming quantity to the quarantine warehouse (stock transfer) so it is not issued or delivered by mistake while awaiting a decision.
+Chưa có hành động nào.	No actions yet.
+Chỉ cho kiểm tra trong quá trình – VD: Sơn PU	Only for in-process inspection – e.g. PU painting
+Chỉ cấp giấy chứng nhận cho phiếu đã kết luận.	A certificate can only be issued for a concluded inspection.
+Chỉ cấp giấy chứng nhận khi kết luận Đạt / Đạt có điều kiện.	A certificate can only be issued when the result is Pass / Conditional pass.
+Chỉ lập phiếu kiểm tra lại cho hướng xử lý Sửa chữa / làm lại.	A re-inspection can only be created for the Rework disposition.
+Chỉ thả cách ly khi hướng xử lý là Chấp nhận nhân nhượng hoặc Sửa chữa / làm lại.	Quarantine can only be released when the disposition is Accept under concession or Rework.
+Cách ly	Quarantine
+Cách ly & tái chế	Quarantine & rework
+Cách ly hàng không phù hợp theo {0}	Quarantine of nonconforming goods per {0}
+Cách lấy mẫu	Sampling method
+Còn hành động khắc phục / phòng ngừa chưa hoàn thành.	Some corrective / preventive actions are not completed.
+Công đoạn sản xuất	Production operation
+Công đoạn sản xuất áp dụng	Applicable production operation
+Cấp giấy chứng nhận	Issue certificate
+Cấp giấy chứng nhận chất lượng cho {0} đạt?	Issue a quality certificate for {0} passed?
+Dao cắt mòn, sai số kích thước	Worn cutting blade, dimensional error
+GIẤY CHỨNG NHẬN CHẤT LƯỢNG	QUALITY CERTIFICATE
+Giấy chứng nhận	Certificate
+Giấy chứng nhận chất lượng cấp cho kiểm tra thành phẩm hoặc trước khi giao hàng.	Quality certificates are issued for finished-goods or pre-delivery inspections.
+Giấy chứng nhận chất lượng {0}	Quality certificate {0}
+Giấy chứng nhận {0}	Certificate {0}
+Hoàn thành {0}	Completed {0}
+Hàng còn ở kho cách ly: thả cách ly (chuyển về kho) trước khi đóng NCR.	Goods are still in the quarantine warehouse: release them (transfer back) before closing the NCR.
+Hàng không ở trạng thái cách ly.	The goods are not in quarantine.
+Hàng nằm ở kho cách ly. Chọn hướng xử lý: hủy bỏ / trả nhà cung cấp xuất trực tiếp từ kho cách ly; chấp nhận nhân nhượng hoặc sửa chữa thì thả cách ly khi đủ điều kiện.	The goods are in the quarantine warehouse. Choose a disposition: scrap / return to vendor issues directly from quarantine; for acceptance under concession or rework, release them once the conditions are met.
+Hàng đang được cách ly.	The goods are being quarantined.
+Hàng đang ở kho cách ly.	The goods are in the quarantine warehouse.
+Hàng đã được thả khỏi cách ly.	The goods have been released from quarantine.
+Hành động khắc phục / phòng ngừa (CAPA)	Corrective / preventive actions (CAPA)
+Hành động đã hoàn thành.	The action is already completed.
+Hạn	Due
+In giấy chứng nhận	Print certificate
+Kho cách ly hàng không đạt	Quarantine warehouse for nonconforming goods
+Khu cách ly chất lượng	Quality quarantine area
+Không có số lượng đạt để cấp giấy chứng nhận.	No passed quantity to certify.
+Khắc phục	Corrective
+Kiểm tra giữa công đoạn {0}, lô LOT-THS-0001	Mid-process inspection at {0}, lot LOT-THS-0001
+Kiểm tra lại sau sửa chữa / tái chế theo {0}	Re-inspection after rework per {0}
+Kiểm tra lại {0}: {1} ({2} không đạt)	Re-inspection {0}: {1} ({2} failed)
+Kiểm tra theo công đoạn	Inspection by operation
+Kiểm tra theo lô	Inspection by lot
+Kiểm tra theo số lượng đạt / không đạt.	Inspection by passed / failed quantity.
+Kết quả đo	Measured result
+Lô kệ sách: 2 chiếc lệch kích thước	Bookshelf lot: 2 units off dimension
+Lô vượt ngưỡng đạt: {0}. Kết luận Không đạt.	Lot exceeds the acceptance threshold: {0}. Conclude Fail.
+Lô đạt, đủ điều kiện nhập kho và xuất hàng	Lot passed, eligible for stock-in and shipment
+Lấy mẫu AQL	AQL sampling
+Lấy mẫu cố định {0}	Fixed sampling {0}
+Lấy mẫu theo AQL {0}	AQL sampling {0}
+Lấy mẫu theo AQL: cỡ mẫu và số lỗi chấp nhận / loại tự tính theo cỡ lô (bảng rút gọn ISO 2859-1, mức II, kiểm tra bình thường). Ngưỡng đạt: lô có tỷ lệ lỗi trong mẫu vượt ngưỡng thì phải kết luận Không đạt. Tỷ lệ % và số lượng cố định chỉ dùng khi chọn cách lấy mẫu tương ứng.	AQL sampling: sample size and accept / reject numbers are calculated from the lot size (reduced ISO 2859-1 table, level II, normal inspection). Acceptance threshold: a lot whose defect rate in the sample exceeds the threshold must be concluded Fail. Percentage and fixed quantity are used only when that sampling method is chosen.
+Lấy mẫu {0} lô	Sampling {0} of the lot
+Lập lịch kiểm tra dao cắt hằng tuần	Schedule weekly cutting blade checks
+Lập phiếu kiểm tra lại	Create re-inspection
+Lỗi trong mẫu	Defects in sample
+Mẫu {0}: chấp nhận ≤ {1} lỗi, loại từ {2} lỗi · lỗi trong mẫu	Sample {0}: accept ≤ {1} defects, reject from {2} defects · defects in sample
+NCR đã có phiếu kiểm tra lại.	The NCR already has a re-inspection.
+NCR đã xuất kho theo hướng xử lý.	The NCR already has a stock issue.
+Ngày thả	Release date
+Người cấp giấy	Issued by
+Người kiểm tra (KCS)	Inspector (QC)
+Người phụ trách	Person in charge
+Ngưỡng đạt: tỷ lệ lỗi tối đa (%)	Acceptance threshold: max defect rate (%)
+Nhập nội dung hành động.	Enter the action description.
+Nhập số lượng mẫu cố định > 0.	Enter a fixed sample quantity > 0.
+Phiếu chưa được cấp giấy chứng nhận.	No certificate has been issued for this inspection.
+Phiếu kiểm tra lại	Re-inspection
+Phòng ngừa	Preventive
+Quản đốc xưởng	Workshop foreman
+SL mẫu lỗi	Defective sample qty
+SL mẫu lỗi phải từ 0 đến số lượng mẫu.	The defective sample quantity must be between 0 and the sample quantity.
+Số giấy chứng nhận	Certificate no.
+Số lượng mẫu cố định	Fixed sample quantity
+Số lượng được chứng nhận	Certified quantity
+Sửa chữa / làm lại: phải có phiếu kiểm tra lại kết luận Đạt trước khi đóng NCR.	Rework: a re-inspection concluded Pass is required before closing the NCR.
+Sửa chữa / tái chế	Rework / recycling
+Thay dao cắt, hiệu chuẩn lại máy CNC	Replace the cutting blade and recalibrate the CNC machine
+Theo AQL (ISO 2859-1, mức II, lấy mẫu một lần)	By AQL (ISO 2859-1, level II, single sampling)
+Theo tỷ lệ % của lô	As a % of the lot
+Thêm hành động	Add action
+Thả cách ly	Release quarantine
+Thả cách ly theo {0}	Quarantine release per {0}
+Thả cách ly và chuyển hàng về kho ban đầu?	Release the quarantine and move the goods back to the original warehouse?
+Tái chế: phải có phiếu kiểm tra lại kết luận Đạt trước khi thả cách ly.	Rework: a re-inspection concluded Pass is required before releasing quarantine.
+Tổ trưởng cắt ván	Board cutting team leader
+bởi {0}	by {0}
+mẫu có {0} lỗi, từ {1} lỗi trở lên phải loại lô (AQL, chấp nhận tối đa {2})	the sample has {0} defects; from {1} defects the lot must be rejected (AQL, maximum accepted {2})
+tỷ lệ lỗi trong mẫu {0}% vượt ngưỡng đạt {1}%	the defect rate in the sample {0}% exceeds the acceptance threshold {1}%
+· Công đoạn:	· Operation:
+· Ngày {0}	· Date {0}
+· Ngưỡng đạt: lỗi trong mẫu ≤ {0}%	· Acceptance threshold: defects in sample ≤ {0}%
+· chứng từ	· document
+Đang cách ly	Quarantined
+Đang thực hiện	In progress
+Đã cách ly {0} hàng không phù hợp: phiếu chuyển kho {1}.	Quarantined {0} nonconforming goods: stock transfer {1}.
+Đã cấp giấy chứng nhận chất lượng {0}.	Quality certificate {0} issued.
+Đã cấp giấy chứng nhận {0}.	Certificate {0} has already been issued.
+Đã ghi nhận hoàn thành hành động.	Action completion recorded.
+Đã lập phiếu kiểm tra lại {0}. Nhập kết quả sau khi sửa chữa / tái chế.	Re-inspection {0} created. Enter the results after rework.
+Đã thay dao và chạy thử đạt	Blade replaced and test run passed
+Đã thêm hành động.	Action added.
+Đã thả cách ly, chuyển hàng về kho ban đầu: phiếu {0}.	Quarantine released, goods moved back to the original warehouse: document {0}.
+ĐẠT TIÊU CHUẨN CHẤT LƯỢNG	MEETS QUALITY STANDARDS
+Kiểm tra lại	Re-inspection
+Kiểm tra trong quá trình	In-process inspection
+Số lô / serial	Lot / serial no.
+Số lô	Lot no.
+Chuyển {0} sang kho cách ly?	Move {0} to the quarantine warehouse?
+Ngưỡng đạt: ≤ {0}% lỗi trong mẫu	Acceptance threshold: ≤ {0}% defects in the sample
+Giám đốc	Director
+Ký, đóng dấu	Sign and stamp
+Kiểm tra trong quá trình theo công đoạn	In-process inspection by operation

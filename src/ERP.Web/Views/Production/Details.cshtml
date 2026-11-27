@@ -97,12 +97,12 @@
         @if (Model.Operations.Any())
         {
             <table class="table table-sm mb-0">
-                <thead><tr><th>#</th><th>Công đoạn</th><th>Trung tâm</th><th class="num">Phút kế hoạch</th><th class="num">Phút thực tế</th><th class="num">SL đạt</th><th class="num">SL lỗi</th><th style="width:150px">Tiến độ</th><th>Trạng thái</th></tr></thead>
+                <thead><tr><th>#</th><th>Công đoạn</th><th>Trung tâm</th><th class="num">Phút kế hoạch</th><th class="num">Phút thực tế</th><th class="num">SL đạt</th><th class="num">SL lỗi</th><th style="width:150px">Tiến độ</th><th>Trạng thái</th><th></th></tr></thead>
                 <tbody>@foreach (var o in Model.Operations.OrderBy(x => x.Seq))
                 {
                     var pct = Model.Quantity == 0 ? 0 : (int)Math.Min(100, o.GoodQty * 100 / Model.Quantity);
                     <tr><td>@o.Seq</td><td>@o.Name</td><td>@o.WorkCenter?.Code</td><td class="num">@o.PlannedMinutes.ToQty()</td><td class="num @(o.ActualMinutes > o.PlannedMinutes && o.PlannedMinutes > 0 ? "warn" : "")">@o.ActualMinutes.ToQty()</td><td class="num">@o.GoodQty.ToQty()</td><td class="num @(o.ScrapQty > 0 ? "bad" : "")">@o.ScrapQty.ToQty()</td>
-                        <td><div class="progress"><div class="progress-bar" style="width:@pct%"></div></div></td><td>@o.Status.GetDisplayName()</td></tr>
+                        <td><div class="progress"><div class="progress-bar" style="width:@pct%"></div></div></td><td>@o.Status.GetDisplayName()</td><td>@if (User.InAny(AppRoles.QcInspectors) && running) { <a class="btn btn-sm btn-outline-success py-0" asp-controller="QcInspections" asp-action="Create" asp-route-productionId="@Model.Id" asp-route-itemId="@Model.ItemId" asp-route-operationId="@o.Id" title="Kiểm tra trong quá trình theo công đoạn"><i class="bi bi-clipboard-check"></i> Kiểm tra</a> }</td></tr>
                 }</tbody>
             </table>
         }
