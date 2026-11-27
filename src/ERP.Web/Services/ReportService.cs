@@ -134,7 +134,7 @@ public class ReportService
         };
     }
 
-    // ------------------------------------------------------------------ Bảng cân đối kế toán (B01-DN rút gọn)
+    // ------------------------------------------------------------------ Báo cáo tình hình tài chính (B01-DN theo TT99, trước đây là Bảng cân đối kế toán; rút gọn)
     public async Task<(List<ReportLine> Assets, List<ReportLine> Sources)> BalanceSheetAsync(DateTime at)
     {
         var mv = await MovesAsync(null, at);
@@ -155,8 +155,8 @@ public class ReportService
         var mapped = new[] { "111", "112", "113", "131", "133", "138", "141", "151", "152", "153", "154", "155", "156", "157", "242", "211", "213", "214" };
         var otherAssets = mv.Where(m => (codes[m.AccountId][0] is '1' or '2') && !mapped.Any(p => codes[m.AccountId].StartsWith(p))).Sum(m => m.D - m.C);
 
-        var tax = -Bal("333"); var payroll = -Bal("334"); var otherPay = -Bal("335", "336", "338"); var loans = -Bal("341");
-        var mappedL = new[] { "331", "333", "334", "335", "336", "338", "341" };
+        var tax = -Bal("333"); var payroll = -Bal("334"); var otherPay = -Bal("332", "335", "336", "338"); var loans = -Bal("341");
+        var mappedL = new[] { "331", "332", "333", "334", "335", "336", "338", "341" };
         var otherLiab = -mv.Where(m => codes[m.AccountId][0] == '3' && !mappedL.Any(p => codes[m.AccountId].StartsWith(p))).Sum(m => m.D - m.C);
         var capital = -Bal("411");
         // LNST chưa phân phối = TK 421 + kết quả kinh doanh chưa kết chuyển (đầu 5–9)
@@ -180,7 +180,7 @@ public class ReportService
             R("200", "B. TÀI SẢN DÀI HẠN", longAssets, true, 0),
             R("221", "Tài sản cố định – nguyên giá", faCost),
             R("223", "Giá trị hao mòn lũy kế", faDep),
-            R("260", "Chi phí trả trước, tài sản dài hạn khác", prepaid + otherAssets),
+            R("260", "Chi phí chờ phân bổ, tài sản dài hạn khác", prepaid + otherAssets),
             R("270", "TỔNG CỘNG TÀI SẢN", shortAssets + longAssets, true, 0)
         };
         var sources = new List<ReportLine>

@@ -1,0 +1,48 @@
+@model List<ProductionOutput>
+@{
+    ViewData["Title"] = "Thống kê sản lượng & năng suất"; var centers = (List<WorkCenter>)ViewBag.Centers;
+    var types = (Dictionary<ProductionType, (int Count, decimal Qty, decimal Done)>)ViewBag.Types;
+    string Rate(decimal good, decimal scrap) => good + scrap == 0 ? "—" : (scrap * 100 / (good + scrap)).ToString("0.#") + "%";
+    string Prod(decimal good, decimal minutes) => minutes <= 0 ? "—" : (good / (minutes / 60m)).ToString("0.##");
+}
+<partial name="_MfgNav" model="@("out")" />
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@(((DateTime)ViewBag.To).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Chuyền / trung tâm</label><select name="workCenterId" class="form-select form-select-sm"><option value="">-- Tất cả --</option>@foreach (var w in centers) { <option value="@w.Id" selected="@(ViewBag.WorkCenterId == w.Id)">@w.Code – @w.Name</option> }</select></div>
+    <div><label class="form-label small mb-0">Ca</label><select name="shift" class="form-select form-select-sm"><option value="">-- Tất cả --</option>@foreach (var s in ManufacturingService.Shifts) { <option selected="@(ViewBag.Shift == s)">@s</option> }</select></div>
+    <button class="btn btn-sm btn-outline-primary">Xem</button>
+</form>
+<div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="card kpi"><div class="label">Sản lượng đạt</div><div class="value">@Model.Sum(o => o.GoodQty).ToQty()</div><div class="sub">Lỗi @Model.Sum(o => o.ScrapQty).ToQty() (@Rate(Model.Sum(o => o.GoodQty), Model.Sum(o => o.ScrapQty)))</div></div></div>
+    <div class="col-md-3"><div class="card kpi"><div class="label">Giờ làm việc</div><div class="value">@((Model.Sum(o => o.Minutes) / 60m).ToQty())</div><div class="sub">Năng suất @Prod(Model.Sum(o => o.GoodQty), Model.Sum(o => o.Minutes)) SP / giờ</div></div></div>
+    @foreach (ProductionType t in Enum.GetValues<ProductionType>())
+    {
+        var v = types.TryGetValue(t, out var x) ? x : (Count: 0, Qty: 0m, Done: 0m);
+        <div class="col-md-3"><div class="card kpi"><div class="label">@t.GetDisplayName()</div><div class="value">@v.Count lệnh</div><div class="sub">Kế hoạch @v.Qty.ToQty() · hoàn thành @v.Done.ToQty()</div></div></div>
+    }
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-lg-4"><div class="card h-100"><div class="card-header">Theo ca</div><div class="card-body p-0"><table class="table table-sm mb-0">
+        <thead><tr><th>Ca</th><th class="num">Đạt</th><th class="num">Lỗi</th><th class="num">% lỗi</th><th class="num">SP / giờ</th></tr></thead><tbody>
+        @foreach (var g in Model.GroupBy(o => o.Shift).OrderBy(g => g.Key)) { <tr><td>@g.Key</td><td class="num">@g.Sum(o => o.GoodQty).ToQty()</td><td class="num">@g.Sum(o => o.ScrapQty).ToQty()</td><td class="num">@Rate(g.Sum(o => o.GoodQty), g.Sum(o => o.ScrapQty))</td><td class="num">@Prod(g.Sum(o => o.GoodQty), g.Sum(o => o.Minutes))</td></tr> }
+        </tbody></table></div></div></div>
+    <div class="col-lg-8"><div class="card h-100"><div class="card-header">Theo chuyền / trung tâm (so với năng suất chuẩn)</div><div class="card-body p-0"><table class="table table-sm mb-0">
+        <thead><tr><th>Chuyền</th><th class="num">Đạt</th><th class="num">Lỗi</th><th class="num">% lỗi</th><th class="num">Giờ</th><th class="num">SP / giờ thực tế</th><th class="num">SP / giờ chuẩn</th><th class="num">Đạt chuẩn</th></tr></thead><tbody>
+        @foreach (var g in Model.GroupBy(o => o.WorkCenterId).OrderBy(g => g.Key))
+        {
+            var wc = centers.FirstOrDefault(c => c.Id == g.Key); var good = g.Sum(o => o.GoodQty); var mins = g.Sum(o => o.Minutes); var actual = mins > 0 ? good / (mins / 60m) : 0; var std = wc?.UnitsPerHour ?? 0;
+            <tr><td>@(wc != null ? wc.Code + " – " + wc.Name : "(không chuyền)")</td><td class="num">@good.ToQty()</td><td class="num">@g.Sum(o => o.ScrapQty).ToQty()</td><td class="num">@Rate(good, g.Sum(o => o.ScrapQty))</td><td class="num">@((mins / 60m).ToQty())</td>
+                <td class="num">@(actual > 0 ? actual.ToString("0.##") : "—")</td><td class="num">@(std > 0 ? std.ToQty() : "—")</td><td class="num @(std > 0 && actual > 0 && actual < std * 0.9m ? "bad" : "good")">@(std > 0 && actual > 0 ? (actual * 100 / std).ToString("0") + "%" : "—")</td></tr>
+        }
+        </tbody></table></div></div></div>
+</div>
+<div class="card mb-3"><div class="card-header">Theo ngày</div><div class="card-body p-0"><table class="table table-sm mb-0">
+    <thead><tr><th>Ngày</th><th class="num">Đạt</th><th class="num">Lỗi</th><th class="num">% lỗi</th><th class="num">Giờ</th><th class="num">SP / giờ</th></tr></thead><tbody>
+    @foreach (var g in Model.GroupBy(o => o.Date).OrderByDescending(g => g.Key)) { <tr><td>@g.Key.ToDate()</td><td class="num">@g.Sum(o => o.GoodQty).ToQty()</td><td class="num">@g.Sum(o => o.ScrapQty).ToQty()</td><td class="num">@Rate(g.Sum(o => o.GoodQty), g.Sum(o => o.ScrapQty))</td><td class="num">@((g.Sum(o => o.Minutes) / 60m).ToQty())</td><td class="num">@Prod(g.Sum(o => o.GoodQty), g.Sum(o => o.Minutes))</td></tr> }
+    @if (!Model.Any()) { <tr><td colspan="6" class="text-center text-muted py-4">Chưa có sản lượng trong kỳ. Ghi nhận sản lượng tại trang lệnh sản xuất hoặc từ phiếu cân.</td></tr> }
+</tbody></table></div></div>
+<div class="card"><div class="card-header">Chi tiết ghi nhận</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0">
+    <thead><tr><th>Ngày</th><th>Ca</th><th>Lệnh</th><th>Sản phẩm</th><th>Công đoạn</th><th>Chuyền</th><th class="num">Đạt</th><th class="num">Lỗi</th><th class="num">Phút</th><th>Nguồn</th></tr></thead><tbody>
+    @foreach (var o in Model) { <tr><td>@o.Date.ToDate()</td><td>@o.Shift</td><td><a asp-action="Details" asp-route-id="@o.ProductionOrderId">@o.ProductionOrder?.Number</a></td><td>@o.ProductionOrder?.Item?.Name</td><td>@o.Operation?.Name</td><td>@o.WorkCenter?.Code</td><td class="num">@o.GoodQty.ToQty()</td><td class="num">@o.ScrapQty.ToQty()</td><td class="num">@o.Minutes.ToQty()</td><td>@o.Source</td></tr> }
+</tbody></table></div></div></div>

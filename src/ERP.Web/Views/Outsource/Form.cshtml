@@ -1,0 +1,23 @@
+@model OutsourceOrder
+@{ ViewData["Title"] = "Phiếu gia công ngoài"; }
+<partial name="_MfgNav" model="@("os")" />
+<div class="card" style="max-width:900px"><div class="card-body">
+<form asp-action="Save" method="post">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 empty-hide"></div>
+    <div class="row g-3">
+        <div class="col-md-6"><label asp-for="VendorId" class="form-label"></label><select asp-for="VendorId" class="form-select" asp-items="ViewBag.Vendors"><option value="">-- Chọn --</option></select><span asp-validation-for="VendorId" class="text-danger small"></span></div>
+        <div class="col-md-6"><label asp-for="BomId" class="form-label"></label><select asp-for="BomId" class="form-select" asp-items="ViewBag.Boms"><option value="">-- Chọn --</option></select><span asp-validation-for="BomId" class="text-danger small"></span></div>
+        <div class="col-md-3"><label asp-for="Quantity" class="form-label"></label><input asp-for="Quantity" type="number" step="0.001" class="form-control" /></div>
+        <div class="col-md-3"><label asp-for="FeePerUnit" class="form-label"></label><input asp-for="FeePerUnit" type="number" step="1000" class="form-control" /></div>
+        <div class="col-md-2"><label asp-for="VatRate" class="form-label"></label><select asp-for="VatRate" class="form-select">@foreach (var v in new[] { 0, 5, 8, 10 }) { <option value="@v" selected="@(Model.VatRate == v)">@v</option> }</select></div>
+        <div class="col-md-4"><label asp-for="ProductionOrderId" class="form-label">Lệnh sản xuất liên quan</label><select asp-for="ProductionOrderId" class="form-select" asp-items="ViewBag.Orders"><option value="">--</option></select></div>
+        <div class="col-md-3"><label asp-for="MaterialWarehouseId" class="form-label"></label><select asp-for="MaterialWarehouseId" class="form-select" asp-items="ViewBag.Whs"></select></div>
+        <div class="col-md-3"><label asp-for="ReceiveWarehouseId" class="form-label"></label><select asp-for="ReceiveWarehouseId" class="form-select" asp-items="ViewBag.Whs"></select></div>
+        <div class="col-md-3"><label asp-for="Date" class="form-label"></label><input asp-for="Date" type="date" class="form-control" /></div>
+        <div class="col-md-3"><label asp-for="ExpectedDate" class="form-label"></label><input asp-for="ExpectedDate" type="date" class="form-control" /></div>
+        <div class="col-12"><label asp-for="Note" class="form-label"></label><input asp-for="Note" class="form-control" /></div>
+    </div>
+    <div class="small text-muted mt-2">Nguyên vật liệu giao đi được tính theo định mức × số lượng gia công. Giao NVL: Nợ 154 / Có 152 (hoặc 155 với bán thành phẩm). Nhận hàng: nhập kho Nợ 155 / Có 154 theo giá trị NVL + phí gia công; phí gia công hạch toán qua hóa đơn mua Nợ 154 / Có 331.</div>
+    <div class="mt-4 d-flex gap-2"><button class="btn btn-primary">Lập phiếu</button><a class="btn btn-light" asp-action="Index">Hủy</a></div>
+</form>
+</div></div>

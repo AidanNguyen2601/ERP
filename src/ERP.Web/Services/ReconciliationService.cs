@@ -198,7 +198,7 @@ public class ReconciliationService
             .Select(l => new { l.Account!.Code, l.Debit, l.Credit }).ToListAsync();
         var rows = new List<ReconRow>();
         decimal lt = 0, rt = 0;
-        foreach (var (code, name, types) in new[] { ("152", "Nguyên vật liệu", new[] { ItemType.Material }), ("155", "Thành phẩm", new[] { ItemType.FinishedGood }), ("156", "Hàng hóa", new[] { ItemType.Merchandise }) })
+        foreach (var (code, name, types) in new[] { ("152", "Nguyên vật liệu", new[] { ItemType.Material }), ("155", "Thành phẩm", new[] { ItemType.FinishedGood, ItemType.SemiFinished }), ("156", "Hàng hóa", new[] { ItemType.Merchandise }) })
         {
             var sub = moves.Where(m => types.Contains(m.Type)).Sum(m => m.Amount);
             var led = gl.Where(l => l.Code.StartsWith(code)).Sum(l => l.Debit - l.Credit);
@@ -242,10 +242,10 @@ public class ReconciliationService
         foreach (var i in items)
         {
             if (!val.TryGetValue(i.Id, out var v)) continue;
-            // Hết hàng mà sổ cái kho vẫn còn giá trị (hoặc âm) là dư do làm tròn giá bình quân; còn hàng thì giá trị phải xấp xỉ SL × giá bình quân
+            // Hết hàng mà sổ cái kho vẫn còn giá trị (hoặc âm) là dư do làm tròn giá bình quân; còn hàng thì giá trị phải xấp xỉ SL × giá bình quân (hàng tính giá theo lô FIFO / đích danh: giá trị theo giá từng lô nên không so với giá bình quân)
             if (v.Q == 0 && Math.Abs(v.V) >= Tolerance)
                 rows.Add(new ReconRow(i.Code, $"{i.Name}: tồn bằng 0 nhưng còn giá trị trên sổ kho", v.V, 0, "Dư làm tròn giá vốn bình quân khi xuất hết hàng", $"/Inventory/StockCard?itemId={i.Id}"));
-            else if (v.Q > 0 && Math.Abs(v.V - v.Q * i.AvgCost) > Math.Max(5m, Math.Abs(v.V) * 0.001m))
+            else if (v.Q > 0 && i.CostMethod == CostMethod.Average && Math.Abs(v.V - v.Q * i.AvgCost) > Math.Max(5m, Math.Abs(v.V) * 0.001m))
                 rows.Add(new ReconRow(i.Code, $"{i.Name}: giá trị tồn ≠ SL × giá bình quân", v.V, Math.Round(v.Q * i.AvgCost, 0), $"SL {v.Q:0.###} × giá BQ {i.AvgCost:N2}", $"/Inventory/StockCard?itemId={i.Id}"));
         }
         return new ReconCheck
@@ -385,7 +385,7 @@ public class ReconciliationService
 
     private async Task<ReconCheck> WipAsync()
     {
-        var orders = await _db.ProductionOrders.AsNoTracking().Where(p => p.Status != ProductionStatus.Cancelled && p.Status != ProductionStatus.Draft && p.Status != ProductionStatus.Released).ToListAsync();
+        var orders = await _db.ProductionOrders.AsNoTracking().Where(p => p.Status != ProductionStatus.Cancelled && p.Status != ProductionStatus.Draft && p.Status != ProductionStatus.Released && p.Status != ProductionStatus.PendingApproval && p.Status != ProductionStatus.Approved).ToListAsync();
         var docs = await _db.InventoryDocs.AsNoTracking().Where(d => d.Origin == DocOrigin.Production && d.Status == DocStatus.Posted)
             .Select(d => new { d.OriginId, d.Type, Amt = d.Lines.Sum(l => l.Amount) }).ToListAsync();
         var rows = new List<ReconRow>(); decimal sub = 0;
@@ -397,9 +397,13 @@ public class ReconciliationService
             var rest = issued + labor - received;
             sub += rest;
             // Lệnh đã hoàn thành phải kết chuyển hết chi phí sang thành phẩm
-            if (o.Status == ProductionStatus.Completed && Math.Abs(rest) >= Tolerance)
+            if (o.Status is ProductionStatus.Completed or ProductionStatus.Closed && Math.Abs(rest) >= Tolerance)
                 rows.Add(new ReconRow(o.Number, "Lệnh đã hoàn thành còn dư chi phí dở dang (chi phí đầu vào ≠ giá trị nhập kho thành phẩm)", issued + labor, received, "Chênh lệch do làm tròn giá thành đơn vị", $"/Production/Details/{o.Id}"));
         }
+        // Gia công ngoài: NVL đã giao + phí gia công đã ghi sổ hóa đơn − hàng đã nhận về
+        var osDocs = await _db.InventoryDocs.AsNoTracking().Where(d => d.Origin == DocOrigin.Outsource && d.Status == DocStatus.Posted).Select(d => new { d.Type, Amt = d.Lines.Sum(l => l.Amount) }).ToListAsync();
+        var osFee = await _db.OutsourceReceipts.AsNoTracking().Where(r => r.Invoice != null && r.Invoice.Status == InvoiceStatus.Issued).SumAsync(r => (decimal?)r.FeeAmount) ?? 0;
+        sub += osDocs.Where(d => d.Type == InvDocType.Issue).Sum(d => d.Amt) + osFee - osDocs.Where(d => d.Type == InvDocType.Receipt).Sum(d => d.Amt);
         var gl = await _db.JournalLines.AsNoTracking().Where(l => l.JournalEntry!.Status == DocStatus.Posted && l.Account!.Code.StartsWith("154")).SumAsync(l => l.Debit - l.Credit);
         if (Math.Abs(sub - gl) >= Tolerance) rows.Add(new ReconRow("154", "Chi phí dở dang theo lệnh sản xuất ≠ số dư TK 154", sub, gl, "Σ (NVL đã xuất + nhân công + SXC − thành phẩm nhập kho) so với TK 154"));
         return new ReconCheck
@@ -582,8 +586,8 @@ public class ReconciliationService
 
     private async Task<ReconCheck> ProductionIssuedAsync()
     {
-        var docs = (await _db.InventoryDocs.AsNoTracking().Where(d => d.Origin == DocOrigin.Production && d.Type == InvDocType.Issue && d.Status == DocStatus.Posted)
-            .SelectMany(d => d.Lines.Select(l => new { d.OriginId, l.ItemId, l.Quantity, l.Amount })).ToListAsync()).GroupBy(x => (x.OriginId ?? 0, x.ItemId)).ToDictionary(g => g.Key, g => (Q: g.Sum(x => x.Quantity), A: g.Sum(x => x.Amount)));
+        var docs = (await _db.InventoryDocs.AsNoTracking().Where(d => d.Origin == DocOrigin.Production && (d.Type == InvDocType.Issue || d.Type == InvDocType.Receipt) && d.Status == DocStatus.Posted)
+            .SelectMany(d => d.Lines.Select(l => new { d.OriginId, l.ItemId, Quantity = d.Type == InvDocType.Issue ? l.Quantity : -l.Quantity, Amount = d.Type == InvDocType.Issue ? l.Amount : -l.Amount })).ToListAsync()).GroupBy(x => (x.OriginId ?? 0, x.ItemId)).ToDictionary(g => g.Key, g => (Q: g.Sum(x => x.Quantity), A: g.Sum(x => x.Amount)));
         var lines = await _db.ProductionOrderLines.AsNoTracking().Include(l => l.ProductionOrder).Include(l => l.Item).ToListAsync();
         var rows = new List<ReconRow>();
         foreach (var l in lines)
@@ -593,6 +597,6 @@ public class ReconciliationService
                 rows.Add(new ReconRow(l.ProductionOrder!.Number, $"{l.Item?.Code}: NVL đã xuất / giá trị trên lệnh ≠ phiếu xuất kho", l.IssuedQty, d.Q, $"Giá trị lệnh {l.Cost:N0} so với phiếu {d.A:N0}", $"/Production/Details/{l.ProductionOrderId}"));
         }
         return new ReconCheck { Code = "D4", Group = "Đơn hàng ↔ chứng từ", Title = "Lệnh sản xuất: NVL đã xuất = phiếu xuất kho", Kind = ReconKind.Qty, LeftLabel = "Lệnh sản xuất", RightLabel = "Phiếu xuất kho",
-            Description = "Số lượng và giá trị NVL đã xuất trên lệnh phải bằng các phiếu xuất kho sản xuất đã ghi sổ.", Rows = rows, Checked = lines.Count, LeftTotal = lines.Sum(l => l.IssuedQty), RightTotal = docs.Values.Sum(v => v.Q) };
+            Description = "Số lượng và giá trị NVL đã xuất trên lệnh phải bằng các phiếu xuất kho sản xuất đã ghi sổ.", Rows = rows, Checked = lines.Count, LeftTotal = lines.Sum(l => l.IssuedQty), RightTotal = lines.Sum(l => docs.GetValueOrDefault((l.ProductionOrderId, l.ItemId)).Q) };
     }
 }

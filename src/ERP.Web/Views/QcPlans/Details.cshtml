@@ -5,7 +5,9 @@
         <h5 class="mb-1">@Model.Name</h5>
         <div class="meta"><i class="bi @QcUi.Icon(Model.Stage)"></i> @Model.Stage.GetDisplayName() ·
             @(Model.Item != null ? $"Mặt hàng {Model.Item.Code} – {Model.Item.Name}" : Model.ItemType.HasValue ? "Loại hàng: " + Model.ItemType.Value.GetDisplayName() : "Áp dụng mọi mặt hàng") ·
-            Lấy mẫu @Model.SamplePct.ToPct() lô
+            @(Model.SamplingMethod switch { QcSamplingMethod.Aql => $"Lấy mẫu theo AQL {(Model.AqlValue ?? 1.0m):0.##}", QcSamplingMethod.Fixed => $"Lấy mẫu cố định {Model.FixedSampleQty.ToQty()}", _ => $"Lấy mẫu {Model.SamplePct.ToPct()} lô" })
+            @(Model.MaxDefectPct > 0 ? $" · Ngưỡng đạt: lỗi trong mẫu ≤ {Model.MaxDefectPct:0.##}%" : "")
+            @(string.IsNullOrEmpty(Model.OperationName) ? "" : " · Công đoạn: " + Model.OperationName)
             @if (!Model.IsActive) { <span class="badge bg-secondary ms-1">Ngưng áp dụng</span> }</div>
         @if (!string.IsNullOrWhiteSpace(Model.Note)) { <div class="small mt-1">@Model.Note</div> }
     </div>

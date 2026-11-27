@@ -34,6 +34,11 @@ public class QcNcrsController : ErpControllerBase
         if (n == null) return NotFound();
         ViewBag.CanManage = CanManage; ViewBag.CanExecute = CanExecute;
         ViewBag.Returns = await Db.PurchaseReturns.Include(r => r.PurchaseOrderLine).ThenInclude(l => l!.PurchaseOrder).Include(r => r.Offsets).ThenInclude(o => o.Invoice).Where(r => r.NcrId == id).OrderBy(r => r.Id).ToListAsync();
+        ViewBag.Actions = await Db.QcNcrActions.Where(a => a.NcrId == id).OrderBy(a => a.Id).ToListAsync();
+        ViewBag.Reinspection = n.ReinspectionId == null ? null : await Db.QcInspections.FindAsync(n.ReinspectionId);
+        ViewBag.QuarantineDoc = n.QuarantineDocId == null ? null : await Db.InventoryDocs.FindAsync(n.QuarantineDocId);
+        ViewBag.ReleaseDoc = n.ReleaseDocId == null ? null : await Db.InventoryDocs.FindAsync(n.ReleaseDocId);
+        ViewBag.OriginalWh = n.OriginalWarehouseId == null ? null : await Db.Warehouses.FindAsync(n.OriginalWarehouseId);
         return View(n);
     }
 
@@ -90,6 +95,63 @@ public class QcNcrsController : ErpControllerBase
         if (n == null) return NotFound();
         var doc = await _qc.ExecuteDispositionAsync(n, date ?? DateTime.Today);
         Success($"Đã lập và ghi sổ phiếu xuất kho {doc.Number} ({n.Disposition.GetDisplayName().ToLowerInvariant()}), giá trị {doc.TotalAmount.ToMoney()} đ.");
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    /// <summary>Cách ly hàng không phù hợp sang kho cách ly</summary>
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Quarantine(int id, DateTime? date)
+    {
+        if (!CanExecute) return Denied();
+        var n = await Db.QcNonconformances.FindAsync(id);
+        if (n == null) return NotFound();
+        var doc = await _qc.QuarantineAsync(n, date ?? DateTime.Today);
+        Success($"Đã cách ly {n.Quantity.ToQty()} hàng không phù hợp: phiếu chuyển kho {doc.Number}.");
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Release(int id, DateTime? date)
+    {
+        if (!CanExecute) return Denied();
+        var n = await Db.QcNonconformances.FindAsync(id);
+        if (n == null) return NotFound();
+        var doc = await _qc.ReleaseAsync(n, date ?? DateTime.Today);
+        Success($"Đã thả cách ly, chuyển hàng về kho ban đầu: phiếu {doc.Number}.");
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    /// <summary>Hướng xử lý Sửa chữa / làm lại: lập phiếu kiểm tra lại</summary>
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Reinspect(int id)
+    {
+        if (!CanManage) return Denied();
+        var n = await Db.QcNonconformances.FindAsync(id);
+        if (n == null) return NotFound();
+        var insp = await _qc.CreateReinspectionAsync(n);
+        Success($"Đã lập phiếu kiểm tra lại {insp.Number}. Nhập kết quả sau khi sửa chữa / tái chế.");
+        return RedirectToAction("Edit", "QcInspections", new { id = insp.Id });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddAction(int id, QcActionKind kind, string description, string? responsible, DateTime? dueDate)
+    {
+        if (!CanManage) return Denied();
+        var n = await Db.QcNonconformances.FindAsync(id);
+        if (n == null) return NotFound();
+        await _qc.AddActionAsync(n, kind, description, responsible, dueDate);
+        Success("Đã thêm hành động.");
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> CompleteAction(int id, int actionId, string? note)
+    {
+        if (!CanManage) return Denied();
+        var a = await Db.QcNcrActions.FirstOrDefaultAsync(x => x.Id == actionId && x.NcrId == id);
+        if (a == null) return NotFound();
+        await _qc.CompleteActionAsync(a, note);
+        Success("Đã ghi nhận hoàn thành hành động.");
         return RedirectToAction(nameof(Details), new { id });
     }
 

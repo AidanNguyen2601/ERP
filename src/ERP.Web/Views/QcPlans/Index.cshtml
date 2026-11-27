@@ -21,7 +21,7 @@
             <td><a asp-action="Details" asp-route-id="@p.Id"><b>@p.Code</b></a></td><td>@p.Name</td>
             <td class="small text-nowrap"><i class="bi @QcUi.Icon(p.Stage)"></i> @p.Stage.GetDisplayName()</td>
             <td class="small">@(p.Item != null ? $"{p.Item.Code} – {p.Item.Name}" : p.ItemType.HasValue ? "Loại: " + p.ItemType.Value.GetDisplayName() : "Mọi mặt hàng")</td>
-            <td class="num">@p.Lines.Count</td><td class="num">@p.Lines.Count(l => l.IsCritical)</td><td class="num">@p.SamplePct.ToPct()</td>
+            <td class="num">@p.Lines.Count</td><td class="num">@p.Lines.Count(l => l.IsCritical)</td><td class="num">@(p.SamplingMethod == QcSamplingMethod.Aql ? $"AQL {(p.AqlValue ?? 1.0m):0.##}" : p.SamplingMethod == QcSamplingMethod.Fixed ? p.FixedSampleQty.ToQty() : p.SamplePct.ToPct())</td>
             <td class="num">@usage.GetValueOrDefault(p.Id)</td>
             <td>@if (p.IsActive) { <span class="badge bg-success">Áp dụng</span> } else { <span class="badge bg-secondary">Ngưng</span> }</td>
         </tr>

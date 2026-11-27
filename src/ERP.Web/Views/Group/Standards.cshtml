@@ -11,7 +11,7 @@
     <button class="btn btn-sm btn-outline-primary">Xem</button>
     <a class="btn btn-sm btn-light" asp-controller="Reports" asp-action="TrialBalance"><i class="bi bi-table"></i> Cân đối theo hệ thống TK gốc</a>
 </form>
-<div class="alert alert-info small">Sổ sách ghi theo hệ thống tài khoản đang áp dụng (TT200 / TT99). Trang này chuyển đổi số liệu sang hệ thống tài khoản của chuẩn mực khác (VD TT133 cho báo cáo công ty nhỏ, hoặc mã khoản mục IFRS / báo cáo tập đoàn)
+<div class="alert alert-info small">Sổ sách ghi theo hệ thống tài khoản đang áp dụng (TT99; TT200 cũ). Trang này chuyển đổi số liệu sang hệ thống tài khoản của chuẩn mực khác (VD TT133 cho báo cáo công ty nhỏ, hoặc mã khoản mục IFRS / báo cáo tập đoàn)
     bằng bảng ánh xạ tiền tố TK. Có thể khai báo thêm chuẩn mới (VD "IFRS") ở form bên dưới.</div>
 @if (unmapped.Any()) { <div class="alert alert-warning small">Tài khoản chưa ánh xạ (giữ nguyên số hiệu): @string.Join(", ", unmapped)</div> }
 <div class="row g-3">

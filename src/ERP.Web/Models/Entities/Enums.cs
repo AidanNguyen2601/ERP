@@ -43,7 +43,8 @@ public enum ItemType
     [Display(Name = "Nguyên vật liệu")] Material = 1,
     [Display(Name = "Thành phẩm")] FinishedGood = 2,
     [Display(Name = "Hàng hóa")] Merchandise = 3,
-    [Display(Name = "Dịch vụ")] Service = 4
+    [Display(Name = "Dịch vụ")] Service = 4,
+    [Display(Name = "Bán thành phẩm")] SemiFinished = 5
 }
 
 public enum InvDocType
@@ -61,7 +62,8 @@ public enum DocOrigin
     [Display(Name = "Bán hàng")] Sales = 3,
     [Display(Name = "Sản xuất")] Production = 4,
     [Display(Name = "Quản lý chất lượng")] Quality = 5,
-    [Display(Name = "Hàng bán bị trả lại")] SalesReturn = 6
+    [Display(Name = "Hàng bán bị trả lại")] SalesReturn = 6,
+    [Display(Name = "Gia công ngoài")] Outsource = 7
 }
 
 public enum PoStatus
@@ -132,7 +134,10 @@ public enum ProductionStatus
     [Display(Name = "Đã phát lệnh")] Released = 2,
     [Display(Name = "Đang sản xuất")] InProgress = 3,
     [Display(Name = "Hoàn thành")] Completed = 4,
-    [Display(Name = "Đã hủy")] Cancelled = 5
+    [Display(Name = "Đã hủy")] Cancelled = 5,
+    [Display(Name = "Chờ duyệt")] PendingApproval = 6,
+    [Display(Name = "Đã duyệt")] Approved = 7,
+    [Display(Name = "Đã đóng lệnh")] Closed = 8
 }
 
 /// <summary>Các loại danh mục dùng chung (bảng CatalogItems)</summary>

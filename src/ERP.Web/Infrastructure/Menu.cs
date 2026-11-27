@@ -125,9 +125,14 @@ public static class Menu
         }},
         new() { Key = "mfg", Title = "Sản xuất", Icon = "bi-gear-wide-connected", Tint = "#f8fafc", Items = new MenuItem[]
         {
-            new() { Key = "mo", Title = "Lệnh sản xuất", Icon = "bi-tools", Controller = "Production", Active = m => m.Is("Production") && m.Action != "Mrp" },
+            new() { Key = "mo", Title = "Lệnh sản xuất", Icon = "bi-tools", Controller = "Production", Active = m => m.Is("Production") && m.Action is not ("Mrp" or "Outputs" or "Variance") },
             new() { Key = "bom", Title = "Định mức (BOM)", Icon = "bi-diagram-3", Controller = "Boms", Active = m => m.Is("Boms") },
+            new() { Key = "wc", Title = "Trung tâm sản xuất", Icon = "bi-building-gear", Controller = "WorkCenters", Active = m => m.Is("WorkCenters") },
+            new() { Key = "mps", Title = "Kế hoạch tổng thể (MPS)", Icon = "bi-calendar-range", Controller = "Mps", Active = m => m.Is("Mps") },
             new() { Key = "mrp", Title = "Hoạch định vật tư", Icon = "bi-clipboard-data", Controller = "Production", Action = "Mrp", Active = m => m.Is("Production", "Mrp") },
+            new() { Key = "mfgout", Title = "Thống kê sản lượng", Icon = "bi-bar-chart-steps", Controller = "Production", Action = "Outputs", Active = m => m.Is("Production", "Outputs") },
+            new() { Key = "mfgvar", Title = "Định mức vs thực tế", Icon = "bi-arrow-left-right", Controller = "Production", Action = "Variance", Visible = u => u.InAny(AppRoles.FinanceView + "," + AppRoles.Production), Active = m => m.Is("Production", "Variance") },
+            new() { Key = "outsource", Title = "Gia công ngoài", Icon = "bi-box-arrow-up-right", Controller = "Outsource", Active = m => m.Is("Outsource") },
             new() { Key = "costing", Title = "Giá thành sản phẩm", Icon = "bi-calculator", Controller = "Costing", Visible = u => u.InAny(AppRoles.FinanceView + "," + AppRoles.Production), Active = m => m.Is("Costing") },
         }},
         new() { Key = "hr", Title = "Nhân sự · Tiền lương", Icon = "bi-people", Tint = "#fef3c7", Items = new MenuItem[]

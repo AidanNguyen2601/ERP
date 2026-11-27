@@ -124,6 +124,15 @@ public class ErpDbContext : DbContext
     public DbSet<BomLine> BomLines => Set<BomLine>();
     public DbSet<ProductionOrder> ProductionOrders => Set<ProductionOrder>();
     public DbSet<ProductionOrderLine> ProductionOrderLines => Set<ProductionOrderLine>();
+    public DbSet<WorkCenter> WorkCenters => Set<WorkCenter>();
+    public DbSet<BomOperation> BomOperations => Set<BomOperation>();
+    public DbSet<ProductionOperation> ProductionOperations => Set<ProductionOperation>();
+    public DbSet<ProductionOutput> ProductionOutputs => Set<ProductionOutput>();
+    public DbSet<MpsPlan> MpsPlans => Set<MpsPlan>();
+    public DbSet<MpsLine> MpsLines => Set<MpsLine>();
+    public DbSet<OutsourceOrder> OutsourceOrders => Set<OutsourceOrder>();
+    public DbSet<OutsourceMaterial> OutsourceMaterials => Set<OutsourceMaterial>();
+    public DbSet<OutsourceReceipt> OutsourceReceipts => Set<OutsourceReceipt>();
     // Danh mục dùng chung & tùy chọn người dùng
     public DbSet<CatalogItem> CatalogItems => Set<CatalogItem>();
     public DbSet<UserPreference> UserPreferences => Set<UserPreference>();
@@ -133,6 +142,7 @@ public class ErpDbContext : DbContext
     public DbSet<QcPlan> QcPlans => Set<QcPlan>();
     public DbSet<QcPlanLine> QcPlanLines => Set<QcPlanLine>();
     public DbSet<QcInspection> QcInspections => Set<QcInspection>();
+    public DbSet<QcNcrAction> QcNcrActions => Set<QcNcrAction>();
     public DbSet<QcInspectionLine> QcInspectionLines => Set<QcInspectionLine>();
     public DbSet<QcNonconformance> QcNonconformances => Set<QcNonconformance>();
     public DbSet<PurchaseReturn> PurchaseReturns => Set<PurchaseReturn>();
@@ -239,6 +249,10 @@ public class ErpDbContext : DbContext
         modelBuilder.Entity<DepreciationRun>().HasIndex(x => new { x.Year, x.Month }).IsUnique();
         modelBuilder.Entity<Bom>().HasIndex(x => x.Code).IsUnique();
         modelBuilder.Entity<ProductionOrder>().HasIndex(x => x.Number).IsUnique();
+        modelBuilder.Entity<WorkCenter>().HasIndex(x => x.Code).IsUnique();
+        modelBuilder.Entity<MpsPlan>().HasIndex(x => x.Code).IsUnique();
+        modelBuilder.Entity<OutsourceOrder>().HasIndex(x => x.Number).IsUnique();
+        modelBuilder.Entity<ProductionOutput>().HasIndex(x => new { x.Date, x.WorkCenterId });
         modelBuilder.Entity<CatalogItem>().HasIndex(x => new { x.Type, x.Code }).IsUnique();
         modelBuilder.Entity<UserPreference>().HasIndex(x => new { x.UserId, x.Key }).IsUnique();
         modelBuilder.Entity<PostingRule>().HasIndex(x => x.Key).IsUnique();

@@ -22,6 +22,8 @@ public class Company
     [StringLength(300)][Display(Name = "Địa chỉ")] public string? Address { get; set; }
     [Display(Name = "Là công ty mẹ")] public bool IsParent { get; set; }
     [Display(Name = "Tỷ lệ sở hữu của công ty mẹ (%)")][Range(0, 100)] public decimal OwnershipPct { get; set; } = 100;
+    [DataType(DataType.Date)][Display(Name = "Ngày công ty mẹ nắm quyền kiểm soát")] public DateTime? AcquisitionDate { get; set; }
+    [Display(Name = "LNST chưa phân phối của công ty con tại ngày mua")] public decimal RetainedAtAcquisition { get; set; }
     [Display(Name = "Đang hoạt động")] public bool IsActive { get; set; } = true;
     public ICollection<Branch> Branches { get; set; } = new List<Branch>();
 }
@@ -68,6 +70,7 @@ public enum ApprovalDocType
     [Display(Name = "Chứng từ kế toán thủ công")] JournalEntry = 3,
     [Display(Name = "Bảng lương")] Payroll = 4,
     [Display(Name = "Đề nghị mua hàng")] PurchaseRequisition = 5,
+    [Display(Name = "Lệnh sản xuất")] ProductionOrder = 6,
 }
 
 public enum ApprovalStatus
@@ -537,7 +540,7 @@ public class AccountMapping
     public int Id { get; set; }
     /// <summary>TT133, TT99, IFRS...</summary>
     [Required, StringLength(20)] public string Standard { get; set; } = string.Empty;
-    /// <summary>Đầu số TK theo hệ thống đang dùng (TT200)</summary>
+    /// <summary>Đầu số TK theo hệ thống đang dùng (TT99)</summary>
     [Required, StringLength(10)] public string FromPrefix { get; set; } = string.Empty;
     [Required, StringLength(10)] public string ToCode { get; set; } = string.Empty;
     [Required, StringLength(200)] public string ToName { get; set; } = string.Empty;

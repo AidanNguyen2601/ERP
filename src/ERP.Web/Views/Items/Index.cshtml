@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Hàng hóa, vật tư"; var stock = (Dictionary<int, decimal>)ViewBag.Stock;
     var invAcc = new Dictionary<ItemType, string>();
-    foreach (var t in new[] { ItemType.Material, ItemType.FinishedGood, ItemType.Merchandise }) invAcc[t] = (await Acc.RuleAccountAsync(PostingCatalog.InventoryKey(t))).Code;
+    foreach (var t in new[] { ItemType.Material, ItemType.SemiFinished, ItemType.FinishedGood, ItemType.Merchandise }) invAcc[t] = (await Acc.RuleAccountAsync(PostingCatalog.InventoryKey(t))).Code;
 }
 <form class="toolbar" method="get">
     <div><label class="form-label small mb-0">Loại</label><select name="type" class="form-select form-select-sm"><option value="">-- Tất cả --</option>

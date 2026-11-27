@@ -1,0 +1,53 @@
+@model (MpsPlan Plan, MpsService.Result Result)
+@{
+    var plan = Model.Plan; var res = Model.Result; var can = (bool)ViewBag.CanEdit; var orders = (Dictionary<int, ProductionOrder>)ViewBag.Orders;
+    ViewData["Title"] = $"Kế hoạch {plan.Code}";
+    var periods = Enumerable.Range(0, plan.Months).Select(i => plan.FromMonth.AddMonths(i)).ToList();
+    var overloaded = res.Loads.Where(l => l.Pct > 100).ToList();
+}
+<partial name="_MfgNav" model="@("mps")" />
+<div class="subnav"><a asp-action="Index">← Danh sách kế hoạch</a></div>
+<div class="card mb-3"><div class="card-body d-flex justify-content-between flex-wrap">
+    <div><div class="fs-5 fw-semibold">@plan.Code – @plan.Name</div><div class="meta">@plan.FromMonth.ToString("MM/yyyy") → @plan.FromMonth.AddMonths(plan.Months - 1).ToString("MM/yyyy") @(string.IsNullOrWhiteSpace(plan.Note) ? "" : "· " + plan.Note)</div></div>
+    @if (can) { <form asp-action="Delete" asp-route-id="@plan.Id" method="post" data-confirm="Xóa kế hoạch? Lệnh sản xuất đã tạo được giữ nguyên."><button class="btn btn-sm btn-outline-danger">Xóa kế hoạch</button></form> }
+</div></div>
+@if (overloaded.Any())
+{
+    <div class="alert alert-warning py-2">Quá tải công suất: @string.Join("; ", overloaded.Select(l => $"{l.Center.Code} tháng {l.Period:MM/yyyy} ({l.Pct:0}%)")). Giảm số lượng, tăng ca hoặc chuyển bớt sang gia công ngoài.</div>
+}
+<form method="post" asp-antiforgery="true">
+<input type="hidden" name="id" value="@plan.Id" />
+<div class="card mb-3"><div class="card-header d-flex justify-content-between align-items-center"><span>Kế hoạch theo mặt hàng và tháng</span>
+    @if (can) { <span class="d-flex gap-2"><button class="btn btn-sm btn-outline-primary" formaction="@Url.Action("Suggest")">Đề xuất số lượng</button><button class="btn btn-sm btn-primary" formaction="@Url.Action("Save")">Lưu</button></span> }</div>
+<div class="card-body p-0"><div class="table-responsive"><table class="table table-sm align-middle mb-0">
+    <thead><tr><th>Mặt hàng</th><th>Tháng</th><th class="num">Nhu cầu đơn hàng</th><th style="width:110px" class="num">Dự báo</th><th class="num">Tồn đầu kỳ + đang SX</th><th class="num">Đề xuất</th><th style="width:120px" class="num">SL kế hoạch</th><th class="num">Tồn dự kiến cuối kỳ</th><th>Lệnh sản xuất</th>@if (can) { <th></th> }</tr></thead>
+    <tbody>
+    @foreach (var g in res.Rows.GroupBy(r => r.Line.ItemId))
+    {
+        foreach (var r in g.OrderBy(x => x.Line.Period))
+        {
+            var l = r.Line; var mo = l.ProductionOrderId != null && orders.TryGetValue(l.ProductionOrderId.Value, out var o) ? o : null;
+            <tr><td>@(r.Line == g.OrderBy(x => x.Line.Period).First().Line ? l.Item?.Code + " – " + l.Item?.Name : "")</td><td>@l.Period.ToString("MM/yyyy")</td><td class="num">@(r.OrderDemand > 0 ? r.OrderDemand.ToQty() : "")</td>
+                <td class="num">@if (can) { <input type="number" step="1" min="0" name="forecast[@l.Id]" value="@l.ForecastQty.Raw()" class="form-control form-control-sm text-end" /> } else { @l.ForecastQty.ToQty() }</td>
+                <td class="num">@r.Opening.ToQty()</td><td class="num text-muted">@r.Suggested.ToQty()</td>
+                <td class="num">@if (can && mo == null) { <input type="number" step="1" min="0" name="planned[@l.Id]" value="@l.PlannedQty.Raw()" class="form-control form-control-sm text-end" /> } else { @l.PlannedQty.ToQty() }</td>
+                <td class="num @(r.Closing < 0 ? "bad" : "")">@r.Closing.ToQty()</td>
+                <td>@if (mo != null) { <a asp-controller="Production" asp-action="Details" asp-route-id="@mo.Id">@mo.Number</a> <span class="badge @(mo.OrderType == ProductionType.MakeToOrder ? "bg-primary" : "bg-secondary")">@(mo.OrderType == ProductionType.MakeToOrder ? "MTO" : "MTS")</span> }</td>
+                @if (can) { <td>@if (mo == null && l.PlannedQty > 0) { <input type="checkbox" name="lineIds" value="@l.Id" form="mo-form" /> }</td> }</tr>
+        }
+    }
+    </tbody>
+</table></div></div>
+@if (can) { <div class="card-footer d-flex gap-2 align-items-center"><button class="btn btn-sm btn-success" form="mo-form">Tạo lệnh sản xuất cho các dòng đã chọn</button><span class="small text-muted">Kỳ có đơn bán đã xác nhận sẽ tạo lệnh theo đơn hàng (MTO), ngược lại theo kho (MTS). Lệnh tạo ở trạng thái nháp.</span></div> }
+</div>
+</form>
+@if (can) { <form id="mo-form" asp-action="CreateOrders" method="post"><input type="hidden" name="id" value="@plan.Id" /></form> }
+<div class="card"><div class="card-header">Tải công suất theo trung tâm sản xuất (giờ)</div><div class="card-body p-0"><table class="table table-sm mb-0">
+    <thead><tr><th>Trung tâm</th>@foreach (var p in periods) { <th class="num">@p.ToString("MM/yyyy")</th> }<th class="num">Công suất / tháng</th></tr></thead><tbody>
+    @foreach (var g in res.Loads.GroupBy(l => l.Center.Id))
+    {
+        var c = g.First().Center;
+        <tr><td>@c.Code – @c.Name</td>@foreach (var p in periods) { var l = g.FirstOrDefault(x => x.Period == p); <td class="num @(l != null && l.Pct > 100 ? "bad fw-bold" : l != null && l.Pct > 85 ? "warn" : "")">@(l == null ? "" : $"{l.Hours.ToQty()} ({l.Pct:0}%)")</td> }<td class="num">@g.First().Capacity.ToQty()</td></tr>
+    }
+    @if (!res.Loads.Any()) { <tr><td colspan="@(periods.Count + 2)" class="text-muted text-center py-3">Chưa khai báo trung tâm sản xuất / quy trình sản xuất cho định mức.</td></tr> }
+</tbody></table></div></div>

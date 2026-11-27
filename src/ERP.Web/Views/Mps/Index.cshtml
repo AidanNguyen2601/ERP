@@ -1,0 +1,29 @@
+@model List<MpsPlan>
+@{ ViewData["Title"] = "Kế hoạch sản xuất tổng thể (MPS)"; var items = (List<Item>)ViewBag.Items; var can = (bool)ViewBag.CanEdit; }
+<partial name="_MfgNav" model="@("mps")" />
+<div class="row g-3">
+    <div class="col-lg-7"><div class="card"><div class="card-body p-0"><table class="table table-sm table-hover mb-0">
+        <thead><tr><th>Mã</th><th>Tên kế hoạch</th><th>Giai đoạn</th><th class="num">Mặt hàng</th><th class="num">SL kế hoạch</th><th class="num">Đã lập lệnh</th></tr></thead><tbody>
+        @foreach (var p in Model)
+        {
+            <tr><td><a asp-action="Details" asp-route-id="@p.Id">@p.Code</a></td><td>@p.Name</td><td>@p.FromMonth.ToString("MM/yyyy") → @p.FromMonth.AddMonths(p.Months - 1).ToString("MM/yyyy")</td>
+                <td class="num">@p.Lines.Select(l => l.ItemId).Distinct().Count()</td><td class="num">@p.Lines.Sum(l => l.PlannedQty).ToQty()</td><td class="num">@p.Lines.Count(l => l.ProductionOrderId != null) / @p.Lines.Count(l => l.PlannedQty > 0 || l.ProductionOrderId != null)</td></tr>
+        }
+        @if (!Model.Any()) { <tr><td colspan="6" class="text-center text-muted py-4">Chưa có kế hoạch.</td></tr> }
+        </tbody></table></div></div></div>
+    @if (can)
+    {
+        <div class="col-lg-5"><div class="card"><div class="card-header">Lập kế hoạch mới</div><div class="card-body">
+            <form asp-action="Create" method="post" class="row g-2">
+                <div class="col-12"><label class="form-label small">Tên kế hoạch</label><input name="name" class="form-control form-control-sm" placeholder="VD: Kế hoạch sản xuất quý 1/2027" required /></div>
+                <div class="col-6"><label class="form-label small">Từ tháng</label><input type="month" name="fromMonth" value="@DateTime.Today.ToString("yyyy-MM")" class="form-control form-control-sm" /></div>
+                <div class="col-6"><label class="form-label small">Số tháng</label><input type="number" name="months" min="1" max="12" value="3" class="form-control form-control-sm" /></div>
+                <div class="col-12"><label class="form-label small">Mặt hàng (bỏ trống = tất cả có định mức)</label>
+                    <select name="itemIds" multiple size="6" class="form-select form-select-sm">@foreach (var i in items) { <option value="@i.Id">@i.Code – @i.Name @(i.Type == ItemType.SemiFinished ? "(BTP)" : "")</option> }</select></div>
+                <div class="col-12"><input name="note" class="form-control form-control-sm" placeholder="Ghi chú" /></div>
+                <div class="col-12"><button class="btn btn-sm btn-primary">Lập kế hoạch</button></div>
+            </form>
+        </div></div></div>
+    }
+</div>
+<div class="small text-muted mt-3">MPS lập theo tháng cho thành phẩm / bán thành phẩm: nhu cầu = đơn bán đã xác nhận chưa giao (theo ngày giao) + dự báo; đề xuất sản xuất trừ tồn kho và lệnh đang mở, cộng tồn tối thiểu; công suất kiểm tra theo quy trình (routing) của định mức so với giờ khả dụng của trung tâm sản xuất.</div>

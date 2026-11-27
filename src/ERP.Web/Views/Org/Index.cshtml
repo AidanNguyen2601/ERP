@@ -10,7 +10,7 @@
     báo cáo tài chính lọc theo chi nhánh đang chọn ở thanh trên cùng. Báo cáo hợp nhất cộng các công ty và loại trừ giao dịch nội bộ.</div>
 @foreach (var c in Model)
 {
-    <div class="card mb-3"><div class="card-header d-flex justify-content-between"><span><i class="bi bi-buildings me-1"></i><b>@c.Code</b> – @c.Name @if (c.IsParent) { <span class="badge bg-primary ms-1">Công ty mẹ</span> } else { <span class="badge bg-light text-dark border ms-1">Sở hữu @c.OwnershipPct.ToPct()</span> }</span>
+    <div class="card mb-3"><div class="card-header d-flex justify-content-between"><span><i class="bi bi-buildings me-1"></i><b>@c.Code</b> – @c.Name @if (c.IsParent) { <span class="badge bg-primary ms-1">Công ty mẹ</span> } else { <span class="badge bg-light text-dark border ms-1">Sở hữu @c.OwnershipPct.ToPct()@(c.AcquisitionDate != null ? " từ " + c.AcquisitionDate.Value.ToString("dd/MM/yyyy") : "")</span> }</span>
         <span class="small text-muted fw-normal">MST @c.TaxCode · @c.Address</span></div>
         <div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><thead><tr><th>Mã chi nhánh</th><th>Tên</th><th>Địa chỉ</th><th class="num">Bút toán</th><th class="num">Người dùng</th><th>Trạng thái</th></tr></thead><tbody>
         @foreach (var b in c.Branches.OrderBy(x => x.Code))
@@ -30,6 +30,8 @@
                 <div class="col-12"><label class="form-label small">Tên công ty</label><input name="Name" class="form-control form-control-sm" required /></div>
                 <div class="col-12"><label class="form-label small">Địa chỉ</label><input name="Address" class="form-control form-control-sm" /></div>
                 <div class="col-4"><label class="form-label small">Tỷ lệ sở hữu (%)</label><input name="OwnershipPct" type="number" value="100" class="form-control form-control-sm" /></div>
+                <div class="col-4"><label class="form-label small">Ngày nắm quyền kiểm soát</label><input name="AcquisitionDate" type="date" class="form-control form-control-sm" /></div>
+                <div class="col-4"><label class="form-label small">LNST chưa PP tại ngày mua</label><input name="RetainedAtAcquisition" type="number" step="1000" value="0" class="form-control form-control-sm" /></div>
                 <div class="col-8 d-flex align-items-end gap-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="IsParent" value="true" id="ip"><label class="form-check-label small" for="ip">Công ty mẹ</label></div>
                     <div class="form-check"><input class="form-check-input" type="checkbox" name="IsActive" value="true" id="ia" checked><label class="form-check-label small" for="ia">Hoạt động</label></div></div>
                 <div class="col-12"><button class="btn btn-sm btn-primary">Lưu công ty</button></div>

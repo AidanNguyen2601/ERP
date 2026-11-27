@@ -55,6 +55,10 @@ builder.Services.AddScoped<ERP.Web.Services.SalesService>();
 builder.Services.AddScoped<ERP.Web.Services.CashService>();
 builder.Services.AddScoped<ERP.Web.Services.AssetService>();
 builder.Services.AddScoped<ERP.Web.Services.ProductionService>();
+builder.Services.AddScoped<ERP.Web.Services.BomService>();
+builder.Services.AddScoped<ERP.Web.Services.ManufacturingService>();
+builder.Services.AddScoped<ERP.Web.Services.MpsService>();
+builder.Services.AddScoped<ERP.Web.Services.OutsourceService>();
 builder.Services.AddScoped<ERP.Web.Services.PeriodService>();
 builder.Services.AddScoped<ERP.Web.Services.ReportService>();
 builder.Services.AddScoped<ERP.Web.Services.PreferenceService>();
@@ -104,6 +108,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseMiddleware<ERP.Web.Infrastructure.TranslationMiddleware>();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();

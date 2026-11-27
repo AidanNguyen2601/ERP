@@ -337,7 +337,7 @@ public class CostingService
         var weights = orders.Select(o => basis == "qty" ? o.Quantity : o.MaterialCost).ToList();
         var sum = weights.Sum();
         if (sum <= 0) throw new BusinessException("Tiêu thức phân bổ bằng 0.");
-        var wip = await _acc.RuleAsync(PostingCatalog.PrdWip); var oh = await _acc.RuleAsync(PostingCatalog.PrdOverhead);
+        var wip = await _acc.RuleAsync(PostingCatalog.PrdWip);
         var lines = new List<JLine>(); decimal used = 0;
         for (var i = 0; i < orders.Count; i++)
         {
@@ -346,7 +346,7 @@ public class CostingService
             orders[i].OverheadCost += part; orders[i].AllocatedOverhead += part;
             lines.Add(new JLine(wip, part, 0, null, orders[i].Number));
         }
-        lines.Add(new JLine(oh, 0, pool, null, "Phân bổ chi phí sản xuất chung"));
+        lines.AddRange(await _acc.CreditByBalanceAsync("627", pool, end, await _acc.RuleAsync(PostingCatalog.PrdOverhead), "Phân bổ chi phí sản xuất chung"));
         await _acc.PostAsync(end, $"Phân bổ chi phí sản xuất chung tháng {month:00}/{year} cho {orders.Count} lệnh sản xuất (tiêu thức {(basis == "qty" ? "số lượng" : "chi phí NVL")})",
             JournalSource.Production, $"PBSXC{month:00}{year % 100:00}", null, lines);
         await _db.SaveChangesAsync();
@@ -357,7 +357,7 @@ public class CostingService
     public async Task<List<CostRow>> ReportAsync(DateTime from, DateTime to, string by)
     {
         var orders = await _db.ProductionOrders.Include(p => p.Item).Include(p => p.SalesOrder).Include(p => p.Bom).ThenInclude(b => b!.Lines).ThenInclude(l => l.Item)
-            .Where(p => p.Status == ProductionStatus.Completed && p.CompletedDate >= from && p.CompletedDate <= to).ToListAsync();
+            .Where(p => (p.Status == ProductionStatus.Completed || p.Status == ProductionStatus.Closed) && p.CompletedDate >= from && p.CompletedDate <= to).ToListAsync();
         var rows = orders.Select(o =>
         {
             var q = o.CompletedQty; var b = o.Bom!; var ratio = b.OutputQuantity == 0 ? 0 : q / b.OutputQuantity;

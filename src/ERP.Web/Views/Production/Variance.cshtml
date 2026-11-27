@@ -1,0 +1,53 @@
+@model List<ProductionOrder>
+@{
+    ViewData["Title"] = "So sánh định mức và thực tế"; var centers = (Dictionary<int, WorkCenter>)ViewBag.Centers; var th = (decimal)ViewBag.Threshold;
+    string Pct(decimal v, decimal std) => std == 0 ? "—" : (v * 100 / std).ToString("+0.#;-0.#;0") + "%";
+    var rows = Model.Select(p =>
+    {
+        var bom = p.Bom!; var cq = p.CompletedQty > 0 ? p.CompletedQty : p.Quantity;
+        var lines = p.Lines.Select(l =>
+        {
+            var bl = bom.Lines.FirstOrDefault(x => x.ItemId == l.ItemId);
+            var stdQty = bl == null ? 0 : ProductionService.Required(bl, bom.OutputQuantity, cq);
+            var unit = l.IssuedQty > 0 ? l.Cost / l.IssuedQty : (l.Item?.AvgCost ?? 0);
+            return (Line: l, StdQty: stdQty, Unit: unit, StdCost: Math.Round(stdQty * unit, 0));
+        }).ToList();
+        var rt = BomService.RoutingPerUnit(bom, centers, cq);
+        var stdLab = Math.Round((bom.LaborCostPerUnit > 0 || !bom.Operations.Any() ? bom.LaborCostPerUnit : rt.Labor) * cq, 0);
+        var stdOhd = Math.Round((bom.OverheadPerUnit > 0 || !bom.Operations.Any() ? bom.OverheadPerUnit : rt.Overhead) * cq, 0);
+        var stdMat = lines.Sum(x => x.StdCost);
+        return (Order: p, Lines: lines, StdMat: stdMat, StdLab: stdLab, StdOhd: stdOhd, Cq: cq);
+    }).ToList();
+}
+<partial name="_MfgNav" model="@("var")" />
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Hoàn thành từ</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">đến</label><input type="date" name="to" value="@(((DateTime)ViewBag.To).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Cảnh báo khi lệch ≥ (%)</label><input type="number" step="0.5" name="threshold" value="@th.Raw()" class="form-control form-control-sm" style="width:90px" /></div>
+    <button class="btn btn-sm btn-outline-primary">Xem</button>
+</form>
+<div class="card mb-3"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0 align-middle">
+    <thead><tr><th>Lệnh</th><th>Sản phẩm</th><th class="num">SL hoàn thành</th><th class="num">NVL định mức</th><th class="num">NVL thực tế</th><th class="num">Chênh lệch NVL</th><th class="num">Nhân công ĐM</th><th class="num">Nhân công TT</th><th class="num">SXC ĐM</th><th class="num">SXC TT</th><th class="num">Tổng ĐM</th><th class="num">Tổng thực tế</th><th class="num">Chênh lệch</th></tr></thead>
+    <tbody>
+    @foreach (var r in rows)
+    {
+        var o = r.Order; var std = r.StdMat + r.StdLab + r.StdOhd; var act = o.TotalCost; var diff = act - std;
+        <tr><td><a asp-action="Details" asp-route-id="@o.Id">@o.Number</a></td><td>@o.Item?.Name</td><td class="num">@r.Cq.ToQty()</td>
+            <td class="num">@r.StdMat.ToMoney()</td><td class="num">@o.MaterialCost.ToMoney()</td><td class="num @(Math.Abs(o.MaterialCost - r.StdMat) * 100 >= th * Math.Max(1, r.StdMat) ? (o.MaterialCost > r.StdMat ? "bad" : "good") : "")">@((o.MaterialCost - r.StdMat).ToMoney()) (@Pct(o.MaterialCost - r.StdMat, r.StdMat))</td>
+            <td class="num">@r.StdLab.ToMoney()</td><td class="num">@o.LaborCost.ToMoney()</td><td class="num">@r.StdOhd.ToMoney()</td><td class="num">@o.OverheadCost.ToMoney()</td>
+            <td class="num">@std.ToMoney()</td><td class="num">@act.ToMoney()</td><td class="num fw-bold @(std > 0 && Math.Abs(diff) * 100 >= th * std ? (diff > 0 ? "bad" : "good") : "")">@diff.ToMoney() (@Pct(diff, std))</td></tr>
+        @if (r.Lines.Any(x => Math.Abs(x.Line.IssuedQty - x.StdQty) > 0.0005m))
+        {
+            <tr class="table-light small"><td></td><td colspan="12">@foreach (var x in r.Lines.Where(x => Math.Abs(x.Line.IssuedQty - x.StdQty) > 0.0005m)) { <span class="me-3">@x.Line.Item?.Code: ĐM @x.StdQty.ToQty() · TT @x.Line.IssuedQty.ToQty() · <b class="@(x.Line.IssuedQty > x.StdQty ? "bad" : "good")">@((x.Line.IssuedQty - x.StdQty).ToQty()) @x.Line.Item?.Unit (@((x.Line.Cost - x.StdCost).ToMoney()) đ)</b></span> }</td></tr>
+        }
+    }
+    @if (!rows.Any()) { <tr><td colspan="13" class="text-center text-muted py-4">Không có lệnh hoàn thành trong kỳ.</td></tr> }
+    </tbody>
+    @if (rows.Any())
+    {
+        <tfoot><tr class="fw-bold"><td colspan="3" class="text-end">Cộng</td><td class="num">@rows.Sum(r => r.StdMat).ToMoney()</td><td class="num">@rows.Sum(r => r.Order.MaterialCost).ToMoney()</td><td class="num">@((rows.Sum(r => r.Order.MaterialCost) - rows.Sum(r => r.StdMat)).ToMoney())</td>
+            <td class="num">@rows.Sum(r => r.StdLab).ToMoney()</td><td class="num">@rows.Sum(r => r.Order.LaborCost).ToMoney()</td><td class="num">@rows.Sum(r => r.StdOhd).ToMoney()</td><td class="num">@rows.Sum(r => r.Order.OverheadCost).ToMoney()</td>
+            <td class="num">@rows.Sum(r => r.StdMat + r.StdLab + r.StdOhd).ToMoney()</td><td class="num">@rows.Sum(r => r.Order.TotalCost).ToMoney()</td><td class="num">@((rows.Sum(r => r.Order.TotalCost) - rows.Sum(r => r.StdMat + r.StdLab + r.StdOhd)).ToMoney())</td></tr></tfoot>
+    }
+</table></div></div></div>
+<div class="small text-muted">Định mức tính theo số lượng hoàn thành thực tế (gồm tỷ lệ hao hụt định mức), nhân công / SXC theo quy trình (routing) nếu có, ngược lại theo định mức nhập tay. Chênh lệch dương (đỏ) là chi phí vượt định mức; nguyên nhân thường là xuất bổ sung NVL, hao hụt vượt định mức hoặc nhân công thực tế cao hơn.</div>

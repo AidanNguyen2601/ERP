@@ -318,7 +318,7 @@ public static class ProcessDemoSeeder
         inv.Lines.Add(new InvoiceLine { Description = "Bộ dụng cụ cầm tay, máy khoan, máy chà nhám cho xưởng", Unit = "Lô", Quantity = 1, UnitPrice = 24_000_000, VatRate = 10, AccountId = a242 });
         InvoiceService.Recalc(inv); await invoices.IssueAsync(inv); await db.SaveChangesAsync();
         // CCDC: đã hạch toán 242 trên hóa đơn → chỉ khai báo thẻ phân bổ
-        var a627 = await acc.IdAsync("627"); var a6423 = await acc.IdAsync("6421");
+        var a627 = await acc.IdAsync("6273"); var a6423 = await acc.IdAsync("6423");
         foreach (var (code, name, dept, cost, months, exp) in new[] { ("CCDC001", "Bộ dụng cụ cầm tay xưởng mộc", "Xưởng sản xuất", 14_000_000m, 12, a627), ("CCDC002", "Máy khoan, máy chà nhám cầm tay", "Xưởng sản xuất", 10_000_000m, 24, a627), ("CCDC003", "Bàn ghế, tủ hồ sơ văn phòng kế toán", "Phòng Kế toán", 9_600_000m, 24, a6423) })
             if (!await db.ToolItems.AnyAsync(t => t.Code == code)) await tools.RegisterAsync(new ToolItem { Code = code, Name = name, Department = dept, Quantity = 1, Cost = cost, Months = months, StartDate = c.Day(2), ExpenseAccountId = exp, Note = "Theo hóa đơn 0002288" }, null, null);
         try { await tools.RunAsync(c.Today.Year, c.Today.Month); } catch (BusinessException) { }
@@ -335,7 +335,7 @@ public static class ProcessDemoSeeder
         {
             Name = "Phân bổ chi phí điện nước cho các bộ phận", Description = "Chia chi phí dịch vụ mua ngoài theo tỷ lệ sử dụng", IntervalMonths = 1, DayOfMonth = 28, NextDate = new DateTime(c.Today.Year, c.Today.Month, 1).AddMonths(1).AddDays(27), AutoPost = false, IsAllocation = true,
             SourceAccountId = await acc.IdAsync("6428"),
-            Lines = { new RecurringJournalLine { AccountId = a627, Percent = 60, Department = "Xưởng sản xuất" }, new RecurringJournalLine { AccountId = await acc.IdAsync("641"), Percent = 15, Department = "Phòng Kinh doanh" }, new RecurringJournalLine { AccountId = await acc.IdAsync("6421"), Percent = 25, Department = "Phòng Kế toán" } }
+            Lines = { new RecurringJournalLine { AccountId = await acc.IdAsync("6277"), Percent = 60, Department = "Xưởng sản xuất" }, new RecurringJournalLine { AccountId = await acc.IdAsync("6417"), Percent = 15, Department = "Phòng Kinh doanh" }, new RecurringJournalLine { AccountId = await acc.IdAsync("6421"), Percent = 25, Department = "Phòng Kế toán" } }
         });
         await db.SaveChangesAsync();
         await rec.GenerateDueAsync(c.Today);
@@ -369,7 +369,7 @@ public static class ProcessDemoSeeder
         L("641", "Phòng Kinh doanh", 35_000_000, "Chi phí bán hàng"); L("6421", null, 70_000_000, "Chi phí nhân viên quản lý");
         L("6427", null, 12_000_000, "Dịch vụ mua ngoài", 8_000_000); L("627", "Xưởng sản xuất", 55_000_000, "Chi phí sản xuất chung"); L("6428", null, 6_000_000, "Chi phí bằng tiền khác");
         db.Budgets.Add(b);
-        db.Budgets.Add(new Budget { Year = c.Today.Year, Name = "Ngân sách khối văn phòng (chặn khi vượt)", Control = BudgetControl.Block, IsActive = false, Lines = { new BudgetLine { AccountPrefix = "6421", Department = "Phòng Kế toán", M01 = 2_000_000, M02 = 2_000_000, M03 = 2_000_000, M04 = 2_000_000, M05 = 2_000_000, M06 = 2_000_000, M07 = 2_000_000, M08 = 2_000_000, M09 = 2_000_000, M10 = 2_000_000, M11 = 2_000_000, M12 = 2_000_000 } } });
+        db.Budgets.Add(new Budget { Year = c.Today.Year, Name = "Ngân sách khối văn phòng (chặn khi vượt)", Control = BudgetControl.Block, IsActive = false, Lines = { new BudgetLine { AccountPrefix = "6423", Department = "Phòng Kế toán", M01 = 2_000_000, M02 = 2_000_000, M03 = 2_000_000, M04 = 2_000_000, M05 = 2_000_000, M06 = 2_000_000, M07 = 2_000_000, M08 = 2_000_000, M09 = 2_000_000, M10 = 2_000_000, M11 = 2_000_000, M12 = 2_000_000 } } });
         await db.SaveChangesAsync();
     }
 

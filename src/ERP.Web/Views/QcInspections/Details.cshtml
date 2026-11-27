@@ -23,6 +23,9 @@
     </div>
     <div class="actions">
         <a class="btn btn-sm btn-light" asp-action="Index"><i class="bi bi-arrow-left"></i> Danh sách</a>
+        @if (!string.IsNullOrEmpty(Model.CertificateNo)) { <a class="btn btn-sm btn-success" asp-action="Certificate" asp-route-id="@Model.Id" target="_blank"><i class="bi bi-award"></i> Giấy chứng nhận @Model.CertificateNo</a> }
+        else if (User.InAny(AppRoles.QcManagers) && Model.Status == QcStatus.Completed && Model.Result is QcResult.Pass or QcResult.Conditional && Model.Stage is QcStage.Final or QcStage.Outgoing && Model.AcceptedQty > 0)
+        { <form asp-action="IssueCertificate" asp-route-id="@Model.Id" method="post" data-confirm="Cấp giấy chứng nhận chất lượng cho @Model.AcceptedQty.ToQty() đạt?"><button class="btn btn-sm btn-outline-success"><i class="bi bi-award"></i> Cấp giấy chứng nhận</button></form> }
         @if (canWrite && Model.Status == QcStatus.Draft)
         {
             <a class="btn btn-sm btn-primary" asp-action="Edit" asp-route-id="@Model.Id"><i class="bi bi-pencil"></i> Nhập kết quả / kết luận</a>
@@ -37,6 +40,10 @@
         <dt class="col-sm-4">Chứng từ gốc</dt><dd class="col-sm-8">@if (originUrl != null) { <a href="@originUrl">@Model.Origin.GetDisplayName() @Model.OriginRef</a> } else { <span>Thủ công</span> }</dd>
         <dt class="col-sm-4">NCC / khách hàng</dt><dd class="col-sm-8">@Model.Partner?.Name</dd>
         <dt class="col-sm-4">Kho</dt><dd class="col-sm-8">@Model.Warehouse?.Name</dd>
+        @if (!string.IsNullOrEmpty(Model.LotNo)) { <dt class="col-sm-4">Số lô / serial</dt><dd class="col-sm-8">@Model.LotNo</dd> }
+        @if (!string.IsNullOrEmpty(Model.OperationName)) { <dt class="col-sm-4">Công đoạn sản xuất</dt><dd class="col-sm-8">@Model.OperationName</dd> }
+        @if (Model.AcceptNumber != null) { <dt class="col-sm-4">Lấy mẫu AQL</dt><dd class="col-sm-8">Mẫu @Model.SampleQty.ToQty(): chấp nhận ≤ @Model.AcceptNumber lỗi, loại từ @Model.RejectNumber lỗi · lỗi trong mẫu <b>@Model.DefectQty.ToQty()</b></dd> }
+        else if (Model.DefectQty > 0) { <dt class="col-sm-4">Lỗi trong mẫu</dt><dd class="col-sm-8">@Model.DefectQty.ToQty() / @Model.SampleQty.ToQty()</dd> }
         <dt class="col-sm-4">Kế hoạch kiểm tra</dt><dd class="col-sm-8">@if (Model.QcPlan != null) { <a asp-controller="QcPlans" asp-action="Details" asp-route-id="@Model.QcPlanId">@Model.QcPlan.Code – @Model.QcPlan.Name</a> }</dd>
         @if (!string.IsNullOrWhiteSpace(Model.Note)) { <dt class="col-sm-4">Nhận xét</dt><dd class="col-sm-8 pre">@Model.Note</dd> }
     </dl></div></div></div>

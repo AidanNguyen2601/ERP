@@ -1,18 +1,21 @@
 @model ProductionOrder
 @{ ViewData["Title"] = "Lập lệnh sản xuất"; }
+<partial name="_MfgNav" model="@("mo")" />
 <div class="card" style="max-width:900px"><div class="card-body">
 <form asp-action="Save" method="post">
     <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 empty-hide"></div>
     <div class="row g-3">
         <div class="col-md-6"><label asp-for="BomId" class="form-label"></label><select asp-for="BomId" class="form-select" asp-items="ViewBag.Boms"><option value="">-- Chọn --</option></select><span asp-validation-for="BomId" class="text-danger small"></span></div>
         <div class="col-md-3"><label asp-for="Quantity" class="form-label"></label><input asp-for="Quantity" type="number" step="0.001" class="form-control" /></div>
-        <div class="col-md-3"><label asp-for="SalesOrderId" class="form-label"></label><select asp-for="SalesOrderId" class="form-select" asp-items="ViewBag.SalesOrders"><option value="">-- Sản xuất tồn kho --</option></select></div>
+        <div class="col-md-3"><label asp-for="OrderType" class="form-label"></label><select asp-for="OrderType" class="form-select" asp-items="Html.GetEnumSelectList<ProductionType>()"></select></div>
+        <div class="col-md-6"><label asp-for="SalesOrderId" class="form-label"></label><select asp-for="SalesOrderId" class="form-select" asp-items="ViewBag.SalesOrders"><option value="">-- Sản xuất tồn kho --</option></select><span asp-validation-for="SalesOrderId" class="text-danger small"></span></div>
         <div class="col-md-3"><label asp-for="MaterialWarehouseId" class="form-label"></label><select asp-for="MaterialWarehouseId" class="form-select" asp-items="ViewBag.Whs"></select></div>
         <div class="col-md-3"><label asp-for="FinishedWarehouseId" class="form-label"></label><select asp-for="FinishedWarehouseId" class="form-select" asp-items="ViewBag.Whs"></select></div>
         <div class="col-md-3"><label asp-for="StartDate" class="form-label"></label><input asp-for="StartDate" type="date" class="form-control" /></div>
         <div class="col-md-3"><label asp-for="DueDate" class="form-label"></label><input asp-for="DueDate" type="date" class="form-control" /><span asp-validation-for="DueDate" class="text-danger small"></span></div>
         <div class="col-12"><label asp-for="Note" class="form-label"></label><input asp-for="Note" class="form-control" /></div>
     </div>
+    <div class="small text-muted mt-2">Chọn đơn bán liên quan thì lệnh là sản xuất theo đơn hàng (MTO); để trống là sản xuất bổ sung tồn kho (MTS). Lệnh nháp cần qua bước duyệt theo quy tắc phê duyệt trước khi phát lệnh (tự duyệt nếu không có quy tắc áp dụng). Công đoạn của quy trình (routing) được sao vào lệnh để theo dõi tiến độ.</div>
     <div class="mt-4 d-flex gap-2"><button class="btn btn-light border" name="release" value="false">Lưu nháp</button><button class="btn btn-primary" name="release" value="true">Lưu & phát lệnh</button><a class="btn btn-light" asp-action="Index">Hủy</a></div>
 </form>
 </div></div>

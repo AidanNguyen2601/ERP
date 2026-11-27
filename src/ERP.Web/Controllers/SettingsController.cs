@@ -17,7 +17,7 @@ public class SettingsController : ErpControllerBase
 
     public static readonly (string Group, string Key, string Label, string Kind, string? Hint)[] Fields =
     {
-        ("Chế độ kế toán", "Accounting.Regime", "Chế độ kế toán áp dụng", "regime", "TT200 (doanh nghiệp lớn) hoặc TT133 (vừa và nhỏ). Có thể xem bảng cân đối theo chuẩn khác tại Báo cáo theo chuẩn mực."),
+        ("Chế độ kế toán", "Accounting.Regime", "Chế độ kế toán áp dụng", "regime", "TT99 (áp dụng từ 2026, thay TT200) hoặc TT133 (vừa và nhỏ). Có thể xem bảng cân đối theo chuẩn khác tại Báo cáo theo chuẩn mực."),
         ("Hóa đơn điện tử", "EInvoice.Enabled", "Phát hành hóa đơn điện tử khi phát hành hóa đơn bán", "bool", null),
         ("Hóa đơn điện tử", "EInvoice.Provider", "Nhà cung cấp", "provider", "demo = giả lập cấp mã; http = gọi API nhà cung cấp (VNPT, Viettel, MISA, BKAV... qua cổng tích hợp)"),
         ("Hóa đơn điện tử", "EInvoice.Url", "Địa chỉ API nhà cung cấp", "text", "VD: https://api.nha-cung-cap/einvoice"),

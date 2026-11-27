@@ -5,6 +5,7 @@
     var canManage = (bool)ViewBag.CanManage; var canExecute = (bool)ViewBag.CanExecute;
     var needsStock = Model.Disposition is NcrDisposition.Scrap or NcrDisposition.ReturnToVendor;
     var rets = (List<PurchaseReturn>)ViewBag.Returns;
+    var actions = (List<QcNcrAction>)ViewBag.Actions; var reinsp = (QcInspection?)ViewBag.Reinspection; var qDoc = (InventoryDoc?)ViewBag.QuarantineDoc; var rDoc = (InventoryDoc?)ViewBag.ReleaseDoc; var origWh = (Warehouse?)ViewBag.OriginalWh;
     Account? counter = Model.Disposition switch
     {
         NcrDisposition.Scrap => await Acc.RuleAccountAsync(PostingCatalog.QcScrap),
@@ -16,6 +17,7 @@
     <div>
         <div class="d-flex gap-2 flex-wrap"><span class="badge @QcUi.Badge(Model.Status)">@Model.Status.GetDisplayName()</span>
             <span class="badge @QcUi.Badge(Model.Disposition)">@Model.Disposition.GetDisplayName()</span>
+            @if (Model.IsQuarantined) { <span class="badge bg-dark"><i class="bi bi-shield-lock"></i> Đang cách ly</span> }
             @if (Model.IsOverdue) { <span class="badge bg-danger">Quá hạn xử lý</span> }</div>
         <div class="meta mt-1">Lập ngày @Model.Date.ToDate() @if (Model.CreatedBy != null) { <span>bởi @Model.CreatedBy.FullName</span> }
             @if (Model.DueDate.HasValue) { <span>· hạn xử lý @Model.DueDate.ToDate()</span> }
@@ -33,6 +35,7 @@
 
 <div class="flow mb-3">
     <span class="step done">Phát hiện</span><span class="arrow">›</span>
+    <span class="step @(Model.QuarantinedAt != null ? "done" : "")">Cách ly</span><span class="arrow">›</span>
     <span class="step @(Model.Disposition != NcrDisposition.Pending ? "done" : "current")">Quyết định xử lý</span><span class="arrow">›</span>
     @if (needsStock) { <span class="step @(Model.InventoryDocId != null ? "done" : Model.Disposition != NcrDisposition.Pending ? "current" : "")">Xuất kho @(Model.Disposition == NcrDisposition.Scrap ? "hủy" : "trả NCC")</span><span class="arrow">›</span> }
     <span class="step @(!string.IsNullOrWhiteSpace(Model.CorrectiveAction) ? "done" : "")">Khắc phục / phòng ngừa</span><span class="arrow">›</span>
@@ -102,4 +105,60 @@
             <div class="alert alert-light border">Hướng xử lý <b>@Model.Disposition.GetDisplayName()</b> không phát sinh nhập / xuất kho.</div>
         }
     </div>
+</div>
+
+@{
+    var canMgr = (bool)ViewBag.CanManage; var canExe = (bool)ViewBag.CanExecute; var open = Model.Status == NcrStatus.Open;
+}
+<div class="row g-3 mt-1">
+    <div class="col-lg-6"><div class="card h-100"><div class="card-header"><i class="bi bi-shield-lock me-1"></i> Cách ly</div><div class="card-body">
+        @if (Model.QuarantinedAt != null)
+        {
+            <p class="mb-1">Đã cách ly ngày @Model.QuarantinedAt.ToDate() từ @origWh?.Name sang kho cách ly@(qDoc != null ? "" : ""). @if (qDoc != null) { <a asp-controller="Inventory" asp-action="Details" asp-route-id="@qDoc.Id">@qDoc.Number</a> }</p>
+            @if (Model.ReleasedAt != null) { <p class="mb-0 small text-muted">Đã thả cách ly ngày @Model.ReleasedAt.ToDate() về @origWh?.Name. @if (rDoc != null) { <a asp-controller="Inventory" asp-action="Details" asp-route-id="@rDoc.Id">@rDoc.Number</a> }</p> }
+            else if (canExe && open && Model.Disposition is NcrDisposition.AcceptAsIs or NcrDisposition.Rework)
+            {
+                <form asp-action="Release" asp-route-id="@Model.Id" method="post" class="d-flex gap-2 align-items-end" data-confirm="Thả cách ly và chuyển hàng về kho ban đầu?">
+                    <div><label class="form-label small mb-0">Ngày thả</label><input type="date" name="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+                    <button class="btn btn-sm btn-success">Thả cách ly</button></form>
+            }
+            else if (open) { <p class="small text-muted mb-0">Hàng nằm ở kho cách ly. Chọn hướng xử lý: hủy bỏ / trả nhà cung cấp xuất trực tiếp từ kho cách ly; chấp nhận nhân nhượng hoặc sửa chữa thì thả cách ly khi đủ điều kiện.</p> }
+        }
+        else
+        {
+            <p class="small text-muted">Chuyển số lượng không phù hợp sang kho cách ly (phiếu chuyển kho) để không bị xuất dùng hoặc giao nhầm trong khi chờ quyết định.</p>
+            @if (canExe && open && Model.InventoryDocId == null && Model.WarehouseId != null)
+            {
+                <form asp-action="Quarantine" asp-route-id="@Model.Id" method="post" class="d-flex gap-2 align-items-end" data-confirm="Chuyển @Model.Quantity.ToQty() sang kho cách ly?">
+                    <div><label class="form-label small mb-0">Ngày</label><input type="date" name="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+                    <button class="btn btn-sm btn-dark"><i class="bi bi-shield-lock"></i> Cách ly</button></form>
+            }
+        }
+    </div></div></div>
+    <div class="col-lg-6"><div class="card h-100"><div class="card-header"><i class="bi bi-wrench-adjustable me-1"></i> Sửa chữa / tái chế</div><div class="card-body">
+        @if (Model.Disposition != NcrDisposition.Rework) { <p class="small text-muted mb-0">Áp dụng khi hướng xử lý là <b>Sửa chữa / làm lại</b>: lập phiếu kiểm tra lại, kết luận Đạt mới được thả cách ly và đóng NCR.</p> }
+        else if (reinsp != null) { <p class="mb-0">Phiếu kiểm tra lại <a asp-controller="QcInspections" asp-action="Details" asp-route-id="@reinsp.Id"><b>@reinsp.Number</b></a> – <span class="badge @QcUi.Badge(reinsp.Status)">@reinsp.Status.GetDisplayName()</span> @if (reinsp.Status == QcStatus.Completed) { <span class="badge @QcUi.Badge(reinsp.Result)">@reinsp.Result.GetDisplayName()</span> }</p> }
+        else if (canMgr && open) { <form asp-action="Reinspect" asp-route-id="@Model.Id" method="post"><button class="btn btn-sm btn-primary">Lập phiếu kiểm tra lại</button></form> }
+    </div></div></div>
+    <div class="col-12"><div class="card"><div class="card-header"><i class="bi bi-list-check me-1"></i> Hành động khắc phục / phòng ngừa (CAPA)</div><div class="card-body p-0">
+        <table class="table table-sm mb-0" data-grid="off"><thead><tr><th>Loại</th><th>Nội dung</th><th>Người phụ trách</th><th>Hạn</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+        @foreach (var a in actions)
+        {
+            <tr><td>@a.Kind.GetDisplayName()</td><td>@a.Description @if (!string.IsNullOrEmpty(a.Note)) { <div class="small text-muted">@a.Note</div> }</td><td>@a.Responsible</td><td class="@(a.IsOverdue ? "overdue" : "")">@a.DueDate.ToDate()</td>
+                <td>@if (a.Status == QcActionStatus.Done) { <span class="badge bg-success">Hoàn thành @a.DoneAt.ToDate()</span> } else { <span class="badge bg-warning text-dark">@a.Status.GetDisplayName()</span> }</td>
+                <td>@if (canMgr && open && a.Status == QcActionStatus.Open) { <form asp-action="CompleteAction" asp-route-id="@Model.Id" method="post" class="d-flex gap-1"><input type="hidden" name="actionId" value="@a.Id" /><input name="note" class="form-control form-control-sm" placeholder="Kết quả" /><button class="btn btn-sm btn-outline-success">Hoàn thành</button></form> }</td></tr>
+        }
+        @if (!actions.Any()) { <tr><td colspan="6" class="text-muted text-center py-3">Chưa có hành động nào.</td></tr> }
+        </tbody></table>
+        @if (canMgr && open)
+        {
+            <form asp-action="AddAction" asp-route-id="@Model.Id" method="post" class="row g-2 p-3 border-top align-items-end">
+                <div class="col-md-2"><label class="form-label small">Loại</label><select name="kind" asp-items="Html.GetEnumSelectList<QcActionKind>()" class="form-select form-select-sm"></select></div>
+                <div class="col-md-4"><label class="form-label small">Nội dung</label><input name="description" class="form-control form-control-sm" required /></div>
+                <div class="col-md-2"><label class="form-label small">Người phụ trách</label><input name="responsible" class="form-control form-control-sm" /></div>
+                <div class="col-md-2"><label class="form-label small">Hạn</label><input type="date" name="dueDate" class="form-control form-control-sm" /></div>
+                <div class="col-md-2"><button class="btn btn-sm btn-primary w-100">Thêm hành động</button></div>
+            </form>
+        }
+    </div></div></div>
 </div>

@@ -127,7 +127,7 @@ public class TaxService
         if (post && d.Payable != 0)
         {
             var date = d.Quarter == 0 ? new DateTime(d.Year, 12, 31) : new DateTime(d.Year, d.Quarter * 3, 1).AddMonths(1).AddDays(-1);
-            var e = await _acc.IdAsync("821"); var p = await _acc.IdAsync("3334");
+            var e = (await _db.Accounts.AnyAsync(a => a.Code == "82111" && a.IsPostable)) ? await _acc.IdAsync("82111") : await _acc.IdAsync("821"); var p = await _acc.IdAsync("3334");
             var amt = Math.Abs(d.Payable);
             var lines = d.Payable > 0 ? new[] { new JLine(e, amt, 0), new JLine(p, 0, amt) } : new[] { new JLine(p, amt, 0), new JLine(e, 0, amt) };
             var je = await _acc.PostAsync(date, $"Thuế TNDN {(d.Quarter == 0 ? "quyết toán năm" : "tạm tính quý " + d.Quarter)} {d.Year}", JournalSource.Tax, $"TNDN{d.Quarter}{d.Year % 100:00}", d.Id, lines);
@@ -155,8 +155,15 @@ public class ConsolidationResult
     public List<ConsolidationRow> Rows { get; set; } = new();
     public List<(string Desc, string Debit, string Credit, decimal Amount)> Eliminations { get; set; } = new();
     public List<string> Notes { get; set; } = new();
+    public List<SubsidiaryInfo> Subsidiaries { get; set; } = new();
+    public List<UnrealizedRow> Unrealized { get; set; } = new();
+    /// <summary>Lợi nhuận sau thuế trong kỳ thuộc cổ đông không kiểm soát</summary>
+    public decimal NciProfit { get; set; }
     public decimal Sum(string prefix, Func<ConsolidationRow, decimal> f) => Rows.Where(r => r.Code.StartsWith(prefix)).Sum(f);
 }
+
+public record SubsidiaryInfo(Company Company, decimal OwnershipPct, decimal Investment, decimal Capital, decimal OtherEquity, decimal Retained, decimal PeriodProfit, decimal RetainedAtAcquisition, decimal Goodwill, decimal Nci, decimal NciProfit);
+public record UnrealizedRow(string Seller, string Buyer, Item Item, decimal QtyBought, decimal QtyOnHand, decimal QtyUnrealized, decimal BuyerUnitCost, decimal SellerUnitCost, decimal Amount, decimal OpeningAmount);
 
 public class ConsolidationService
 {
@@ -175,6 +182,7 @@ public class ConsolidationService
         var rows = new Dictionary<string, ConsolidationRow>();
         var groupPartners = (await _db.Partners.Where(p => p.GroupCompanyId != null && companyIds.Contains(p.GroupCompanyId.Value)).Select(p => new { p.Id, p.GroupCompanyId }).ToListAsync()).ToDictionary(p => p.Id, p => p.GroupCompanyId!.Value);
         decimal icAr = 0, icAp = 0, icRevenue = 0;
+        var investment = new Dictionary<int, decimal>();   // công ty con → giá gốc khoản đầu tư của công ty khác trong tập đoàn (TK 221 theo đối tượng)
         var icExpense = new Dictionary<string, decimal>();
         foreach (var c in companies)
         {
@@ -194,6 +202,8 @@ public class ConsolidationService
             // Công nợ nội bộ còn dư cuối kỳ
             icAr += lines.Where(l => accounts[l.AccountId].Code.StartsWith("131") && l.PartnerId != null && groupPartners.TryGetValue(l.PartnerId.Value, out var gc) && gc != c.Id).Sum(l => l.Debit - l.Credit);
             icAp += lines.Where(l => accounts[l.AccountId].Code.StartsWith("331") && l.PartnerId != null && groupPartners.TryGetValue(l.PartnerId.Value, out var gc) && gc != c.Id).Sum(l => l.Credit - l.Debit);
+            foreach (var l in lines.Where(l => accounts[l.AccountId].Code.StartsWith("221") && l.PartnerId != null && groupPartners.TryGetValue(l.PartnerId.Value, out var gs) && gs != c.Id))
+                investment[groupPartners[l.PartnerId!.Value]] = investment.GetValueOrDefault(groupPartners[l.PartnerId.Value]) + l.Debit - l.Credit;
             // Doanh thu bán cho công ty trong tập đoàn trong kỳ
             icRevenue += await _db.Invoices.IgnoreQueryFilters().Where(i => i.Direction == InvoiceDirection.Sales && i.Status == InvoiceStatus.Issued && branches.Contains(i.BranchId)
                 && i.Date >= from && i.Date <= to && i.PartnerId != null && groupPartners.Keys.Contains(i.PartnerId.Value)).SumAsync(i => (decimal?)i.Subtotal) ?? 0;
@@ -208,6 +218,12 @@ public class ConsolidationService
             if (amt == 0) return;
             res.Eliminations.Add((desc, dr, cr, amt));
             Row(dr).Elimination += amt; Row(cr).Elimination -= amt;
+        }
+        void Multi(string desc, List<(string Code, decimal D, decimal C)> lines)
+        {
+            lines = lines.Where(l => l.D != 0 || l.C != 0).ToList(); if (lines.Count == 0) return;
+            res.Eliminations.Add((desc, string.Join(", ", lines.Where(l => l.D > 0).Select(l => Row(l.Code).Code).Distinct()), string.Join(", ", lines.Where(l => l.C > 0).Select(l => Row(l.Code).Code).Distinct()), lines.Sum(l => l.D)));
+            foreach (var l in lines) Row(l.Code).Elimination += l.D - l.C;
         }
         ConsolidationRow Row(string code)
         {
@@ -230,10 +246,96 @@ public class ConsolidationService
         }
         Elim("Loại trừ doanh thu bán hàng nội bộ và giá vốn tương ứng", revKey, rows.Keys.Where(k => k.StartsWith("632")).OrderBy(k => k.Length).FirstOrDefault() ?? "632", left);
         if (icExpense.Values.Sum() > icRevenue) res.Notes.Add($"Chi phí mua nội bộ ({icExpense.Values.Sum().ToMoney()}) lớn hơn doanh thu bán nội bộ ({icRevenue.ToMoney()}) – kiểm tra hóa đơn nội bộ hai bên.");
-        if (icRevenue > 0) res.Notes.Add("Chưa loại trừ lãi chưa thực hiện trong hàng tồn kho mua nội bộ còn tồn cuối kỳ (cần số liệu tồn kho mua nội bộ chi tiết).");
-        if (companies.Any(c => !c.IsParent && c.OwnershipPct < 100)) res.Notes.Add("Có công ty con sở hữu dưới 100%: chưa tách lợi ích cổ đông không kiểm soát.");
-        res.Notes.Add("Chưa loại trừ khoản đầu tư của công ty mẹ vào công ty con với vốn chủ sở hữu tương ứng (TK 221 ↔ 411).");
+        // ---- Lãi chưa thực hiện trong hàng tồn kho mua nội bộ
+        var invKeys = rows.Keys.ToList();
+        string Inv(ItemType t) { var p = t switch { ItemType.Material => "152", ItemType.FinishedGood or ItemType.SemiFinished => "155", _ => "156" }; return invKeys.Where(k => k.StartsWith(p)).OrderBy(k => k.Length).FirstOrDefault() ?? p; }
+        var cogsKey = rows.Keys.Where(k => k.StartsWith("632")).OrderBy(k => k.Length).FirstOrDefault() ?? "632";
+        res.Unrealized = await UnrealizedAsync(companies, groupPartners, from, to);
+        foreach (var g in res.Unrealized.GroupBy(u => Inv(u.Item.Type)))
+        {
+            var close = g.Sum(x => x.Amount); var open = g.Sum(x => x.OpeningAmount);
+            Elim($"Loại trừ lãi chưa thực hiện trong hàng tồn kho mua nội bộ còn tồn cuối kỳ (TK {g.Key})", cogsKey, g.Key, close);
+            if (open != 0) Elim($"Lãi chưa thực hiện đầu kỳ đã thực hiện trong kỳ (hàng mua nội bộ đã bán ra ngoài tập đoàn, TK {g.Key})", "421", cogsKey, open);
+        }
+
+        // ---- Loại trừ khoản đầu tư vào công ty con với vốn chủ sở hữu; tách lợi ích cổ đông không kiểm soát (NCI)
+        decimal Credit(Company c, Func<string, bool> pick) => -rows.Values.Where(r => pick(r.Code)).Sum(r => r.ByCompany.GetValueOrDefault(c.Id));
+        foreach (var sub in companies.Where(c => !c.IsParent))
+        {
+            var p = Math.Clamp(sub.OwnershipPct, 0, 100) / 100m;
+            var cap = Credit(sub, k => k.StartsWith("411"));
+            var other = Credit(sub, k => k[0] == '4' && !k.StartsWith("411") && !k.StartsWith("421"));
+            var profit = Credit(sub, k => k[0] is '5' or '6' or '7' or '8' or '9');
+            var retained = Credit(sub, k => k.StartsWith("421")) + profit;
+            var inv = investment.GetValueOrDefault(sub.Id);
+            var ra = sub.RetainedAtAcquisition;
+            decimal goodwill = 0;
+            if (inv != 0 || (p > 0 && cap != 0))
+            {
+                var share = Math.Round(p * (cap + ra), 0); goodwill = inv - share;
+                var lines = new List<(string Code, decimal D, decimal C)> { ("411", Math.Round(p * cap, 0), 0), ("421", Math.Round(p * ra, 0), 0), ("221", 0, inv) };
+                if (goodwill > 0) lines.Add(("269", goodwill, 0)); else if (goodwill < 0) lines.Add(("421", 0, -goodwill));
+                Multi($"Loại trừ khoản đầu tư của công ty mẹ vào {sub.Code} ({sub.OwnershipPct.ToPct()}) với vốn chủ sở hữu tại ngày mua" + (goodwill > 0 ? " – phát sinh lợi thế thương mại" : goodwill < 0 ? " – lãi từ giao dịch mua giá rẻ" : ""), lines);
+                if (inv == 0) res.Notes.Add($"Không tìm thấy giá gốc khoản đầu tư vào {sub.Code} trên TK 221 (theo dõi theo đối tượng là công ty con) của các công ty trong tập đoàn.");
+            }
+            decimal nci = 0, nciProfit = 0;
+            if (p < 1)
+            {
+                var q = 1 - p; nci = Math.Round(q * (cap + other + retained), 0); nciProfit = Math.Round(q * profit, 0);
+                var capPart = Math.Round(q * cap, 0); var otherPart = Math.Round(q * other, 0);
+                var lines = new List<(string Code, decimal D, decimal C)> { ("411", capPart, 0), ("421", nci - capPart - otherPart, 0), ("429", 0, nci) };
+                if (other != 0) lines.Add((rows.Keys.Where(k => k[0] == '4' && !k.StartsWith("411") && !k.StartsWith("421") && rows[k].ByCompany.ContainsKey(sub.Id)).OrderBy(k => k).First(), otherPart, 0));
+                Multi($"Tách lợi ích cổ đông không kiểm soát của {sub.Code} ({(100 - sub.OwnershipPct).ToPct()} vốn chủ sở hữu, gồm {nciProfit.ToMoney()} lợi nhuận trong kỳ)", lines);
+            }
+            res.NciProfit += nciProfit;
+            res.Subsidiaries.Add(new SubsidiaryInfo(sub, sub.OwnershipPct, inv, cap, other, retained, profit, ra, goodwill, nci, nciProfit));
+        }
+        if (rows.TryGetValue("269", out var gw)) gw.Name = "Lợi thế thương mại (hợp nhất)";
+        if (rows.TryGetValue("429", out var nr)) nr.Name = "Lợi ích cổ đông không kiểm soát (hợp nhất)";
+        if (res.Subsidiaries.Any(s => s.Goodwill > 0)) res.Notes.Add("Lợi thế thương mại được phân bổ dần vào chi phí trong tối đa 10 năm (VAS 11); bảng này trình bày giá trị tại ngày mua, chưa trừ phần đã phân bổ.");
+        var parentCode = companies.FirstOrDefault(c => c.IsParent)?.Code;
+        if (res.Unrealized.Any(u => u.Seller != parentCode)) res.Notes.Add("Có lãi chưa thực hiện từ giao dịch công ty con bán lên (ngược chiều): đã loại trừ toàn bộ, chưa phân bổ phần thuộc cổ đông không kiểm soát.");
         res.Rows = rows.Values.OrderBy(r => r.Code).ToList();
+        return res;
+    }
+
+    /// <summary>
+    /// Lãi chưa thực hiện: hàng bên mua nhận từ công ty khác trong tập đoàn (theo đơn mua) còn tồn trong kho của bên mua tại ngày khóa sổ.
+    /// Số lượng hàng mua nội bộ còn tồn = min(tồn kho bên mua, số đã nhận từ nội bộ) – coi hàng mua nội bộ xuất sau cùng (thận trọng).
+    /// Lãi / đơn vị = giá mua nội bộ bình quân của bên mua − giá vốn bình quân xuất bán của bên bán cho bên mua.
+    /// </summary>
+    private async Task<List<UnrealizedRow>> UnrealizedAsync(List<Company> companies, Dictionary<int, int> groupPartners, DateTime from, DateTime to)
+    {
+        var res = new List<UnrealizedRow>(); var open = from.AddDays(-1);
+        var whBranch = await _db.Warehouses.IgnoreQueryFilters().ToDictionaryAsync(w => w.Id, w => w.BranchId);
+        var icVendors = groupPartners.Keys.Select(k => (int?)k).ToList();
+        foreach (var buyer in companies)
+        {
+            var bBranches = buyer.Branches.Select(b => (int?)b.Id).ToList();
+            var bWh = whBranch.Where(x => bBranches.Contains(x.Value)).Select(x => x.Key).ToList();
+            var pol = await _db.PurchaseOrderLines.IgnoreQueryFilters().Include(l => l.Item).Include(l => l.PurchaseOrder)
+                .Where(l => l.PurchaseOrder!.Status != PoStatus.Cancelled && l.ReceivedQty > l.ReturnedQty && icVendors.Contains(l.PurchaseOrder.VendorId)
+                    && bBranches.Contains(l.PurchaseOrder.BranchId) && l.PurchaseOrder.Date <= to).ToListAsync();
+            foreach (var g in pol.GroupBy(l => (Seller: groupPartners[l.PurchaseOrder!.VendorId!.Value], l.ItemId)))
+            {
+                var seller = companies.FirstOrDefault(c => c.Id == g.Key.Seller); if (seller == null || seller.Id == buyer.Id) continue;
+                var item = g.First().Item!; var bought = g.Sum(x => x.ReceivedQty - x.ReturnedQty); if (bought <= 0) continue;
+                var buyCost = g.Sum(x => (x.ReceivedQty - x.ReturnedQty) * x.UnitPrice) / bought;
+                // Giá vốn bên bán: phiếu xuất bán của bên bán cho các đối tác đại diện bên mua
+                var buyerPartners = groupPartners.Where(x => x.Value == buyer.Id).Select(x => (int?)x.Key).ToList();
+                var sBranches = seller.Branches.Select(b => (int?)b.Id).ToList();
+                var issued = await _db.InventoryDocLines.IgnoreQueryFilters().Where(l => l.ItemId == item.Id && l.InventoryDoc!.Origin == DocOrigin.Sales && l.InventoryDoc.Type == InvDocType.Issue
+                    && l.InventoryDoc.Status == DocStatus.Posted && buyerPartners.Contains(l.InventoryDoc.PartnerId) && sBranches.Contains(l.InventoryDoc.BranchId)).Select(l => new { l.Quantity, l.Amount }).ToListAsync();
+                var sq = issued.Sum(x => x.Quantity); if (sq <= 0) continue;
+                var sellCost = issued.Sum(x => x.Amount) / sq;
+                var margin = buyCost - sellCost; if (margin <= 0) continue;
+                async Task<decimal> OnHand(DateTime at) => await _db.StockMoves.IgnoreQueryFilters().Where(m => m.ItemId == item.Id && bWh.Contains(m.WarehouseId) && m.Date <= at).SumAsync(m => (decimal?)m.Quantity) ?? 0;
+                var onHand = await OnHand(to); var left = Math.Max(0, Math.Min(onHand, bought));
+                var boughtOpen = g.Where(x => x.PurchaseOrder!.Date <= open).Sum(x => x.ReceivedQty - x.ReturnedQty);
+                var leftOpen = boughtOpen <= 0 ? 0 : Math.Max(0, Math.Min(await OnHand(open), boughtOpen));
+                res.Add(new UnrealizedRow(seller.Code, buyer.Code, item, bought, onHand, left, Math.Round(buyCost, 2), Math.Round(sellCost, 2), Math.Round(left * margin, 0), Math.Round(leftOpen * margin, 0)));
+            }
+        }
         return res;
     }
 }

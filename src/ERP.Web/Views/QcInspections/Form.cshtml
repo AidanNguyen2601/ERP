@@ -3,13 +3,15 @@
     ViewData["Title"] = Model.Id == 0 ? "Lập phiếu kiểm tra chất lượng" : $"Phiếu kiểm tra {Model.Number}";
     var fromDoc = Model.Origin != DocOrigin.Manual;
 }
-<form asp-action="Save" method="post" id="qcForm">
+<form asp-action="Save" method="post" id="qcForm" data-maxdef="@((Model.QcPlan?.MaxDefectPct ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture))">
     <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="AcceptNumber" /><input type="hidden" asp-for="RejectNumber" /><input type="hidden" asp-for="ProductionOperationId" /><input type="hidden" asp-for="OperationName" />
     <input type="hidden" asp-for="Origin" /><input type="hidden" asp-for="OriginRef" /><input type="hidden" asp-for="OriginId" />
     @* Dùng cho nút "Nạp lại tiêu chí" (GET Create) *@
     @if (Model.Origin == DocOrigin.Purchase) { <input type="hidden" name="poId" value="@Model.OriginId" /> }
     @if (Model.Origin == DocOrigin.Production) { <input type="hidden" name="productionId" value="@Model.OriginId" /> }
     @if (Model.Origin == DocOrigin.Sales) { <input type="hidden" name="soId" value="@Model.OriginId" /> }
+    @if (Model.ProductionOperationId != null) { <input type="hidden" name="operationId" value="@Model.ProductionOperationId" /> }
     <div asp-validation-summary="All" class="alert alert-danger py-2 empty-hide"></div>
 
     <div class="card mb-3"><div class="card-body"><div class="row g-3">
@@ -26,8 +28,11 @@
         <div class="col-md-3"><label asp-for="QcPlanId" class="form-label"></label><select asp-for="QcPlanId" asp-items="ViewBag.Plans" class="form-select"><option value="">-- Không theo kế hoạch --</option></select></div>
         <div class="col-md-2"><label asp-for="LotQty" class="form-label"></label><input asp-for="LotQty" type="number" step="0.001" class="form-control" id="lotQty" /><span asp-validation-for="LotQty" class="text-danger small"></span></div>
         <div class="col-md-2"><label asp-for="SampleQty" class="form-label"></label><input asp-for="SampleQty" type="number" step="0.001" class="form-control" /></div>
+        <div class="col-md-2"><label asp-for="DefectQty" class="form-label"></label><input asp-for="DefectQty" type="number" step="0.001" class="form-control" />@if (Model.AcceptNumber != null) { <div class="form-text">AQL: chấp nhận ≤ @Model.AcceptNumber, loại từ @Model.RejectNumber lỗi</div> }@if ((Model.QcPlan?.MaxDefectPct ?? 0) > 0) { <div class="form-text">Ngưỡng đạt: ≤ @Model.QcPlan!.MaxDefectPct.ToString("0.##")% lỗi trong mẫu</div> }</div>
         <div class="col-md-3"><label asp-for="WarehouseId" class="form-label"></label><select asp-for="WarehouseId" asp-items="ViewBag.Whs" class="form-select"><option value="">--</option></select></div>
         <div class="col-md-5"><label asp-for="PartnerId" class="form-label"></label><select asp-for="PartnerId" asp-items="ViewBag.Partners" class="form-select"><option value="">--</option></select></div>
+        <div class="col-md-3"><label asp-for="LotNo" class="form-label"></label><input asp-for="LotNo" class="form-control" placeholder="Kiểm tra theo lô" /></div>
+        @if (!string.IsNullOrEmpty(Model.OperationName)) { <div class="col-md-3"><label class="form-label">Công đoạn sản xuất</label><input class="form-control" value="@Model.OperationName" readonly /></div> }
         @if (Model.Id == 0)
         {
             <div class="col-12"><button type="submit" class="btn btn-sm btn-outline-secondary" formaction="@Url.Action("Create")" formmethod="get" formnovalidate>
@@ -121,6 +126,8 @@
             if (passed !== true) allPass = false;
         });
         suggestion = critFail ? 'Fail' : anyFail ? 'Conditional' : (rows > 0 && allPass) || rows === 0 ? 'Pass' : 'Pending';
+        const defN = num(document.getElementById('DefectQty')?.value) || 0, reN = num(document.getElementById('RejectNumber')?.value), smp = num(document.getElementById('SampleQty')?.value) || 0, mx = num(document.getElementById('qcForm').dataset.maxdef) || 0;
+        if ((reN !== null && defN >= reN) || (mx > 0 && smp > 0 && defN * 100 / smp > mx)) suggestion = 'Fail';
         document.getElementById('suggest').textContent = labels[suggestion];
     }
     const lot = document.getElementById('lotQty'), acc = document.getElementById('accQty'), rej = document.getElementById('rejQty');

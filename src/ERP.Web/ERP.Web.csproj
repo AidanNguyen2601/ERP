@@ -15,4 +15,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Resources/i18n/en.tsv" />
+  </ItemGroup>
+
 </Project>

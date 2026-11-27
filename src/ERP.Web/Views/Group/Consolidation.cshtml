@@ -26,6 +26,34 @@
     <div class="col"><div class="card card-body"><div class="small text-muted">Doanh thu & thu nhập hợp nhất</div><div class="fs-5 fw-bold">@revenue.ToMoney()</div></div></div>
     <div class="col"><div class="card card-body"><div class="small text-muted">Lợi nhuận trước thuế hợp nhất (kỳ)</div><div class="fs-5 fw-bold @(profit < 0 ? "text-danger" : "text-success")">@profit.ToMoney()</div></div></div>
 </div>
+@if (Model.Subsidiaries.Any())
+{
+    <div class="card mb-3"><div class="card-header">Đầu tư vào công ty con & lợi ích cổ đông không kiểm soát</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0" data-grid="off">
+        <thead><tr><th>Công ty con</th><th class="num">Tỷ lệ sở hữu</th><th class="num">Giá gốc đầu tư (221)</th><th class="num">Vốn góp (411)</th><th class="num">LNST tại ngày mua</th><th class="num">Lợi thế thương mại</th><th class="num">Vốn chủ sở hữu cuối kỳ</th><th class="num">Lợi ích CĐ không kiểm soát</th><th class="num">LN trong kỳ thuộc CĐKKS</th></tr></thead>
+        <tbody>
+        @foreach (var s in Model.Subsidiaries)
+        {
+            <tr><td><b>@s.Company.Code</b> <span class="small text-muted">@s.Company.Name</span></td><td class="num">@s.OwnershipPct.ToPct()</td><td class="num">@s.Investment.ToMoney()</td><td class="num">@s.Capital.ToMoney()</td><td class="num">@s.RetainedAtAcquisition.ToMoney()</td>
+                <td class="num @(s.Goodwill < 0 ? "text-success" : "")">@s.Goodwill.ToMoney()</td><td class="num">@((s.Capital + s.OtherEquity + s.Retained).ToMoney())</td><td class="num fw-bold">@s.Nci.ToMoney()</td><td class="num">@s.NciProfit.ToMoney()</td></tr>
+        }
+        </tbody></table></div>
+        <div class="small text-muted p-2">Lợi nhuận sau thuế hợp nhất của công ty mẹ = lợi nhuận hợp nhất trong kỳ − phần thuộc cổ đông không kiểm soát (@Model.NciProfit.ToMoney()). Nhập tỷ lệ sở hữu, ngày nắm quyền kiểm soát và LNST tại ngày mua ở <a asp-controller="Org" asp-action="Index">Công ty & chi nhánh</a>; giá gốc đầu tư lấy từ TK 221 theo đối tượng là công ty con.</div>
+    </div></div>
+}
+@if (Model.Unrealized.Any())
+{
+    <div class="card mb-3"><div class="card-header">Lãi chưa thực hiện trong hàng tồn kho mua nội bộ</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0" data-grid="off">
+        <thead><tr><th>Bên bán → bên mua</th><th>Hàng hóa</th><th class="num">Đã mua nội bộ</th><th class="num">Tồn kho bên mua</th><th class="num">SL còn tồn tính lãi</th><th class="num">Giá mua nội bộ</th><th class="num">Giá vốn bên bán</th><th class="num">Lãi chưa thực hiện cuối kỳ</th><th class="num">Đầu kỳ</th></tr></thead>
+        <tbody>
+        @foreach (var u in Model.Unrealized)
+        {
+            <tr><td>@u.Seller → @u.Buyer</td><td>@u.Item.Code – @u.Item.Name</td><td class="num">@u.QtyBought.ToQty()</td><td class="num">@u.QtyOnHand.ToQty()</td><td class="num">@u.QtyUnrealized.ToQty()</td>
+                <td class="num">@u.BuyerUnitCost.ToMoney()</td><td class="num">@u.SellerUnitCost.ToMoney()</td><td class="num fw-bold">@u.Amount.ToMoney()</td><td class="num">@u.OpeningAmount.ToMoney()</td></tr>
+        }
+        </tbody></table></div>
+        <div class="small text-muted p-2">Loại trừ: Nợ 632 / Có hàng tồn kho phần lãi chưa thực hiện cuối kỳ; phần đầu kỳ đã bán ra ngoài tập đoàn trong kỳ: Nợ 421 / Có 632. Hàng mua nội bộ được coi là xuất sau cùng (thận trọng).</div>
+    </div></div>
+}
 @if (Model.Eliminations.Any() || Model.Notes.Any())
 {
     <div class="card mb-3"><div class="card-header">Bút toán loại trừ</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
