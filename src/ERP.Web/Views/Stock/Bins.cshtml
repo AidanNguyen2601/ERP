@@ -1,0 +1,52 @@
+@model List<BinLocation>
+@{
+    ViewData["Title"] = "Vị trí lưu kho (kệ, pallet)"; var stock = (List<StockBin>)ViewBag.Stock; bool can = ViewBag.CanWrite; var items = (List<Item>)ViewBag.Items; var allBins = (List<BinLocation>)ViewBag.AllBins;
+    var un = (List<(Item Item, Warehouse Wh, decimal Qty)>)ViewBag.Unassigned; int? wid = ViewBag.WarehouseId;
+}
+<div class="toolbar"><form method="get" class="d-inline-flex gap-2"><select name="warehouseId" asp-items="ViewBag.Whs" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()"><option value="">Mọi kho</option></select></form>
+    <a class="btn btn-sm btn-light ms-auto" asp-action="Labels" asp-route-kind="bin"><i class="bi bi-upc"></i> In tem vị trí / pallet</a></div>
+<div class="row g-3">
+<div class="col-lg-6">
+    <div class="card mb-3"><div class="card-header">Danh sách vị trí</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off">
+        <thead><tr><th>Kho</th><th>Mã vị trí</th><th>Loại</th><th>Mô tả</th><th class="num">Số mặt hàng</th><th></th></tr></thead><tbody>
+        @foreach (var b in Model)
+        {
+            <tr class="@(b.IsActive ? "" : "text-muted")"><td class="small">@b.Warehouse?.Code</td><td><b>@b.Code</b></td><td class="small">@b.Kind</td><td class="small">@b.Name</td><td class="num">@stock.Count(s => s.BinId == b.Id)</td>
+                <td>@if (can) { <button type="button" class="btn btn-sm btn-light" onclick="fb(@b.Id,@b.WarehouseId,'@b.Code','@b.Name','@b.Kind')"><i class="bi bi-pencil"></i></button> }</td></tr>
+        }
+        @if (!Model.Any()) { <tr><td colspan="6" class="text-center text-muted">Chưa có vị trí.</td></tr> }
+    </tbody></table></div>
+    @if (can)
+    {
+        <div class="card-footer"><form asp-action="SaveBin" method="post" id="binForm" class="row g-1"><input type="hidden" name="id" value="0" />
+            <div class="col-3"><select name="warehouseId" asp-items="ViewBag.Whs" class="form-select form-select-sm"></select></div>
+            <div class="col-3"><input name="code" class="form-control form-control-sm" placeholder="Mã (VD A-01-02)" required /></div>
+            <div class="col-3"><select name="kind" class="form-select form-select-sm"><option>Kệ</option><option>Pallet</option><option>Khu vực</option><option>Ngăn</option></select></div>
+            <div class="col-3"><input name="name" class="form-control form-control-sm" placeholder="Mô tả" /></div>
+            <div class="col-12"><input type="hidden" name="isActive" value="true" /><button class="btn btn-sm btn-primary">Lưu vị trí</button></div></form></div>
+    }
+    </div>
+    @if (can)
+    {
+        <div class="card"><div class="card-header">Chuyển hàng giữa các vị trí</div><div class="card-body">
+            <form asp-action="MoveBin" method="post" class="row g-1">
+                <div class="col-md-6"><select name="itemId" class="form-select form-select-sm">@foreach (var i in items) { <option value="@i.Id">@i.Code – @i.Name</option> }</select></div>
+                <div class="col-md-6"><select name="warehouseId" asp-items="ViewBag.Whs" class="form-select form-select-sm"></select></div>
+                <div class="col-md-4"><select name="fromBinId" class="form-select form-select-sm"><option value="">Từ: chưa gán vị trí</option>@foreach (var b in allBins) { <option value="@b.Id">Từ @b.Code</option> }</select></div>
+                <div class="col-md-4"><select name="toBinId" class="form-select form-select-sm">@foreach (var b in allBins) { <option value="@b.Id">Đến @b.Code</option> }</select></div>
+                <div class="col-md-2"><input name="qty" type="number" step="any" min="0" class="form-control form-control-sm" placeholder="SL" required /></div>
+                <div class="col-md-2"><button class="btn btn-sm btn-primary w-100">Chuyển</button></div>
+            </form></div></div>
+    }
+</div>
+<div class="col-lg-6">
+    <div class="card mb-3"><div class="card-header">Tồn theo vị trí</div><div class="card-body p-0" style="max-height:420px;overflow:auto"><table class="table table-sm mb-0" data-grid="off"><thead><tr><th>Vị trí</th><th>Hàng hóa</th><th class="num">Số lượng</th></tr></thead><tbody>
+        @foreach (var s in stock.Where(x => wid == null || x.WarehouseId == wid).OrderBy(x => x.Bin?.Code)) { <tr><td><b>@s.Bin?.Code</b></td><td>@s.Item?.Code – @s.Item?.Name</td><td class="num">@s.Quantity.ToQty()</td></tr> }
+        @if (!stock.Any()) { <tr><td colspan="3" class="text-center text-muted">Chưa có hàng gán vị trí. Chọn vị trí trên dòng phiếu nhập kho, hoặc dùng "Chuyển hàng giữa các vị trí".</td></tr> }
+    </tbody></table></div></div>
+    <div class="card"><div class="card-header">Tồn chưa gán vị trí</div><div class="card-body p-0" style="max-height:300px;overflow:auto"><table class="table table-sm mb-0" data-grid="off"><tbody>
+        @foreach (var (i, w, q) in un) { <tr><td class="small">@w.Code</td><td>@i.Code – @i.Name</td><td class="num">@q.ToQty()</td></tr> }
+    </tbody></table></div></div>
+</div>
+</div>
+@section Scripts { <script>function fb(id, wh, c, n, k) { const f = document.getElementById('binForm'); f.id.value = id; f.warehouseId.value = wh; f.code.value = c; f.name.value = n; f.kind.value = k; }</script> }

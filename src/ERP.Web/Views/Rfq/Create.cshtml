@@ -1,0 +1,18 @@
+@{ ViewData["Title"] = "Tạo yêu cầu báo giá"; var items = (List<Item>)ViewBag.Items; var vendors = (List<Partner>)ViewBag.Vendors; }
+<form asp-action="Create" method="post">
+<div class="card mb-3"><div class="card-body row g-3">
+    <div class="col-md-3"><label class="form-label">Hạn nhận báo giá</label><input type="date" name="dueDate" value="@DateTime.Today.AddDays(5).Iso()" class="form-control" /></div>
+    <div class="col-md-9"><label class="form-label">Yêu cầu / điều kiện</label><input name="note" class="form-control" placeholder="Tiêu chuẩn kỹ thuật, giao hàng, thanh toán..." /></div>
+</div></div>
+<div class="card mb-3"><div class="card-header">Mặt hàng cần báo giá</div><div class="card-body">
+    @for (var i = 0; i < 6; i++)
+    {
+        <div class="row g-2 mb-1"><div class="col-md-8"><select name="itemId" class="form-select form-select-sm"><option value="0">-- Chọn hàng --</option>@foreach (var it in items) { <option value="@it.Id">@it.Code – @it.Name (@it.Unit)</option> }</select></div>
+            <div class="col-md-2"><input type="number" name="qty" step="any" min="0" class="form-control form-control-sm" placeholder="Số lượng" /></div></div>
+    }
+</div></div>
+<div class="card mb-3"><div class="card-header">Nhà cung cấp được mời báo giá</div><div class="card-body" style="column-count:2">
+    @foreach (var v in vendors) { <div class="form-check"><input class="form-check-input" type="checkbox" name="vendorIds" value="@v.Id" id="v@(v.Id)" /><label class="form-check-label" for="v@(v.Id)">@v.Code – @v.Name @(v.Grade != null ? "[" + v.Grade + "]" : "")</label></div> }
+</div></div>
+<button class="btn btn-primary">Tạo RFQ</button> <a class="btn btn-light" asp-action="Index">Hủy</a>
+</form>

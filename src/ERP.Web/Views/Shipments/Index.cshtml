@@ -1,0 +1,43 @@
+@model List<Shipment>
+@{ ViewData["Title"] = "Giao hàng & vận chuyển"; var pending = (List<InventoryDoc>)ViewBag.Pending; ShipmentStatus? st = ViewBag.Status; bool can = ViewBag.CanEdit; }
+<div class="toolbar"><form method="get" class="d-inline-flex gap-2"><select name="status" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()"><option value="">Mọi trạng thái</option>@foreach (ShipmentStatus s in Enum.GetValues<ShipmentStatus>()) { <option value="@s" selected="@(st == s)">@s.GetDisplayName()</option> }</select></form>
+    <a class="btn btn-sm btn-light ms-auto" asp-controller="SalesOrders" asp-action="Index"><i class="bi bi-bag-check"></i> Đơn bán hàng</a></div>
+@if (pending.Any())
+{
+    <div class="card mb-3"><div class="card-header">Phiếu xuất kho giao hàng chưa có vận đơn</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+        @foreach (var d in pending)
+        {
+            <tr><td><a asp-controller="Inventory" asp-action="Details" asp-route-id="@d.Id">@d.Number</a></td><td>@d.Date.ToDate()</td><td>@d.Partner?.Name</td><td class="small">@d.OriginRef</td>
+                <td class="text-end"><a class="btn btn-sm btn-light" asp-action="Note" asp-route-docId="@d.Id" target="_blank"><i class="bi bi-printer"></i> Phiếu giao hàng</a>
+                    @if (can) { <form asp-action="Create" method="post" class="d-inline"><input type="hidden" name="docId" value="@d.Id" /><button class="btn btn-sm btn-primary">Lập vận đơn</button></form> }</td></tr>
+        }
+    </tbody></table></div></div>
+}
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm align-middle mb-0" data-grid="off">
+    <thead><tr><th>Vận đơn</th><th>Phiếu xuất</th><th>Đơn bán</th><th>Khách hàng</th><th>Vận chuyển</th><th>Địa chỉ giao</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+    @foreach (var s in Model)
+    {
+        <tr><td><b>@s.Number</b><div class="small text-muted">@s.ShippedAt?.ToString("dd/MM HH:mm") @(s.DeliveredAt != null ? "→ " + s.DeliveredAt.Value.ToString("dd/MM HH:mm") : "")</div></td>
+            <td><a asp-controller="Inventory" asp-action="Details" asp-route-id="@s.InventoryDocId">@s.InventoryDoc?.Number</a> <a asp-action="Note" asp-route-docId="@s.InventoryDocId" target="_blank" title="In phiếu giao hàng"><i class="bi bi-printer"></i></a></td>
+            <td>@if (s.SalesOrder != null) { <a asp-controller="SalesOrders" asp-action="Details" asp-route-id="@s.SalesOrderId">@s.SalesOrder.Number</a> }</td><td class="small">@s.InventoryDoc?.Partner?.Name</td>
+            <td class="small">@s.Carrier @s.VehicleNo @s.Driver<br />@s.TrackingNo</td><td class="small">@s.Address<br />Người nhận: @s.Receiver</td>
+            <td><span class="badge @(s.Status == ShipmentStatus.Delivered ? "bg-success" : s.Status == ShipmentStatus.InTransit ? "bg-primary" : s.Status == ShipmentStatus.Failed ? "bg-danger" : "bg-secondary")">@s.Status.GetDisplayName()</span></td>
+            <td>@if (can) { <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#e@(s.Id)"><i class="bi bi-pencil"></i></button> }</td></tr>
+        @if (can)
+        {
+            <tr class="collapse" id="e@(s.Id)"><td colspan="8" class="bg-light"><form asp-action="Update" asp-route-id="@s.Id" method="post" class="row g-2">
+                <div class="col-md-2"><select name="status" asp-items="Html.GetEnumSelectList<ShipmentStatus>()" class="form-select form-select-sm"></select></div>
+                <div class="col-md-2"><input name="carrier" value="@s.Carrier" class="form-control form-control-sm" placeholder="Đơn vị vận chuyển" /></div>
+                <div class="col-md-2"><input name="vehicleNo" value="@s.VehicleNo" class="form-control form-control-sm" placeholder="Biển số xe" /></div>
+                <div class="col-md-2"><input name="driver" value="@s.Driver" class="form-control form-control-sm" placeholder="Tài xế" /></div>
+                <div class="col-md-2"><input name="trackingNo" value="@s.TrackingNo" class="form-control form-control-sm" placeholder="Mã vận đơn" /></div>
+                <div class="col-md-2"><input name="freight" type="number" value="@s.Freight.ToString("0", System.Globalization.CultureInfo.InvariantCulture)" class="form-control form-control-sm" placeholder="Cước" /></div>
+                <div class="col-md-5"><input name="address" value="@s.Address" class="form-control form-control-sm" placeholder="Địa chỉ giao" /></div>
+                <div class="col-md-3"><input name="receiver" value="@s.Receiver" class="form-control form-control-sm" placeholder="Người nhận" /></div>
+                <div class="col-md-3"><input name="note" value="@s.Note" class="form-control form-control-sm" placeholder="Ghi chú" /></div>
+                <div class="col-md-1"><button class="btn btn-sm btn-primary w-100">Lưu</button></div>
+            </form></td></tr>
+        }
+    }
+    @if (!Model.Any()) { <tr><td colspan="8" class="text-center text-muted py-3">Chưa có vận đơn.</td></tr> }
+</tbody></table></div></div></div>

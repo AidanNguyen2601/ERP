@@ -41,6 +41,10 @@ public static class Lang
         ["Nhóm tài sản cố định"] = "Asset categories", ["Đơn vị tính"] = "Units of measure", ["Phòng ban / bộ phận"] = "Departments", ["Nhập danh mục từ Excel"] = "Import from Excel",
         ["Duyệt chứng từ"] = "Approvals", ["Người dùng & phân quyền"] = "Users & roles", ["Ma trận phân quyền"] = "Permission matrix", ["Công ty & chi nhánh"] = "Companies & branches",
         ["Nhật ký thao tác"] = "Audit log", ["Tham số hệ thống"] = "System settings", ["Kết nối API & thiết bị"] = "API & devices", ["Kịch bản nghiệp vụ"] = "Business scenarios",
+        ["Mua hàng"] = "Purchasing", ["Bán hàng"] = "Sales", ["Đề nghị mua hàng"] = "Purchase requisitions", ["Yêu cầu báo giá (RFQ)"] = "Requests for quotation", ["Đánh giá nhà cung cấp"] = "Supplier evaluation",
+        ["Đối chiếu 3 bên"] = "3-way matching", ["Chi phí mua hàng"] = "Landed costs", ["Báo giá bán hàng"] = "Sales quotations", ["Giao hàng & vận chuyển"] = "Delivery & shipping", ["Bảng giá & khuyến mại"] = "Price lists & promotions",
+        ["Hoa hồng & KPI bán hàng"] = "Commission & sales KPI", ["Cảnh báo tồn kho"] = "Stock alerts", ["Lô, serial & hạn dùng"] = "Lots, serials & expiry", ["Vị trí lưu kho"] = "Storage locations", ["Kiểm kê kho"] = "Stocktaking",
+        ["Tuổi hàng tồn"] = "Inventory aging", ["In tem mã vạch"] = "Barcode labels", ["Nhóm hàng"] = "Item groups", ["Pallet"] = "Pallets",
         // Tiêu đề trang thường gặp
         ["Danh mục nhân viên"] = "Employees", ["Nhập dữ liệu từ Excel"] = "Import from Excel", ["Quy tắc phê duyệt"] = "Approval rules", ["Kết nối API & thiết bị"] = "API & devices",
         ["Đối chiếu hóa đơn với cổng thuế"] = "Tax portal invoice matching", ["Thuế thu nhập doanh nghiệp"] = "Corporate income tax", ["Tờ khai thuế GTGT (01/GTGT)"] = "VAT return (01/GTGT)",

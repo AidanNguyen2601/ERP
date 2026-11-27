@@ -210,6 +210,7 @@ public class PurchaseService
         if (po.Status != PoStatus.Draft) throw new BusinessException("Chỉ gửi duyệt đơn nháp.");
         if (!po.Lines.Any()) throw new BusinessException("Đơn mua chưa có dòng hàng.");
         Recalc(po);
+        if (await _db.Partners.AnyAsync(v => v.Id == po.VendorId && v.IsBlocked)) throw new BusinessException("Nhà cung cấp đang tạm ngừng giao dịch – không gửi duyệt đơn mua.");
         if (await _wf.HasRulesAsync(ApprovalDocType.PurchaseOrder))
         {
             var vendor = await _db.Partners.FindAsync(po.VendorId);
@@ -245,7 +246,7 @@ public class PurchaseService
     }
 
     /// <summary>Nhận hàng: lập phiếu nhập kho (Nợ 15x / Có 331)</summary>
-    public async Task<InventoryDoc> ReceiveAsync(PurchaseOrder po, DateTime date, IDictionary<int, decimal> qtyByLine)
+    public async Task<InventoryDoc> ReceiveAsync(PurchaseOrder po, DateTime date, IDictionary<int, decimal> qtyByLine, IDictionary<int, (string? Lot, DateTime? Expiry)>? lotInfo = null)
     {
         if (po.Status is not (PoStatus.Approved or PoStatus.PartiallyReceived)) throw new BusinessException("Đơn mua chưa được duyệt hoặc đã nhận đủ.");
         var take = new List<(int, decimal, decimal)>();
@@ -257,7 +258,7 @@ public class PurchaseService
         }
         if (!take.Any()) throw new BusinessException("Nhập số lượng thực nhận.");
         var doc = await _inv.CreateAndPostAsync(InvDocType.Receipt, date, po.WarehouseId!.Value, DocOrigin.Purchase, po.Number, po.Id, po.VendorId,
-            $"Nhận hàng theo đơn mua {po.Number}", take, _user.Id);
+            $"Nhận hàng theo đơn mua {po.Number}", take, _user.Id, lotInfo);
         foreach (var l in po.Lines) if (qtyByLine.TryGetValue(l.Id, out var q)) l.ReceivedQty += q;
         RefreshStatus(po);
         await _db.SaveChangesAsync();
@@ -342,6 +343,7 @@ public class SalesService
         if (!so.Lines.Any()) throw new BusinessException("Đơn bán chưa có dòng hàng.");
         Recalc(so);
         var c = await _db.Partners.FindAsync(so.CustomerId) ?? throw new BusinessException("Không tìm thấy khách hàng.");
+        if (c.IsBlocked) throw new BusinessException($"Khách hàng {c.Name} đang tạm ngừng giao dịch: {c.BlockReason}");
         string? warn = null;
         if (c.CreditLimit > 0)
         {
@@ -384,6 +386,12 @@ public class SalesService
         if (take.Any())
             doc = await _inv.CreateAndPostAsync(InvDocType.Issue, date, so.WarehouseId!.Value, DocOrigin.Sales, so.Number, so.Id, so.CustomerId,
                 $"Xuất bán theo đơn {so.Number}", take, _user.Id);
+        if (doc != null)
+        {
+            // Tự lập vận đơn gắn với phiếu xuất kho và đơn bán (cập nhật vận chuyển tại Giao hàng & vận chuyển)
+            var cust = await _db.Partners.FindAsync(so.CustomerId);
+            _db.Shipments.Add(new Shipment { InventoryDocId = doc.Id, SalesOrderId = so.Id, Address = cust?.Address, Receiver = cust?.ContactPerson, Number = await DocNumbers.NextAsync(_db.Shipments.Select(x => x.Number), "VD", date) });
+        }
         foreach (var l in so.Lines) if (qtyByLine.TryGetValue(l.Id, out var q)) l.DeliveredQty += q;
         RefreshStatus(so);
         await _db.SaveChangesAsync();

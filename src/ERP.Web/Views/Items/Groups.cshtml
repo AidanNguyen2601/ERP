@@ -1,0 +1,19 @@
+@model List<ItemGroup>
+@{ ViewData["Title"] = "Nhóm hàng"; var counts = (Dictionary<int, int>)ViewBag.Counts; bool can = ViewBag.CanEdit; }
+<div class="toolbar"><a class="btn btn-sm btn-light" asp-action="Index"><i class="bi bi-tags"></i> Hàng hóa, vật tư</a></div>
+<div class="row g-3"><div class="col-lg-8"><div class="card"><div class="card-body p-0"><table class="table table-sm mb-0">
+    <thead><tr><th>Mã nhóm</th><th>Tên nhóm</th><th>Nhóm cha</th><th class="num">Số mặt hàng</th><th></th></tr></thead><tbody>
+    @foreach (var g in Model) { <tr><td><b>@g.Code</b></td><td>@g.Name</td><td class="small">@g.Parent?.Name</td><td class="num">@counts.GetValueOrDefault(g.Id)</td><td>@if (can) { <button type="button" class="btn btn-sm btn-light" onclick="fill(@g.Id,'@g.Code','@g.Name',@(g.ParentId?.ToString() ?? "null"))"><i class="bi bi-pencil"></i></button> }</td></tr> }
+    @if (!Model.Any()) { <tr><td colspan="5" class="text-center text-muted py-3">Chưa có nhóm hàng.</td></tr> }
+</tbody></table></div></div></div>
+@if (can)
+{
+    <div class="col-lg-4"><div class="card"><div class="card-header">Thêm / sửa nhóm</div><div class="card-body">
+        <form asp-action="SaveGroup" method="post" id="gf" class="row g-2"><input type="hidden" name="id" value="0" />
+            <div class="col-5"><input name="code" class="form-control form-control-sm" placeholder="Mã" required /></div><div class="col-7"><input name="name" class="form-control form-control-sm" placeholder="Tên nhóm" required /></div>
+            <div class="col-12"><select name="parentId" class="form-select form-select-sm"><option value="">-- Nhóm gốc --</option>@foreach (var g in Model) { <option value="@g.Id">@g.Code – @g.Name</option> }</select></div>
+            <div class="col-12"><button class="btn btn-sm btn-primary">Lưu</button> <button type="reset" class="btn btn-sm btn-light" onclick="gf.id.value=0">Mới</button></div>
+        </form></div></div></div>
+}
+</div>
+@section Scripts { <script>function fill(id, c, n, p) { gf.id.value = id; gf.code.value = c; gf.name.value = n; gf.parentId.value = p ?? ''; }</script> }

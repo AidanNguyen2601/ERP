@@ -46,8 +46,39 @@ public class ContractsController : ErpControllerBase
         ViewBag.SalesOrders = c.Type == ContractType.Sale ? await Db.SalesOrders.Where(o => o.ContractId == id).OrderBy(o => o.Date).ToListAsync() : new List<SalesOrder>();
         ViewBag.PurchaseOrders = c.Type == ContractType.Purchase ? await Db.PurchaseOrders.Where(o => o.ContractId == id).OrderBy(o => o.Date).ToListAsync() : new List<PurchaseOrder>();
         var invIds = ((List<Invoice>)ViewBag.Invoices).Select(i => i.Id).ToList();
+        ViewBag.Milestones = await Db.ContractMilestones.Where(x => x.ContractId == id).OrderBy(x => x.DueDate).ToListAsync();
         ViewBag.Payments = await Db.PaymentAllocations.Include(a => a.CashVoucher).Include(a => a.Invoice).Where(a => invIds.Contains(a.InvoiceId) && a.CashVoucher!.Status == DocStatus.Posted).OrderBy(a => a.CashVoucher!.Date).ToListAsync();
         return View(c);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddMilestone(int id, MilestoneKind kind, string name, DateTime dueDate, decimal amount, string? note)
+    {
+        if (!CanEdit) return Denied();
+        if (string.IsNullOrWhiteSpace(name)) { Error("Nhập tên đợt."); return RedirectToAction(nameof(Details), new { id }); }
+        Db.ContractMilestones.Add(new ContractMilestone { ContractId = id, Kind = kind, Name = name.Trim(), DueDate = dueDate.Date, Amount = Math.Max(0, amount), Note = note });
+        await Db.SaveChangesAsync();
+        Success("Đã thêm đợt hợp đồng.");
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleMilestone(int id, int contractId)
+    {
+        if (!CanEdit) return Denied();
+        var m = await Db.ContractMilestones.FindAsync(id); if (m == null) return NotFound();
+        m.Done = !m.Done; m.DoneDate = m.Done ? DateTime.Today : null;
+        await Db.SaveChangesAsync();
+        return RedirectToAction(nameof(Details), new { id = contractId });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteMilestone(int id, int contractId)
+    {
+        if (!CanEdit) return Denied();
+        var m = await Db.ContractMilestones.FindAsync(id);
+        if (m != null) { Db.ContractMilestones.Remove(m); await Db.SaveChangesAsync(); }
+        return RedirectToAction(nameof(Details), new { id = contractId });
     }
 
     private bool CanEdit => User.InAny(AppRoles.Admin + "," + AppRoles.Accountant + "," + AppRoles.Director + "," + AppRoles.Sales + "," + AppRoles.Purchasing);

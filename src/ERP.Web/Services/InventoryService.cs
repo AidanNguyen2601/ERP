@@ -44,6 +44,16 @@ public class InventoryService
         var items = (await _db.Items.Where(i => itemIds.Contains(i.Id)).ToListAsync()).ToDictionary(i => i.Id);
         if (items.Values.Any(i => !i.IsStocked)) throw new BusinessException("Hàng dịch vụ không quản lý tồn kho.");
         // Nạp tồn kho mọi kho của các mặt hàng liên quan (xử lý trong bộ nhớ để tránh trùng dòng khi chưa lưu)
+        var tracker = new StockTracker(_db, doc.Date, doc.Number, doc.Type.GetDisplayName(), doc.PartnerId, doc.OriginRef);
+        await tracker.LoadAsync(itemIds);
+        var allowExpired = !(doc.Type == InvDocType.Issue && doc.Origin is DocOrigin.Sales or DocOrigin.Production);
+        foreach (var b in doc.Lines.Where(x => x.BinId != null || x.ToBinId != null))
+        {
+            var ids = new[] { b.BinId, b.ToBinId }.Where(x => x != null).Select(x => x!.Value).ToList();
+            var bl = await _db.BinLocations.Where(x => ids.Contains(x.Id)).ToListAsync();
+            if (b.BinId != null && bl.FirstOrDefault(x => x.Id == b.BinId)?.WarehouseId != doc.WarehouseId) throw new BusinessException("Vị trí lưu kho không thuộc kho của phiếu.");
+            if (b.ToBinId != null && bl.FirstOrDefault(x => x.Id == b.ToBinId)?.WarehouseId != (doc.Type == InvDocType.Transfer ? doc.ToWarehouseId : doc.WarehouseId)) throw new BusinessException("Vị trí nhận không thuộc kho nhận.");
+        }
         var levels = await _db.StockLevels.Where(s => itemIds.Contains(s.ItemId)).ToListAsync();
 
         StockLevel Level(int itemId, int whId)
@@ -93,6 +103,8 @@ public class InventoryService
                 item.AvgCost = onHand + qty <= 0 ? cost : Math.Round(((onHand > 0 ? onHand * item.AvgCost : 0) + qty * cost) / ((onHand > 0 ? onHand : 0) + qty), 2);
                 Level(item.Id, doc.WarehouseId).Quantity += qty;
                 l.UnitCost = cost; l.Amount = Math.Round(qty * cost, 0);
+                if (StockTracker.IsTracked(item)) tracker.AddLot(item, doc.WarehouseId, l.LotNo, l.MfgDate, l.ExpiryDate, qty, cost, doc.Number);
+                tracker.AddBin(item, doc.WarehouseId, l.BinId, qty);
                 Move(l, doc.WarehouseId, qty, cost);
             }
             else
@@ -100,8 +112,16 @@ public class InventoryService
                 var qty = Math.Abs(l.Quantity);
                 var lv = Level(item.Id, doc.WarehouseId);
                 if (lv.Quantity < qty) { shortages.Add($"{item.Code} (tồn {lv.Quantity.ToQty()}, cần {qty.ToQty()})"); continue; }
+                decimal? lotAmount = null; var lotParts = new List<(StockLot Lot, decimal Qty)>();
+                if (StockTracker.IsTracked(item))
+                {
+                    var (parts, rem) = tracker.Consume(item, doc.WarehouseId, qty, l.LotNo, allowExpired, lv.Quantity);
+                    lotParts = parts;
+                    if (item.CostMethod != CostMethod.Average) lotAmount = parts.Sum(p => p.Qty * p.Lot.UnitCost) + rem * item.AvgCost;
+                }
+                tracker.ConsumeBin(item, doc.WarehouseId, l.BinId, qty, strict: l.BinId != null);
                 // Xuất hết toàn bộ tồn của mặt hàng (mọi kho): giá trị xuất = toàn bộ giá trị còn trên sổ kho, không để dư do làm tròn giá bình quân
-                var amount = Math.Round(qty * item.AvgCost, 0);
+                var amount = lotAmount.HasValue ? Math.Round(lotAmount.Value, 0) : Math.Round(qty * item.AvgCost, 0);
                 if (doc.Type != InvDocType.Transfer && qty == TotalQty(item.Id))
                 {
                     var book = await _db.StockMoves.Where(m => m.ItemId == item.Id).SumAsync(m => m.Amount) + moves.Where(m => m.ItemId == item.Id).Sum(m => m.Amount);
@@ -113,6 +133,8 @@ public class InventoryService
                 if (doc.Type == InvDocType.Transfer)
                 {
                     Level(item.Id, doc.ToWarehouseId!.Value).Quantity += qty;
+                    foreach (var (pl, pq) in lotParts) tracker.AddLot(item, doc.ToWarehouseId!.Value, pl.LotNo, pl.MfgDate, pl.ExpiryDate, pq, pl.UnitCost, doc.Number);
+                    tracker.AddBin(item, doc.ToWarehouseId!.Value, l.ToBinId, qty);
                     Move(l, doc.ToWarehouseId!.Value, qty, item.AvgCost);
                 }
             }
@@ -169,6 +191,8 @@ public class InventoryService
         await _db.SaveChangesAsync();
         foreach (var m in moves) m.InventoryDocId = doc.Id;
         _db.StockMoves.AddRange(moves);
+        foreach (var m in tracker.Moves) m.InventoryDocId = doc.Id;
+        _db.StockLotMoves.AddRange(tracker.Moves);
         await _db.SaveChangesAsync();
     }
 
@@ -228,6 +252,10 @@ public class InventoryService
         if (lack.Any()) throw new BusinessException("Hàng của phiếu đã được xuất / chuyển đi, không đủ tồn để hủy: " + string.Join("; ", lack));
 
         await UnwindOrderAsync(doc);
+        var tracker = new StockTracker(_db, date, doc.Number, doc.Type.GetDisplayName(), doc.PartnerId, doc.OriginRef);
+        await tracker.LoadAsync(itemIds);
+        await tracker.ReverseAsync(doc, items);
+        foreach (var o in ops.Where(x => x.OutWh.HasValue && doc.Type != InvDocType.Transfer)) tracker.ConsumeBin(items[o.Line.ItemId], o.OutWh!.Value, null, o.Qty, strict: false);
 
         // Giá vốn bình quân tính lại theo tổng số lượng và giá trị còn trên sổ kho
         var qtyNow = new Dictionary<int, decimal>(); var valNow = new Dictionary<int, decimal>();
@@ -255,6 +283,7 @@ public class InventoryService
 
         if (doc.JournalEntryId != null) await _acc.ReverseAsync(doc.JournalEntryId, date, $"Hủy phiếu {doc.Number}: {reason}");
         _db.StockMoves.AddRange(moves);
+        _db.StockLotMoves.AddRange(tracker.Moves);
         doc.Status = DocStatus.Cancelled;
         var note = $" [Hủy {date:dd/MM/yyyy}: {reason}]";
         doc.Reason = ((doc.Reason ?? "") + note).Length <= 500 ? (doc.Reason ?? "") + note : (doc.Reason ?? "")[..Math.Max(0, 500 - note.Length)] + note;
@@ -306,14 +335,15 @@ public class InventoryService
 
     /// <summary>Tạo và ghi sổ ngay một phiếu kho (dùng cho nhận hàng PO, giao hàng SO, sản xuất)</summary>
     public async Task<InventoryDoc> CreateAndPostAsync(InvDocType type, DateTime date, int warehouseId, DocOrigin origin, string originRef, int originId,
-        int? partnerId, string reason, IEnumerable<(int ItemId, decimal Qty, decimal UnitCost)> lines, int? userId)
+        int? partnerId, string reason, IEnumerable<(int ItemId, decimal Qty, decimal UnitCost)> lines, int? userId, IDictionary<int, (string? Lot, DateTime? Expiry)>? lotInfo = null)
     {
         var doc = new InventoryDoc
         {
             Type = type, Date = date, WarehouseId = warehouseId, Origin = origin, OriginRef = originRef, OriginId = originId,
             PartnerId = partnerId, Reason = reason, CreatedById = userId, Number = await NextNumberAsync(type, date)
         };
-        foreach (var l in lines) doc.Lines.Add(new InventoryDocLine { ItemId = l.ItemId, Quantity = l.Qty, UnitCost = l.UnitCost });
+        foreach (var l in lines)
+            doc.Lines.Add(new InventoryDocLine { ItemId = l.ItemId, Quantity = l.Qty, UnitCost = l.UnitCost, LotNo = lotInfo != null && lotInfo.TryGetValue(l.ItemId, out var li) ? li.Lot : null, ExpiryDate = lotInfo != null && lotInfo.TryGetValue(l.ItemId, out var li2) ? li2.Expiry : null });
         await PostAsync(doc);
         return doc;
     }

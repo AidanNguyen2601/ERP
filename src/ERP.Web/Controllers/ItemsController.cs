@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ERP.Web.Data;
 using ERP.Web.Infrastructure;
@@ -24,14 +25,61 @@ public class ItemsController : ErpControllerBase
         return View(items);
     }
 
-    public async Task<IActionResult> Create(ItemType type = ItemType.Merchandise) => CanEdit ? View("Form", new Item { Type = type, Code = await _codes.NextAsync(CodeService.Target(type)) ?? "" }) : Denied();
+    public async Task<IActionResult> Create(ItemType type = ItemType.Merchandise) { if (!CanEdit) return Denied(); await GroupsAsync(); ViewBag.Uoms = new List<UomConversion>(); return View("Form", new Item { Type = type, Code = await _codes.NextAsync(CodeService.Target(type)) ?? "" }); }
+
+    private async Task GroupsAsync() { ViewBag.Groups = new SelectList(await Db.ItemGroups.OrderBy(g => g.Code).Select(g => new { g.Id, Name = g.Code + " – " + g.Name }).ToListAsync(), "Id", "Name"); }
 
     public async Task<IActionResult> Edit(int id)
     {
         if (!CanEdit) return Denied();
         var i = await Db.Items.FindAsync(id);
-        return i == null ? NotFound() : View("Form", i);
+        if (i == null) return NotFound();
+        await GroupsAsync(); ViewBag.Uoms = await Db.UomConversions.Where(u => u.ItemId == id).OrderBy(u => u.Unit).ToListAsync();
+        return View("Form", i);
     }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddUom(int itemId, string unit, decimal factor)
+    {
+        if (!CanEdit) return Denied();
+        unit = (unit ?? "").Trim();
+        if (unit == "" || factor <= 0) { Error("Nhập đơn vị và hệ số quy đổi > 0."); return RedirectToAction(nameof(Edit), new { id = itemId }); }
+        var u = await Db.UomConversions.FirstOrDefaultAsync(x => x.ItemId == itemId && x.Unit == unit);
+        if (u == null) Db.UomConversions.Add(new UomConversion { ItemId = itemId, Unit = unit, Factor = factor }); else u.Factor = factor;
+        await Db.SaveChangesAsync();
+        Success("Đã lưu quy đổi đơn vị tính.");
+        return RedirectToAction(nameof(Edit), new { id = itemId });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteUom(int id, int itemId)
+    {
+        if (!CanEdit) return Denied();
+        var u = await Db.UomConversions.FindAsync(id);
+        if (u != null) { Db.UomConversions.Remove(u); await Db.SaveChangesAsync(); }
+        return RedirectToAction(nameof(Edit), new { id = itemId });
+    }
+
+    // ---- Nhóm hàng
+    public async Task<IActionResult> Groups() { ViewBag.Counts = (await Db.Items.Where(i => i.GroupId != null).GroupBy(i => i.GroupId!.Value).Select(g => new { g.Key, N = g.Count() }).ToListAsync()).ToDictionary(x => x.Key, x => x.N); ViewBag.CanEdit = CanEdit; return View(await Db.ItemGroups.Include(g => g.Parent).OrderBy(g => g.Code).ToListAsync()); }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> SaveGroup(int id, string code, string name, int? parentId)
+    {
+        if (!CanEdit) return Denied();
+        code = (code ?? "").Trim().ToUpperInvariant(); name = (name ?? "").Trim();
+        if (code == "" || name == "") { Error("Nhập mã và tên nhóm."); return RedirectToAction(nameof(Groups)); }
+        if (await Db.ItemGroups.AnyAsync(g => g.Code == code && g.Id != id)) { Error("Mã nhóm đã tồn tại."); return RedirectToAction(nameof(Groups)); }
+        if (parentId == id && id != 0) parentId = null;
+        var g = id == 0 ? new ItemGroup() : await Db.ItemGroups.FindAsync(id);
+        if (g == null) return NotFound();
+        g.Code = code; g.Name = name; g.ParentId = parentId;
+        if (g.Id == 0) Db.ItemGroups.Add(g);
+        await Db.SaveChangesAsync();
+        Success($"Đã lưu nhóm hàng {code}.");
+        return RedirectToAction(nameof(Groups));
+    }
+
 
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Save(Item model)
@@ -46,12 +94,17 @@ public class ItemsController : ErpControllerBase
         Item? existing = model.Id == 0 ? null : await Db.Items.FindAsync(model.Id);
         if (existing != null && existing.Type != model.Type && await Db.StockMoves.AnyAsync(m => m.ItemId == model.Id))
             ModelState.AddModelError(nameof(model.Type), "Hàng đã phát sinh nhập xuất, không đổi loại (ảnh hưởng TK kho).");
-        if (!ModelState.IsValid) return View("Form", model);
-        if (existing == null) { model.AvgCost = 0; Db.Items.Add(model); }
+        if (model.CostMethod == CostMethod.Specific && model.TrackMode == TrackMode.None) ModelState.AddModelError(nameof(model.CostMethod), "Giá đích danh yêu cầu theo dõi hàng theo lô hoặc serial.");
+        if (model.MaxStock > 0 && model.MaxStock < model.MinStock) ModelState.AddModelError(nameof(model.MaxStock), "Tồn tối đa phải lớn hơn tồn tối thiểu.");
+        if (!string.IsNullOrWhiteSpace(model.Barcode) && await Db.Items.AnyAsync(i => i.Barcode == model.Barcode.Trim() && i.Id != model.Id)) ModelState.AddModelError(nameof(model.Barcode), "Mã vạch đã dùng cho hàng khác.");
+        if (!ModelState.IsValid) { await GroupsAsync(); return View("Form", model); }
+        if (existing == null) { model.AvgCost = 0; model.Barcode = string.IsNullOrWhiteSpace(model.Barcode) ? null : model.Barcode.Trim(); Db.Items.Add(model); }
         else
         {
             existing.Code = model.Code; existing.Name = model.Name; existing.Unit = model.Unit; existing.Type = model.Type; existing.SalePrice = model.SalePrice;
             existing.VatRate = model.VatRate; existing.MinStock = model.MinStock; existing.IsActive = model.IsActive;
+            existing.GroupId = model.GroupId; existing.MaxStock = model.MaxStock; existing.TrackMode = model.TrackMode; existing.TrackExpiry = model.TrackExpiry; existing.ExpiryAlertDays = model.ExpiryAlertDays;
+            existing.CostMethod = model.CostMethod; existing.Barcode = string.IsNullOrWhiteSpace(model.Barcode) ? null : model.Barcode.Trim();
         }
         await Db.SaveChangesAsync();
         Success($"Đã lưu {model.Code}.");

@@ -24,6 +24,7 @@ public class SettingsController : ErpControllerBase
         ("Hóa đơn điện tử", "EInvoice.Username", "Tài khoản tích hợp", "text", null),
         ("Hóa đơn điện tử", "EInvoice.ApiKey", "Khóa API / mật khẩu tích hợp", "secret", "Để trống nếu không đổi"),
         ("Hóa đơn điện tử", "EInvoice.TemplateCode", "Ký hiệu mẫu số", "text", "1 = HĐ GTGT, 2 = HĐ bán hàng"),
+        ("Bán hàng", "Quote.MinMarginPct", "Lợi nhuận tối thiểu của báo giá (%) – thấp hơn phải Ban Giám đốc duyệt", "number", null),
         ("Ngân sách", "Budget.Enabled", "Kiểm soát ngân sách khi ghi sổ chi phí", "bool", "Cảnh báo hoặc chặn theo cấu hình từng ngân sách"),
         ("Thuế TNDN", "Cit.Rate", "Thuế suất TNDN (%)", "number", null),
         ("Tiền lương", "Payroll.StandardDays", "Ngày công chuẩn / tháng", "number", null),

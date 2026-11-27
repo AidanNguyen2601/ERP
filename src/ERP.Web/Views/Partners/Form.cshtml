@@ -18,6 +18,13 @@
         <div class="col-md-4"><label asp-for="BankAccountNo" class="form-label"></label><input asp-for="BankAccountNo" class="form-control" /></div>
         <div class="col-md-4"><label asp-for="BankName" class="form-label"></label><input asp-for="BankName" class="form-control" /></div>
         <div class="col-md-4"><label asp-for="GroupCompanyId" class="form-label"></label><select asp-for="GroupCompanyId" asp-items="ViewBag.Companies" class="form-select" disabled="@(!acc)"><option value="">-- Không (bên ngoài tập đoàn) --</option></select><div class="form-text">Dùng để loại trừ giao dịch nội bộ khi hợp nhất</div></div>
+        <div class="col-md-4"><label asp-for="PartnerGroup" class="form-label"></label><input asp-for="PartnerGroup" class="form-control" list="pgroups" placeholder="VD: Đại lý, Bán lẻ, Dự án" /><datalist id="pgroups"><option>Đại lý</option><option>Bán lẻ</option><option>Dự án</option><option>Khách hàng lớn</option><option>Nhà sản xuất</option><option>Nhà phân phối</option></datalist></div>
+        <div class="col-md-4"><label asp-for="BusinessLicenseNo" class="form-label"></label><input asp-for="BusinessLicenseNo" class="form-control" /></div>
+        <div class="col-md-4"><label asp-for="LegalRepresentative" class="form-label"></label><input asp-for="LegalRepresentative" class="form-control" /></div>
+        <div class="col-md-8"><label asp-for="PaymentCondition" class="form-label"></label><input asp-for="PaymentCondition" class="form-control" placeholder="VD: Thanh toán 50% khi đặt hàng, 50% trong 30 ngày sau giao hàng" /></div>
+        <div class="col-md-2"><label asp-for="Grade" class="form-label"></label><select asp-for="Grade" class="form-select" disabled="@(!acc)"><option value="">--</option><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+        <div class="col-md-2 pt-4"><div class="form-check"><input asp-for="IsBlocked" class="form-check-input" disabled="@(!acc)" /><label asp-for="IsBlocked" class="form-check-label"></label></div></div>
+        <div class="col-md-12" id="blockReason"><label asp-for="BlockReason" class="form-label"></label><input asp-for="BlockReason" class="form-control" disabled="@(!acc)" /></div>
         <div class="col-md-4 pt-4">
             <div class="form-check"><input asp-for="IsCustomer" class="form-check-input" /><label asp-for="IsCustomer" class="form-check-label"></label></div>
             <div class="form-check"><input asp-for="IsVendor" class="form-check-input" /><label asp-for="IsVendor" class="form-check-label"></label></div>

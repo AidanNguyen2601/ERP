@@ -31,7 +31,7 @@ public class ErpDbContext : DbContext
     {
         typeof(JournalEntry), typeof(Invoice), typeof(PurchaseOrder), typeof(SalesOrder), typeof(InventoryDoc), typeof(CashVoucher), typeof(ProductionOrder),
         typeof(SalesCreditNote), typeof(FixedAsset), typeof(Contract), typeof(PayrollRun), typeof(BankStatement), typeof(DebtOffset), typeof(ToolItem),
-        typeof(VatDeclaration), typeof(CitDeclaration)
+        typeof(VatDeclaration), typeof(CitDeclaration), typeof(PurchaseRequisition), typeof(SalesQuote), typeof(Stocktake), typeof(LandedCost)
     };
 
     private void SetBranchFilter<T>(ModelBuilder mb) where T : class, IBranchOwned =>
@@ -177,6 +177,35 @@ public class ErpDbContext : DbContext
     public DbSet<CitDeclaration> CitDeclarations => Set<CitDeclaration>();
     public DbSet<TaxPortalInvoice> TaxPortalInvoices => Set<TaxPortalInvoice>();
     public DbSet<ScaleTicket> ScaleTickets => Set<ScaleTicket>();
+    // Mua hàng, bán hàng, kho nâng cao
+    public DbSet<PurchaseRequisition> PurchaseRequisitions => Set<PurchaseRequisition>();
+    public DbSet<PurchaseRequisitionLine> PurchaseRequisitionLines => Set<PurchaseRequisitionLine>();
+    public DbSet<Rfq> Rfqs => Set<Rfq>();
+    public DbSet<RfqLine> RfqLines => Set<RfqLine>();
+    public DbSet<RfqVendor> RfqVendors => Set<RfqVendor>();
+    public DbSet<RfqQuote> RfqQuotes => Set<RfqQuote>();
+    public DbSet<SupplierEvaluation> SupplierEvaluations => Set<SupplierEvaluation>();
+    public DbSet<LandedCost> LandedCosts => Set<LandedCost>();
+    public DbSet<LandedCostLine> LandedCostLines => Set<LandedCostLine>();
+    public DbSet<ContractMilestone> ContractMilestones => Set<ContractMilestone>();
+    public DbSet<PriceList> PriceLists => Set<PriceList>();
+    public DbSet<PriceListLine> PriceListLines => Set<PriceListLine>();
+    public DbSet<Promotion> Promotions => Set<Promotion>();
+    public DbSet<SalesQuote> SalesQuotes => Set<SalesQuote>();
+    public DbSet<SalesQuoteLine> SalesQuoteLines => Set<SalesQuoteLine>();
+    public DbSet<Shipment> Shipments => Set<Shipment>();
+    public DbSet<SalesTarget> SalesTargets => Set<SalesTarget>();
+    public DbSet<CommissionTier> CommissionTiers => Set<CommissionTier>();
+    public DbSet<ItemGroup> ItemGroups => Set<ItemGroup>();
+    public DbSet<UomConversion> UomConversions => Set<UomConversion>();
+    public DbSet<StockLot> StockLots => Set<StockLot>();
+    public DbSet<StockLotMove> StockLotMoves => Set<StockLotMove>();
+    public DbSet<BinLocation> BinLocations => Set<BinLocation>();
+    public DbSet<StockBin> StockBins => Set<StockBin>();
+    public DbSet<Stocktake> Stocktakes => Set<Stocktake>();
+    public DbSet<StocktakeLine> StocktakeLines => Set<StocktakeLine>();
+    public DbSet<Pallet> Pallets => Set<Pallet>();
+    public DbSet<PalletItem> PalletItems => Set<PalletItem>();
 
     /// <summary>Mọi cột tiền / số lượng: decimal(18,2)</summary>
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
@@ -245,6 +274,21 @@ public class ErpDbContext : DbContext
         modelBuilder.Entity<Invoice>().Property(x => x.ExchangeRate).HasPrecision(18, 4);
         modelBuilder.Entity<CashVoucher>().Property(x => x.ExchangeRate).HasPrecision(18, 4);
         modelBuilder.Entity<InvoiceLine>().Property(x => x.FcUnitPrice).HasPrecision(18, 4);
+        modelBuilder.Entity<PurchaseRequisition>().HasIndex(x => x.Number).IsUnique();
+        modelBuilder.Entity<Rfq>().HasIndex(x => x.Number).IsUnique();
+        modelBuilder.Entity<LandedCost>().HasIndex(x => x.Number).IsUnique();
+        modelBuilder.Entity<SalesQuote>().HasIndex(x => x.Number).IsUnique();
+        modelBuilder.Entity<PriceList>().HasIndex(x => x.Code).IsUnique();
+        modelBuilder.Entity<ItemGroup>().HasIndex(x => x.Code).IsUnique();
+        modelBuilder.Entity<StockLot>().HasIndex(x => new { x.ItemId, x.WarehouseId, x.LotNo }).IsUnique();
+        modelBuilder.Entity<StockLotMove>().HasIndex(x => new { x.ItemId, x.LotNo });
+        modelBuilder.Entity<BinLocation>().HasIndex(x => new { x.WarehouseId, x.Code }).IsUnique();
+        modelBuilder.Entity<StockBin>().HasIndex(x => new { x.ItemId, x.WarehouseId, x.BinId }).IsUnique();
+        modelBuilder.Entity<Stocktake>().HasIndex(x => x.Number).IsUnique();
+        modelBuilder.Entity<Pallet>().HasIndex(x => x.Code).IsUnique();
+        modelBuilder.Entity<SalesTarget>().HasIndex(x => new { x.UserId, x.Year, x.Month }).IsUnique();
+        modelBuilder.Entity<UomConversion>().HasIndex(x => new { x.ItemId, x.Unit }).IsUnique();
+        modelBuilder.Entity<UomConversion>().Property(x => x.Factor).HasPrecision(18, 6);
         modelBuilder.Entity<RecurringJournalLine>().Property(x => x.Percent).HasPrecision(9, 4);
         modelBuilder.Entity<ApprovalStep>().HasOne(s => s.ApprovalRequest).WithMany(r => r.Steps).HasForeignKey(s => s.ApprovalRequestId);
         modelBuilder.Entity<AppUser>().HasOne(u => u.Branch).WithMany().HasForeignKey(u => u.BranchId);

@@ -1,0 +1,52 @@
+@model Partner
+@{
+    ViewData["Title"] = $"Hồ sơ nhà cung cấp {Model.Code}";
+    var evals = (List<SupplierEvaluation>)ViewBag.Evals; var s = (SupplierStats)ViewBag.Stats; var orders = (List<PurchaseOrder>)ViewBag.Orders; bool can = ViewBag.CanEval;
+}
+<div class="toolbar"><a class="btn btn-sm btn-light" asp-action="Index">← Danh sách</a>
+    @if (User.InAny(AppRoles.PurchaseTeam + "," + AppRoles.Accountant)) { <a class="btn btn-sm btn-light" asp-controller="Partners" asp-action="Edit" asp-route-id="@Model.Id"><i class="bi bi-pencil"></i> Sửa hồ sơ</a> }
+    @if (Model.IsBlocked) { <span class="badge bg-danger ms-2">Tạm ngừng giao dịch: @Model.BlockReason</span> }</div>
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card mb-3"><div class="card-header">Thông tin pháp lý</div><div class="card-body small">
+            <div><b>@Model.Name</b> @(Model.Grade != null ? "· hạng " + Model.Grade : "")</div>
+            <div>MST: @Model.TaxCode · Số ĐKKD: @Model.BusinessLicenseNo</div>
+            <div>Người đại diện: @Model.LegalRepresentative</div>
+            <div>Địa chỉ: @Model.Address</div>
+            <div>Liên hệ: @Model.ContactPerson · @Model.Phone · @Model.Email</div>
+            <div>Tài khoản: @Model.BankAccountNo @Model.BankName</div>
+            <div>Nhóm: @Model.PartnerGroup · Thanh toán: @(Model.PaymentCondition ?? Model.PaymentTermDays + " ngày")</div>
+        </div></div>
+        <div class="card"><div class="card-header">Chỉ số 12 tháng gần nhất (tự động)</div><div class="card-body small">
+            <div>Số đơn mua: <b>@s.Orders</b> · giá trị <b>@s.Purchased.ToMoney()</b></div>
+            <div>Giao đúng hạn: <b>@(s.Deliveries == 0 ? "chưa có dữ liệu" : $"{s.OnTime}/{s.Deliveries} lần ({s.OnTimePct}%)")</b></div>
+            <div>Đạt kiểm tra đầu vào: <b>@(s.QcChecked == 0 ? "chưa có dữ liệu" : $"{s.QcPassed}/{s.QcChecked} phiếu ({s.QcPassPct}%)")</b></div>
+            <div>Số NCR (hàng không đạt): <b>@s.Ncrs</b></div>
+            <div class="text-muted mt-1">Gợi ý điểm: giao hàng @(s.Deliveries == 0 ? "–" : (s.OnTimePct / 10).ToString("0.0")) · chất lượng @(s.QcChecked == 0 ? "–" : (s.QcPassPct / 10).ToString("0.0"))</div>
+        </div></div>
+    </div>
+    <div class="col-lg-7">
+        @if (can)
+        {
+            <div class="card mb-3"><div class="card-header">Chấm điểm đánh giá (0–10)</div><div class="card-body">
+                <form asp-action="Evaluate" method="post" class="row g-2">
+                    <input type="hidden" name="PartnerId" value="@Model.Id" />
+                    <div class="col-md-3"><label class="form-label small">Kỳ đánh giá</label><input name="Period" value="@DateTime.Today.ToString("MM/yyyy")" class="form-control form-control-sm" /></div>
+                    <div class="col-md-2"><label class="form-label small">Chất lượng (35%)</label><input name="Quality" type="number" step="0.1" min="0" max="10" value="@(s.QcChecked == 0 ? "" : (s.QcPassPct / 10).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture))" class="form-control form-control-sm" required /></div>
+                    <div class="col-md-2"><label class="form-label small">Giao hàng (30%)</label><input name="Delivery" type="number" step="0.1" min="0" max="10" value="@(s.Deliveries == 0 ? "" : (s.OnTimePct / 10).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture))" class="form-control form-control-sm" required /></div>
+                    <div class="col-md-2"><label class="form-label small">Giá cả (20%)</label><input name="Price" type="number" step="0.1" min="0" max="10" class="form-control form-control-sm" required /></div>
+                    <div class="col-md-3"><label class="form-label small">Dịch vụ (15%)</label><input name="Service" type="number" step="0.1" min="0" max="10" class="form-control form-control-sm" required /></div>
+                    <div class="col-12"><input name="Note" class="form-control form-control-sm" placeholder="Nhận xét" /></div>
+                    <div class="col-12"><button class="btn btn-sm btn-primary">Ghi nhận đánh giá</button></div>
+                </form></div></div>
+        }
+        <div class="card mb-3"><div class="card-header">Lịch sử đánh giá</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off">
+            <thead><tr><th>Ngày</th><th>Kỳ</th><th class="num">Chất lượng</th><th class="num">Giao hàng</th><th class="num">Giá</th><th class="num">Dịch vụ</th><th class="num">Tổng</th><th>Hạng</th><th>Người đánh giá</th><th>Nhận xét</th></tr></thead><tbody>
+            @foreach (var e in evals) { <tr><td>@e.Date.ToDate()</td><td>@e.Period</td><td class="num">@e.Quality</td><td class="num">@e.Delivery</td><td class="num">@e.Price</td><td class="num">@e.Service</td><td class="num fw-bold">@e.Total.ToString("0.0")</td><td>@e.Grade</td><td class="small">@e.EvaluatedBy</td><td class="small">@e.Note</td></tr> }
+            @if (!evals.Any()) { <tr><td colspan="10" class="text-center text-muted">Chưa đánh giá lần nào.</td></tr> }
+        </tbody></table></div></div>
+        <div class="card"><div class="card-header">Đơn mua gần đây</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+            @foreach (var o in orders) { <tr><td><a asp-controller="PurchaseOrders" asp-action="Details" asp-route-id="@o.Id">@o.Number</a></td><td>@o.Date.ToDate()</td><td>@o.Status.GetDisplayName()</td><td class="num">@o.Total.ToMoney()</td></tr> }
+        </tbody></table></div></div>
+    </div>
+</div>

@@ -26,6 +26,7 @@ public class ApprovalsController : ErpControllerBase
         ApprovalDocType.SalesOrder => url.Action("Details", "SalesOrders", new { id }),
         ApprovalDocType.JournalEntry => url.Action("Details", "Journals", new { id }),
         ApprovalDocType.Payroll => url.Action("Details", "Payroll", new { id }),
+        ApprovalDocType.PurchaseRequisition => url.Action("Details", "Requisitions", new { id }),
         _ => null
     };
 
@@ -52,6 +53,13 @@ public class ApprovalsController : ErpControllerBase
             case ApprovalDocType.PurchaseOrder:
                 var po = await Db.PurchaseOrders.Include(p => p.Lines).ThenInclude(l => l.Item).FirstAsync(p => p.Id == req.DocId);
                 msg = await _purchase.ApproveAsync(po, approve, comment);
+                break;
+            case ApprovalDocType.PurchaseRequisition:
+                var pr = await Db.PurchaseRequisitions.FirstAsync(p => p.Id == req.DocId);
+                var prSt = await _wf.ActAsync(req, approve, comment);
+                if (prSt == ApprovalStatus.Approved) pr.Status = RequestStatus.Approved; else if (prSt == ApprovalStatus.Rejected) pr.Status = RequestStatus.Draft;
+                await Db.SaveChangesAsync();
+                msg = prSt == ApprovalStatus.Pending ? $"Đã duyệt cấp của bạn – {WorkflowService.Describe(req)}." : prSt == ApprovalStatus.Rejected ? $"Đã từ chối đề nghị {req.DocNumber}, trở về nháp." : $"Đề nghị {req.DocNumber} đã được duyệt hoàn tất.";
                 break;
             default:
                 var st = await _wf.ActAsync(req, approve, comment);

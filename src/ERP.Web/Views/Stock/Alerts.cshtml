@@ -1,0 +1,20 @@
+@model List<StockAlert>
+@{ ViewData["Title"] = "Cảnh báo tồn kho"; bool buy = ViewBag.CanBuy; }
+@functions {
+    static string Badge(string k) => k switch { "min" => "bg-warning text-dark", "max" => "bg-info text-dark", "expiring" => "bg-warning text-dark", _ => "bg-danger" };
+    static string Name(string k) => k switch { "min" => "Thiếu hàng", "max" => "Vượt tồn tối đa", "expiring" => "Sắp hết hạn", _ => "Đã hết hạn" };
+}
+<div class="toolbar">
+    @foreach (var g in Model.GroupBy(a => a.Kind)) { <span class="badge @Badge(g.Key)">@Name(g.Key): @g.Count()</span> }
+    <span class="ms-auto"></span>
+    @if (buy) { <a class="btn btn-sm btn-outline-primary" asp-controller="Requisitions" asp-action="Index"><i class="bi bi-card-checklist"></i> Đề nghị mua hàng (tạo từ tồn tối thiểu)</a> }
+    <a class="btn btn-sm btn-light" asp-action="Aging"><i class="bi bi-hourglass-split"></i> Tuổi hàng tồn</a>
+</div>
+<div class="card"><div class="card-body p-0"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Cảnh báo</th><th>Hàng hóa</th><th>Kho</th><th class="num">Số lượng</th><th>Chi tiết</th></tr></thead><tbody>
+    @foreach (var a in Model.OrderBy(a => a.Kind == "expired" ? 0 : a.Kind == "expiring" ? 1 : a.Kind == "min" ? 2 : 3).ThenBy(a => a.Item.Code))
+    {
+        <tr><td><span class="badge @Badge(a.Kind)">@Name(a.Kind)</span></td><td><a asp-controller="Inventory" asp-action="StockCard" asp-route-itemId="@a.Item.Id">@a.Item.Code</a> – @a.Item.Name</td><td class="small">@a.Warehouse?.Name</td><td class="num">@a.Qty.ToQty()</td><td class="small">@a.Message</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="5" class="text-center text-success py-3">Không có cảnh báo: tồn kho trong mức cho phép, không có lô sắp hết hạn.</td></tr> }
+</tbody></table></div></div>

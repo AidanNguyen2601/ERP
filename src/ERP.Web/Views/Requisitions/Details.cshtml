@@ -1,0 +1,52 @@
+@model PurchaseRequisition
+@{
+    ViewData["Title"] = $"Đề nghị mua {Model.Number}";
+    var ap = ViewBag.Approval as ApprovalRequest; bool w = ViewBag.CanWrite, buy = ViewBag.CanBuy;
+    var rfqs = (List<Rfq>)ViewBag.Rfqs; var orders = (List<PurchaseOrder>)ViewBag.Orders;
+    var open = Model.Lines.Where(l => l.Quantity > l.OrderedQty).ToList();
+}
+<div class="toolbar">
+    <span class="badge @(Model.Status == RequestStatus.Approved ? "bg-success" : Model.Status == RequestStatus.PendingApproval ? "bg-warning text-dark" : "bg-secondary")">@Model.Status.GetDisplayName()</span>
+    <span class="small text-muted">@Model.Department · @Model.Requester?.FullName · nguồn: @Model.Source · cần trước @Model.RequiredDate.ToDate()</span>
+    @if (ap != null) { <a class="small" asp-controller="Approvals" asp-action="Index">Phê duyệt: @ap.Status.GetDisplayName() – @WorkflowService.Describe(ap)</a> }
+    <span class="ms-auto"></span>
+    @if (w && Model.Status == RequestStatus.Draft)
+    {
+        <a class="btn btn-sm btn-light" asp-action="Edit" asp-route-id="@Model.Id">Sửa</a>
+        <form asp-action="Submit" asp-route-id="@Model.Id" method="post" class="d-inline"><button class="btn btn-sm btn-primary">Gửi duyệt</button></form>
+    }
+    @if (w && (Model.Status == RequestStatus.Draft || Model.Status == RequestStatus.Approved || Model.Status == RequestStatus.PendingApproval))
+    {
+        <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="d-inline" data-confirm="Hủy đề nghị?"><button class="btn btn-sm btn-outline-danger">Hủy</button></form>
+    }
+</div>
+@if (!string.IsNullOrEmpty(Model.Purpose)) { <div class="alert alert-light border small">@Model.Purpose</div> }
+<div class="card mb-3"><div class="card-body p-0"><table class="table table-sm mb-0">
+    <thead><tr><th>Hàng hóa</th><th class="num">Số lượng</th><th class="num">Đã đặt</th><th class="num">Còn lại</th><th class="num">Đơn giá dự kiến</th><th class="num">Thành tiền</th><th>Ghi chú</th></tr></thead><tbody>
+    @foreach (var l in Model.Lines) { <tr><td>@l.Item?.Code – @l.Item?.Name</td><td class="num">@l.Quantity.ToQty() @l.Item?.Unit</td><td class="num">@l.OrderedQty.ToQty()</td><td class="num">@((l.Quantity - l.OrderedQty).ToQty())</td><td class="num">@l.EstimatedPrice.ToMoney()</td><td class="num">@((l.Quantity * l.EstimatedPrice).ToMoney())</td><td class="small">@l.Note</td></tr> }
+</tbody><tfoot><tr class="fw-bold"><td colspan="5">Cộng</td><td class="num">@Model.Estimated.ToMoney()</td><td></td></tr></tfoot></table></div></div>
+@if (buy && Model.Status == RequestStatus.Approved && open.Any())
+{
+    <div class="row g-3">
+        <div class="col-lg-6"><div class="card"><div class="card-header">Đặt hàng trực tiếp</div><div class="card-body">
+            <form asp-action="ToPo" asp-route-id="@Model.Id" method="post" class="row g-2">
+                <div class="col-md-6"><select name="vendorId" asp-items="ViewBag.Vendors" class="form-select form-select-sm" required><option value="">-- Nhà cung cấp --</option></select></div>
+                <div class="col-md-6"><select name="warehouseId" asp-items="ViewBag.Whs" class="form-select form-select-sm" required></select></div>
+                <div class="col-12 small">@foreach (var l in open) { <div class="form-check"><input class="form-check-input" type="checkbox" name="lineId" value="@l.Id" checked id="l@(l.Id)" /><label class="form-check-label" for="l@(l.Id)">@l.Item?.Name – @((l.Quantity - l.OrderedQty).ToQty())</label></div> }</div>
+                <div class="col-12"><button class="btn btn-sm btn-primary">Tạo đơn mua nháp</button></div>
+            </form></div></div></div>
+        <div class="col-lg-6"><div class="card"><div class="card-header">Yêu cầu báo giá nhiều nhà cung cấp</div><div class="card-body">
+            <form asp-action="ToRfq" asp-route-id="@Model.Id" method="post">
+                <select name="vendorIds" asp-items="ViewBag.Vendors" class="form-select form-select-sm mb-2" multiple size="5"></select>
+                <div class="small text-muted mb-2">Giữ Ctrl để chọn nhiều nhà cung cấp.</div>
+                <button class="btn btn-sm btn-primary">Gửi yêu cầu báo giá (RFQ)</button>
+            </form></div></div></div>
+    </div>
+}
+@if (rfqs.Any() || orders.Any())
+{
+    <div class="mt-3 small">
+        @foreach (var r in rfqs) { <div>RFQ: <a asp-controller="Rfq" asp-action="Details" asp-route-id="@r.Id">@r.Number</a> – @r.Status.GetDisplayName()</div> }
+        @foreach (var o in orders) { <div>Đơn mua: <a asp-controller="PurchaseOrders" asp-action="Details" asp-route-id="@o.Id">@o.Number</a> – @o.Status.GetDisplayName()</div> }
+    </div>
+}

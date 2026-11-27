@@ -54,6 +54,11 @@ public class LineInput
     public int? PartnerId { get; set; }
     public decimal Debit { get; set; }
     public decimal Credit { get; set; }
+    public string? LotNo { get; set; }
+    public string? Unit { get; set; }
+    public DateTime? ExpiryDate { get; set; }
+    public int? BinId { get; set; }
+    public int? ToBinId { get; set; }
 }
 
 /// <summary>Cấu hình bảng dòng hàng (_ItemLines)</summary>
@@ -67,6 +72,11 @@ public class LineEditorOptions
     public bool ShowScrap { get; set; }
     public bool ShowAccount { get; set; }
     public bool AllowFreeText { get; set; }
+    public bool ShowLot { get; set; }
+    public bool ShowUnit { get; set; }
+    public Dictionary<int, List<(string Unit, decimal Factor)>> Uoms { get; set; } = new();
+    public bool ShowToBin { get; set; }
+    public List<BinLocation> Bins { get; set; } = new();
     public string QtyLabel { get; set; } = "Số lượng";
     public string PriceLabel { get; set; } = "Đơn giá";
     public List<Item> Items { get; set; } = new();
@@ -83,6 +93,7 @@ public class OrderForm
     [DataType(DataType.Date)][Display(Name = "Ngày giao")] public DateTime DeliveryDate { get; set; } = DateTime.Today.AddDays(5);
     [StringLength(500)][Display(Name = "Ghi chú")] public string? Note { get; set; }
     [Display(Name = "Hợp đồng")] public int? ContractId { get; set; }
+    [Display(Name = "Nhân viên kinh doanh")] public int? SalespersonId { get; set; }
     public string? Number { get; set; }
     public List<LineInput> Lines { get; set; } = new();
 }
@@ -93,6 +104,7 @@ public class InvoiceForm
     [Display(Name = "Loại tiền")] public string CurrencyCode { get; set; } = "VND";
     [Display(Name = "Tỷ giá")] public decimal ExchangeRate { get; set; } = 1;
     [Display(Name = "Hợp đồng")] public int? ContractId { get; set; }
+    [Display(Name = "Nhân viên kinh doanh")] public int? SalespersonId { get; set; }
     public InvoiceDirection Direction { get; set; } = InvoiceDirection.Sales;
     [DataType(DataType.Date)][Display(Name = "Ngày hóa đơn")] public DateTime Date { get; set; } = DateTime.Today;
     [DataType(DataType.Date)][Display(Name = "Hạn thanh toán")] public DateTime DueDate { get; set; } = DateTime.Today.AddDays(30);

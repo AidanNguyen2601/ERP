@@ -28,6 +28,7 @@
             { <partial name="_QcButton" model="@(new QcLink("soId", Model.Id, Model.Number, Model.Lines.Where(l => l.Item?.IsStocked == true).Select(l => (l.ItemId, $"{l.Item?.Code} – {l.Item?.Name} × {l.Quantity.ToQty()}")).ToList()))" /> }
             @if (canEdit && Model.Status == SoStatus.Draft) { <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id">Sửa</a> }
             @if ((canEdit || canOv) && Model.Status == SoStatus.Draft) { <form asp-action="Confirm" asp-route-id="@Model.Id" method="post"><button class="btn btn-sm btn-primary">Xác nhận đơn</button></form> }
+            @if (canEdit && Model.Status == SoStatus.Draft) { <form asp-action="ApplyPrices" asp-route-id="@Model.Id" method="post"><button class="btn btn-sm btn-outline-secondary" title="Áp dụng bảng giá, chiết khấu, khuyến mại"><i class="bi bi-tags"></i> Áp dụng bảng giá</button></form> }
             @if (canDel && Model.Status is SoStatus.Confirmed or SoStatus.PartiallyDelivered) { <a class="btn btn-sm btn-primary" asp-action="Deliver" asp-route-id="@Model.Id">Giao hàng / xuất kho</a> }
             @if (canAcc && toBill > 0) { <form asp-action="CreateInvoice" asp-route-id="@Model.Id" method="post"><input type="hidden" name="issue" value="true" /><button class="btn btn-sm btn-success">Xuất hóa đơn</button></form> }
             @if (canEdit && Model.Status is SoStatus.Draft or SoStatus.Confirmed && Model.Lines.All(l => l.DeliveredQty == 0)) { <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" data-confirm="Hủy đơn bán?"><button class="btn btn-sm btn-outline-danger">Hủy đơn</button></form> }
@@ -62,3 +63,10 @@
         @if (!invs.Any()) { <tr><td class="text-muted text-center py-3">Chưa xuất hóa đơn.</td></tr> }
     </tbody></table></div></div></div>
 </div>
+@{ var ships = (List<Shipment>)ViewBag.Shipments; }
+@if (ships.Any())
+{
+    <div class="card mt-3"><div class="card-header">Vận chuyển</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+        @foreach (var s in ships) { <tr><td><a asp-controller="Shipments" asp-action="Index">@s.Number</a></td><td>@s.InventoryDoc?.Number</td><td class="small">@s.Carrier @s.VehicleNo @s.TrackingNo</td><td><span class="badge @(s.Status == ShipmentStatus.Delivered ? "bg-success" : s.Status == ShipmentStatus.InTransit ? "bg-primary" : "bg-secondary")">@s.Status.GetDisplayName()</span></td><td class="small">@s.DeliveredAt?.ToString("dd/MM/yyyy HH:mm")</td><td><a asp-controller="Shipments" asp-action="Note" asp-route-docId="@s.InventoryDocId" target="_blank"><i class="bi bi-printer"></i></a></td></tr> }
+    </tbody></table></div></div>
+}

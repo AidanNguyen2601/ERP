@@ -78,6 +78,8 @@ public class PartnersController : ErpControllerBase
             p.Code = model.Code; p.Name = model.Name; p.TaxCode = model.TaxCode; p.Address = model.Address; p.Phone = model.Phone; p.Email = model.Email;
             p.ContactPerson = model.ContactPerson; p.IsCustomer = model.IsCustomer; p.IsVendor = model.IsVendor; p.PaymentTermDays = model.PaymentTermDays; p.IsActive = model.IsActive;
             p.BankAccountNo = model.BankAccountNo; p.BankName = model.BankName;
+            p.PartnerGroup = model.PartnerGroup; p.BusinessLicenseNo = model.BusinessLicenseNo; p.LegalRepresentative = model.LegalRepresentative; p.PaymentCondition = model.PaymentCondition;
+            if (User.InAny(AppRoles.Accounting + "," + AppRoles.Director)) { p.Grade = model.Grade; p.IsBlocked = model.IsBlocked; p.BlockReason = model.IsBlocked ? model.BlockReason : null; }
             // Hạn mức công nợ và khai báo công ty trong tập đoàn chỉ Kế toán / Admin được đổi
             if (User.InAny(AppRoles.Accounting)) { p.CreditLimit = model.CreditLimit; p.GroupCompanyId = model.GroupCompanyId; }
         }

@@ -1,0 +1,21 @@
+@model List<Stocktake>
+@{ ViewData["Title"] = "Kiểm kê kho theo đợt"; bool can = ViewBag.CanWrite; }
+@if (can)
+{
+    <div class="card mb-3"><div class="card-body"><form asp-action="CreateStocktake" method="post" class="row g-2 align-items-end">
+        <div class="col-md-3"><label class="form-label small">Kho</label><select name="warehouseId" asp-items="ViewBag.Whs" class="form-select form-select-sm"></select></div>
+        <div class="col-md-2"><label class="form-label small">Ngày kiểm kê</label><input type="date" name="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+        <div class="col-md-3"><label class="form-label small">Nhóm hàng (tùy chọn)</label><select name="groupId" asp-items="ViewBag.Groups" class="form-select form-select-sm"><option value="">Toàn bộ hàng trong kho</option></select></div>
+        <div class="col-md-3"><label class="form-label small">Ghi chú</label><input name="note" class="form-control form-control-sm" /></div>
+        <div class="col-md-1"><button class="btn btn-sm btn-primary w-100">Lập đợt</button></div>
+    </form><div class="small text-muted mt-1">Hệ thống chụp tồn sổ sách; in phiếu kiểm đếm, nhập số thực tế, xem chênh lệch rồi xử lý (thừa: Nợ 15x / Có 3381; thiếu: Nợ 1381 / Có 15x).</div></div></div>
+}
+<div class="card"><div class="card-body p-0"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Số</th><th>Ngày</th><th>Kho</th><th class="num">Số mặt hàng</th><th class="num">Đã đếm</th><th class="num">Dòng lệch</th><th>Ghi chú</th><th>Trạng thái</th></tr></thead><tbody>
+    @foreach (var s in Model)
+    {
+        <tr><td><a asp-action="Stocktake" asp-route-id="@s.Id"><b>@s.Number</b></a></td><td>@s.Date.ToDate()</td><td>@s.Warehouse?.Name</td><td class="num">@s.Lines.Count</td><td class="num">@s.Lines.Count(l => l.CountedQty != null)</td><td class="num">@s.Lines.Count(l => l.CountedQty != null && l.CountedQty != l.BookQty)</td><td class="small">@s.Note</td>
+            <td><span class="badge @(s.Status == StocktakeStatus.Posted ? "bg-success" : s.Status == StocktakeStatus.Counting ? "bg-warning text-dark" : "bg-secondary")">@s.Status.GetDisplayName()</span></td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="8" class="text-center text-muted py-3">Chưa có đợt kiểm kê.</td></tr> }
+</tbody></table></div></div>

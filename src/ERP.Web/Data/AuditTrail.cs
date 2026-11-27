@@ -13,6 +13,8 @@ public static class AuditTrail
     /// <summary>Kiểu được ghi vết → tên hiển thị</summary>
     private static readonly Dictionary<Type, string> Tracked = new()
     {
+        [typeof(PurchaseRequisition)] = "Đề nghị mua", [typeof(Rfq)] = "Yêu cầu báo giá", [typeof(SupplierEvaluation)] = "Đánh giá NCC", [typeof(LandedCost)] = "Chi phí mua hàng", [typeof(PriceList)] = "Bảng giá", [typeof(Promotion)] = "Khuyến mại",
+        [typeof(SalesQuote)] = "Báo giá bán", [typeof(Shipment)] = "Vận chuyển", [typeof(Stocktake)] = "Đợt kiểm kê", [typeof(ItemGroup)] = "Nhóm hàng", [typeof(Pallet)] = "Pallet", [typeof(BinLocation)] = "Vị trí kho", [typeof(CommissionTier)] = "Bậc hoa hồng", [typeof(ContractMilestone)] = "Đợt hợp đồng",
         [typeof(AppUser)] = "Người dùng", [typeof(Partner)] = "Đối tác", [typeof(Item)] = "Hàng hóa", [typeof(Account)] = "Tài khoản", [typeof(Warehouse)] = "Kho",
         [typeof(Employee)] = "Nhân viên", [typeof(Company)] = "Công ty", [typeof(Branch)] = "Chi nhánh", [typeof(CashAccount)] = "Quỹ / ngân hàng",
         [typeof(PurchaseOrder)] = "Đơn mua", [typeof(SalesOrder)] = "Đơn bán", [typeof(Invoice)] = "Hóa đơn", [typeof(CashVoucher)] = "Phiếu thu / chi",

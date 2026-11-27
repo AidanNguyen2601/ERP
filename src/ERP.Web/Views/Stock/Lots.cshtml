@@ -1,0 +1,21 @@
+@model List<StockLot>
+@{ ViewData["Title"] = "Tồn kho theo lô / serial"; bool all = ViewBag.All; }
+<form class="toolbar" method="get">
+    <input name="q" value="@ViewBag.Q" class="form-control form-control-sm" style="max-width:240px" placeholder="Số lô / serial, mã hàng" />
+    <select name="warehouseId" asp-items="ViewBag.Whs" class="form-select form-select-sm" style="width:auto"><option value="">Mọi kho</option></select>
+    <div class="form-check"><input type="hidden" name="all" value="false" /><input class="form-check-input" type="checkbox" name="all" value="true" id="al" checked="@all" /><label class="form-check-label small" for="al">Gồm lô đã hết</label></div>
+    <button class="btn btn-sm btn-outline-primary">Tìm</button>
+    <a class="btn btn-sm btn-light ms-auto" asp-action="Trace"><i class="bi bi-diagram-2"></i> Truy xuất nguồn gốc</a>
+    <a class="btn btn-sm btn-light" asp-action="Labels" asp-route-kind="lot"><i class="bi bi-upc"></i> In tem lô</a>
+</form>
+<div class="card"><div class="card-body p-0"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Hàng hóa</th><th>Kho</th><th>Số lô / serial</th><th>Ngày nhập</th><th>Sản xuất</th><th>Hạn dùng</th><th class="num">Còn lại</th><th class="num">Giá vốn</th><th>Chứng từ nhập</th><th></th></tr></thead><tbody>
+    @foreach (var l in Model)
+    {
+        var days = l.ExpiryDate == null ? (int?)null : (l.ExpiryDate.Value.Date - DateTime.Today).Days;
+        <tr class="@(l.Quantity <= 0 ? "text-muted" : days < 0 ? "table-danger" : days <= l.Item!.ExpiryAlertDays ? "table-warning" : "")"><td>@l.Item?.Code – @l.Item?.Name</td><td class="small">@l.Warehouse?.Name</td><td><b>@l.LotNo</b></td><td>@l.ReceivedDate.ToDate()</td><td>@l.MfgDate.ToDate()</td>
+            <td>@l.ExpiryDate.ToDate() @(days != null ? (days < 0 ? $"(quá {-days} ngày)" : $"(còn {days} ngày)") : "")</td><td class="num">@l.Quantity.ToQty()</td><td class="num">@l.UnitCost.ToMoney()</td><td class="small">@l.SourceDoc</td>
+            <td><a asp-action="Trace" asp-route-lot="@l.LotNo" asp-route-itemId="@l.ItemId" title="Truy xuất"><i class="bi bi-diagram-2"></i></a></td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="10" class="text-center text-muted py-3">Chưa có lô / serial. Bật theo dõi lô trên hồ sơ hàng hóa; mỗi lần nhập kho tạo lô (không nhập số lô thì lấy theo số phiếu).</td></tr> }
+</tbody></table></div></div>

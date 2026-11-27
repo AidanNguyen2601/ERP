@@ -151,7 +151,7 @@ public partial class Partner
 // =====================================================================
 //  KHO
 // =====================================================================
-public class Item
+public partial class Item
 {
     public int Id { get; set; }
     [Required(ErrorMessage = "Nhập mã"), StringLength(30)][Display(Name = "Mã hàng")] public string Code { get; set; } = string.Empty;
@@ -234,7 +234,7 @@ public partial class InventoryDoc
     [NotMapped] public decimal TotalAmount => Lines.Sum(l => l.Amount);
 }
 
-public class InventoryDocLine
+public partial class InventoryDocLine
 {
     public int Id { get; set; }
     public int InventoryDocId { get; set; }

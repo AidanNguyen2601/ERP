@@ -12,6 +12,16 @@
 @for (var i = 0; i < steps.Length; i++) { if (i > 0) { <span class="arrow">›</span> } <span class="step @(Model.Status == PoStatus.Cancelled ? "" : i < cur ? "done" : i == cur ? "current" : "")">@steps[i].GetDisplayName()</span> }
 @if (Model.Status == PoStatus.Cancelled) { <span class="badge bg-dark ms-2">Đã hủy</span> }
 </div>
+@{ var ordQ = Model.Lines.Sum(l => l.Quantity); var recQ = Model.Lines.Sum(l => Math.Min(l.ReceivedQty, l.Quantity)); var recPct = ordQ == 0 ? 0 : Math.Round(recQ * 100 / ordQ, 0); }
+@if (Model.Status is PoStatus.Approved or PoStatus.PartiallyReceived or PoStatus.Received or PoStatus.Completed || Model.RequisitionId != null || Model.RfqId != null)
+{
+    <div class="d-flex flex-wrap gap-3 align-items-center small mb-2">
+        @if (Model.Status is PoStatus.Approved or PoStatus.PartiallyReceived or PoStatus.Received or PoStatus.Completed) { <span>Tiến độ giao hàng:</span><div class="progress" style="width:180px;height:14px"><div class="progress-bar @(recPct >= 100 ? "bg-success" : "bg-info")" style="width:@(recPct)%">@recPct%</div></div>@if (Model.ExpectedDate < DateTime.Today && recPct < 100) { <span class="text-danger">Quá hạn giao @((DateTime.Today - Model.ExpectedDate).Days) ngày</span> } }
+        @if (Model.RequisitionId != null) { <a asp-controller="Requisitions" asp-action="Details" asp-route-id="@Model.RequisitionId">Đề nghị mua gốc</a> }
+        @if (Model.RfqId != null) { <a asp-controller="Rfq" asp-action="Details" asp-route-id="@Model.RfqId">Yêu cầu báo giá gốc</a> }
+        @if (canAcc && Model.Status is PoStatus.PartiallyReceived or PoStatus.Received or PoStatus.Completed) { <a asp-controller="Procurement" asp-action="LandedCosts">Chi phí mua hàng</a> <a asp-controller="Procurement" asp-action="Match" asp-route-vendorId="@Model.VendorId">Đối chiếu 3 bên</a> }
+    </div>
+}
 <div class="card mb-3"><div class="card-body">
     <div class="doc-head">
         <div><div class="fs-5 fw-semibold">@Model.Number <partial name="_Badge" model="Model.Status" /></div>

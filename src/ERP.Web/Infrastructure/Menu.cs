@@ -98,11 +98,30 @@ public static class Menu
             new() { Key = "stock-docs", Title = "Phiếu nhập / xuất kho", Icon = "bi-arrow-left-right", Controller = "Inventory", Action = "Docs",
                     Active = m => m.Is("Inventory") && m.Action is not ("Index" or "StockCard" or "Warehouses") },
             new() { Key = "scale", Title = "Phiếu cân điện tử", Icon = "bi-speedometer", Controller = "Scale", Active = m => m.Is("Scale") },
+            new() { Key = "stock-alerts", Title = "Cảnh báo tồn kho", Icon = "bi-exclamation-triangle", Controller = "Stock", Action = "Alerts", Active = m => m.Is("Stock", "Alerts") },
+            new() { Key = "stock-lots", Title = "Lô, serial & hạn dùng", Icon = "bi-upc-scan", Controller = "Stock", Action = "Lots", Active = m => m.Is("Stock") && m.Action is "Lots" or "Trace" },
+            new() { Key = "stock-bins", Title = "Vị trí lưu kho", Icon = "bi-grid-3x2-gap", Controller = "Stock", Action = "Bins", Active = m => m.Is("Stock", "Bins") },
+            new() { Key = "stock-pallets", Title = "Pallet", Icon = "bi-box-seam", Controller = "Stock", Action = "Pallets", Active = m => m.Is("Stock", "Pallets") },
+            new() { Key = "stocktake", Title = "Kiểm kê kho", Icon = "bi-clipboard-check", Controller = "Stock", Action = "Stocktakes", Active = m => m.Is("Stock") && m.Action is "Stocktakes" or "Stocktake" },
+            new() { Key = "stock-aging", Title = "Tuổi hàng tồn", Icon = "bi-hourglass-split", Controller = "Stock", Action = "Aging", Active = m => m.Is("Stock", "Aging") },
+            new() { Key = "stock-labels", Title = "In tem mã vạch", Icon = "bi-upc", Controller = "Stock", Action = "Labels", Active = m => m.Is("Stock") && m.Action is "Labels" or "PrintLabels" },
         }},
-        new() { Key = "trade", Title = "Mua hàng · Bán hàng", Icon = "bi-cart3", Tint = "#fff1f2", Items = new MenuItem[]
+        new() { Key = "purchase", Title = "Mua hàng", Icon = "bi-cart3", Tint = "#fff1f2", Items = new MenuItem[]
         {
+            new() { Key = "pr", Title = "Đề nghị mua hàng", Icon = "bi-card-checklist", Controller = "Requisitions", Active = m => m.Is("Requisitions") },
+            new() { Key = "rfq", Title = "Yêu cầu báo giá (RFQ)", Icon = "bi-envelope-paper", Controller = "Rfq", Visible = u => u.InAny(AppRoles.PurchaseTeam + "," + AppRoles.Accountant + "," + AppRoles.Director), Active = m => m.Is("Rfq") },
             new() { Key = "po", Title = "Đơn mua hàng", Icon = "bi-cart-plus", Controller = "PurchaseOrders", Active = m => m.Is("PurchaseOrders") },
+            new() { Key = "suppliers", Title = "Đánh giá nhà cung cấp", Icon = "bi-award", Controller = "Suppliers", Visible = u => u.InAny(AppRoles.PurchaseTeam + "," + AppRoles.Accountant + "," + AppRoles.Director + "," + AppRoles.Quality), Active = m => m.Is("Suppliers") },
+            new() { Key = "match3", Title = "Đối chiếu 3 bên", Icon = "bi-check2-square", Controller = "Procurement", Action = "Match", Visible = u => u.InAny(AppRoles.PurchaseTeam + "," + AppRoles.Accountant + "," + AppRoles.Director + "," + AppRoles.Warehouse), Active = m => m.Is("Procurement", "Match") },
+            new() { Key = "landed", Title = "Chi phí mua hàng", Icon = "bi-truck", Controller = "Procurement", Action = "LandedCosts", Visible = u => u.InAny(AppRoles.PurchaseTeam + "," + AppRoles.Accountant + "," + AppRoles.Director + "," + AppRoles.Warehouse), Active = m => m.Is("Procurement", "LandedCosts") },
+        }},
+        new() { Key = "sales", Title = "Bán hàng", Icon = "bi-bag-check", Tint = "#fdf4ff", Items = new MenuItem[]
+        {
+            new() { Key = "quotes", Title = "Báo giá bán hàng", Icon = "bi-file-earmark-text", Controller = "Quotes", Visible = u => u.InAny(AppRoles.SalesTeam + "," + AppRoles.Accountant + "," + AppRoles.Director), Active = m => m.Is("Quotes") },
             new() { Key = "so", Title = "Đơn bán hàng", Icon = "bi-bag-check", Controller = "SalesOrders", Active = m => m.Is("SalesOrders") },
+            new() { Key = "shipments", Title = "Giao hàng & vận chuyển", Icon = "bi-truck-flatbed", Controller = "Shipments", Visible = u => u.InAny(AppRoles.SalesTeam + "," + AppRoles.WarehouseTeam + "," + AppRoles.Accountant + "," + AppRoles.Director), Active = m => m.Is("Shipments") },
+            new() { Key = "pricing", Title = "Bảng giá & khuyến mại", Icon = "bi-currency-dollar", Controller = "Pricing", Visible = u => u.InAny(AppRoles.SalesTeam + "," + AppRoles.Accountant + "," + AppRoles.Director), Active = m => m.Is("Pricing") },
+            new() { Key = "commission", Title = "Hoa hồng & KPI bán hàng", Icon = "bi-graph-up", Controller = "Commission", Visible = u => u.InAny(AppRoles.SalesTeam + "," + AppRoles.Accountant + "," + AppRoles.Director), Active = m => m.Is("Commission") },
         }},
         new() { Key = "mfg", Title = "Sản xuất", Icon = "bi-gear-wide-connected", Tint = "#f8fafc", Items = new MenuItem[]
         {
@@ -135,7 +154,8 @@ public static class Menu
         }},
         new() { Key = "catalogs", Title = "Danh mục", Icon = "bi-collection", Tint = "#f5f3ff", Items = new MenuItem[]
         {
-            new() { Key = "items", Title = "Hàng hóa, vật tư", Icon = "bi-tags", Controller = "Items", Active = m => m.Is("Items") },
+            new() { Key = "items", Title = "Hàng hóa, vật tư", Icon = "bi-tags", Controller = "Items", Active = m => m.Is("Items") && m.Action != "Groups" },
+            new() { Key = "item-groups", Title = "Nhóm hàng", Icon = "bi-collection", Controller = "Items", Action = "Groups", Active = m => m.Is("Items", "Groups") },
             new() { Key = "customers", Title = "Khách hàng", Icon = "bi-person-badge", Controller = "Partners", Route = new { type = "customer" },
                     Active = m => m.Is("Partners") && (m.QIs("type", "customer") || m.Q("type") == "") },
             new() { Key = "vendors", Title = "Nhà cung cấp", Icon = "bi-truck", Controller = "Partners", Route = new { type = "vendor" }, Active = m => m.Is("Partners") && m.QIs("type", "vendor") },

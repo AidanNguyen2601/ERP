@@ -1,0 +1,39 @@
+@model List<Pallet>
+@{
+    ViewData["Title"] = "Pallet"; bool can = ViewBag.CanWrite; var bins = (List<BinLocation>)ViewBag.Bins; var items = (List<Item>)ViewBag.Items;
+}
+<div class="toolbar"><form method="get" class="d-inline-flex gap-2"><select name="warehouseId" asp-items="ViewBag.Whs" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()"><option value="">Mọi kho</option></select></form>
+    <a class="btn btn-sm btn-light" asp-action="Bins"><i class="bi bi-grid-3x2-gap"></i> Vị trí lưu kho</a>
+    <a class="btn btn-sm btn-light ms-auto" asp-action="Labels" asp-route-kind="pallet"><i class="bi bi-upc"></i> In tem pallet</a></div>
+@if (can)
+{
+    <div class="card mb-3"><div class="card-body"><form asp-action="CreatePallet" method="post" class="row g-2 align-items-end">
+        <div class="col-md-3"><label class="form-label small">Kho</label><select name="warehouseId" asp-items="ViewBag.Whs" class="form-select form-select-sm"></select></div>
+        <div class="col-md-2"><label class="form-label small">Mã pallet</label><input name="code" class="form-control form-control-sm" placeholder="Để trống: tự sinh" /></div>
+        <div class="col-md-3"><label class="form-label small">Đặt tại vị trí</label><select name="binId" class="form-select form-select-sm"><option value="">-- Chưa đặt --</option>@foreach (var b in bins) { <option value="@b.Id">@b.Code</option> }</select></div>
+        <div class="col-md-3"><label class="form-label small">Ghi chú</label><input name="note" class="form-control form-control-sm" /></div>
+        <div class="col-md-1"><button class="btn btn-sm btn-primary w-100">Tạo</button></div>
+    </form></div></div>
+}
+<div class="row g-3">
+@foreach (var p in Model)
+{
+    <div class="col-lg-6"><div class="card h-100"><div class="card-header d-flex justify-content-between"><span><b>@p.Code</b> <span class="small text-muted">@p.Warehouse?.Name · @(p.Bin?.Code ?? "chưa đặt vị trí")</span></span><span class="small">@p.Note</span></div>
+        <div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+            @foreach (var i in p.Items) { <tr><td>@i.Item?.Code – @i.Item?.Name</td><td class="small">@i.LotNo</td><td class="num">@i.Quantity.ToQty()</td><td>@if (can) { <form asp-action="RemovePalletItem" asp-route-id="@i.Id" method="post" data-confirm="Dỡ hàng khỏi pallet?"><button class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-x"></i></button></form> }</td></tr> }
+            @if (!p.Items.Any()) { <tr><td class="text-muted small text-center">Pallet trống.</td></tr> }
+        </tbody></table></div>
+        @if (can)
+        {
+            <div class="card-footer"><form asp-action="AddPalletItem" asp-route-id="@p.Id" method="post" class="row g-1">
+                <div class="col-5"><select name="itemId" class="form-select form-select-sm">@foreach (var i in items) { <option value="@i.Id">@i.Code – @i.Name</option> }</select></div>
+                <div class="col-2"><input name="qty" type="number" step="any" min="0" class="form-control form-control-sm" placeholder="SL" required /></div>
+                <div class="col-3"><input name="lotNo" class="form-control form-control-sm" placeholder="Lô (nếu có)" /></div>
+                <div class="col-2"><button class="btn btn-sm btn-primary w-100">Xếp</button></div></form>
+                <form asp-action="MovePallet" asp-route-id="@p.Id" method="post" class="d-flex gap-1 mt-1"><select name="toBinId" class="form-select form-select-sm">@foreach (var b in bins.Where(b => b.WarehouseId == p.WarehouseId)) { <option value="@b.Id">@b.Code</option> }</select><button class="btn btn-sm btn-light text-nowrap">Chuyển vị trí</button>
+                    @if (!p.Items.Any()) { <button formaction="@Url.Action("ClosePallet", new { id = p.Id })" class="btn btn-sm btn-outline-danger text-nowrap">Đóng pallet</button> }</form></div>
+        }
+    </div></div>
+}
+@if (!Model.Any()) { <div class="col-12 text-muted text-center py-3">Chưa có pallet.</div> }
+</div>

@@ -80,6 +80,7 @@ public class PurchaseOrdersController : ErpControllerBase
     {
         if (!CanEdit) return Denied();
         var lines = form.Lines.Where(l => l.ItemId != null).ToList();
+        await UomService.NormalizeAsync(Db, lines);
         if (!lines.Any()) ModelState.AddModelError("", "Nhập ít nhất một dòng hàng.");
         if (lines.Any(l => l.Quantity <= 0 || l.UnitPrice < 0)) ModelState.AddModelError("", "Số lượng phải > 0, đơn giá không âm.");
         if (lines.GroupBy(l => l.ItemId).Any(g => g.Count() > 1)) ModelState.AddModelError("", "Mỗi mặt hàng chỉ một dòng.");
@@ -133,11 +134,13 @@ public class PurchaseOrdersController : ErpControllerBase
     }
 
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> Receive(int id, DateTime date, Dictionary<int, decimal> qty)
+    public async Task<IActionResult> Receive(int id, DateTime date, Dictionary<int, decimal> qty, Dictionary<int, string?>? lot, Dictionary<int, DateTime?>? expiry)
     {
         if (!CanReceive) return Denied();
         var po = await LoadAsync(id) ?? throw new BusinessException("Không tìm thấy đơn.");
-        var doc = await _svc.ReceiveAsync(po, date, qty);
+        var lotInfo = new Dictionary<int, (string? Lot, DateTime? Expiry)>();
+        foreach (var l in po.Lines) { var ln = lot?.GetValueOrDefault(l.Id); var ex = expiry?.GetValueOrDefault(l.Id); if (!string.IsNullOrWhiteSpace(ln) || ex != null) lotInfo[l.ItemId] = (string.IsNullOrWhiteSpace(ln) ? null : ln.Trim(), ex); }
+        var doc = await _svc.ReceiveAsync(po, date, qty, lotInfo);
         Success($"Đã nhập kho phiếu {doc.Number} ({doc.TotalAmount.ToMoney()} đ) và ghi nhận công nợ phải trả {po.Vendor?.Name}.");
         return RedirectToAction(nameof(Details), new { id });
     }
@@ -169,7 +172,7 @@ public class PurchaseOrdersController : ErpControllerBase
         ViewBag.Partners = await VendorsAsync(f.PartnerId);
         ViewBag.Whs = await WarehousesAsync(f.WarehouseId);
         ViewBag.Contracts = await ContractsAsync(ContractType.Purchase, f.ContractId);
-        ViewBag.LineOptions = new LineEditorOptions { Items = await ItemsAsync(i => i.IsStocked && i.Type != ItemType.FinishedGood), PriceSource = "cost", Lines = f.Lines, PriceLabel = "Đơn giá mua" };
+        ViewBag.LineOptions = new LineEditorOptions { ShowUnit = true, Uoms = await UomService.LoadAsync(Db), Items = await ItemsAsync(i => i.IsStocked && i.Type != ItemType.FinishedGood), PriceSource = "cost", Lines = f.Lines, PriceLabel = "Đơn giá mua" };
         ViewBag.Threshold = _svc.ApprovalThreshold;
     }
 }

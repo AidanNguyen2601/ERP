@@ -1,0 +1,49 @@
+@model Rfq
+@{
+    ViewData["Title"] = $"Yêu cầu báo giá {Model.Number}";
+    bool buy = ViewBag.CanBuy; var po = ViewBag.Order as PurchaseOrder; var locked = Model.Status is RfqStatus.Awarded or RfqStatus.Cancelled;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    decimal Price(int lineId, int pid) => Model.Quotes.FirstOrDefault(q => q.RfqLineId == lineId && q.PartnerId == pid)?.UnitPrice ?? 0;
+    decimal Total(int pid) => Model.Lines.Sum(l => Price(l.Id, pid) * l.Quantity);
+    bool Complete(int pid) => Model.Lines.All(l => Price(l.Id, pid) > 0);
+    var totals = Model.Vendors.Where(v => Complete(v.PartnerId)).Select(v => Total(v.PartnerId)).ToList(); var best = totals.Any() ? totals.Min() : 0;
+}
+<div class="toolbar">
+    <span class="badge @(Model.Status == RfqStatus.Awarded ? "bg-success" : Model.Status == RfqStatus.Cancelled ? "bg-secondary" : "bg-warning text-dark")">@Model.Status.GetDisplayName()</span>
+    <span class="small text-muted">Hạn báo giá @Model.DueDate.ToDate() @(Model.PurchaseRequisition != null ? "· đề nghị " + Model.PurchaseRequisition.Number : "") @Model.Note</span>
+    @if (po != null) { <a class="btn btn-sm btn-light" asp-controller="PurchaseOrders" asp-action="Details" asp-route-id="@po.Id">Đơn mua @po.Number</a> }
+    @if (Model.PurchaseRequisition != null) { <a class="btn btn-sm btn-light" asp-controller="Requisitions" asp-action="Details" asp-route-id="@Model.PurchaseRequisitionId">Đề nghị mua</a> }
+</div>
+<form asp-action="SaveQuotes" asp-route-id="@Model.Id" method="post">
+<div class="card mb-3"><div class="card-header">So sánh báo giá (đơn giá chưa thuế)</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm align-middle mb-0" data-grid="off">
+    <thead><tr><th>Hàng hóa</th><th class="num">Số lượng</th>@foreach (var v in Model.Vendors) { <th class="text-center" style="min-width:150px">@v.Partner?.Name @(v.Partner?.Grade != null ? "[" + v.Partner.Grade + "]" : "")</th> }</tr></thead>
+    <tbody>
+    @foreach (var l in Model.Lines)
+    {
+        var prices = Model.Vendors.Select(v => Price(l.Id, v.PartnerId)).Where(p => p > 0).ToList(); var min = prices.Any() ? prices.Min() : 0;
+        <tr><td>@l.Item?.Code – @l.Item?.Name</td><td class="num">@l.Quantity.ToQty() @l.Item?.Unit</td>
+        @foreach (var v in Model.Vendors)
+        {
+            var p = Price(l.Id, v.PartnerId);
+            <td class="@(p > 0 && p == min && prices.Count > 1 ? "table-success" : "")"><input type="number" step="any" min="0" name="price_@(l.Id)_@(v.PartnerId)" value="@(p > 0 ? p.ToString("0.##", inv) : "")" class="form-control form-control-sm text-end" disabled="@(locked || !buy)" /></td>
+        }</tr>
+    }
+    <tr class="fw-bold"><td colspan="2">Tổng giá trị (chưa thuế)</td>@foreach (var v in Model.Vendors) { <td class="text-end @(Complete(v.PartnerId) && Total(v.PartnerId) == best && totals.Count > 1 ? "table-success" : "")">@(Complete(v.PartnerId) ? Total(v.PartnerId).ToMoney() : "Chưa đủ báo giá")</td> }</tr>
+    <tr><td colspan="2" class="small">Số ngày giao hàng</td>@foreach (var v in Model.Vendors) { <td><input type="number" min="0" name="lead_@(v.PartnerId)" value="@v.LeadDays" class="form-control form-control-sm text-end" disabled="@(locked || !buy)" /></td> }</tr>
+    <tr><td colspan="2" class="small">Điều kiện thanh toán / giao hàng</td>@foreach (var v in Model.Vendors) { <td><input name="terms_@(v.PartnerId)" value="@v.Terms" class="form-control form-control-sm" disabled="@(locked || !buy)" /></td> }</tr>
+    </tbody>
+</table></div></div></div>
+@if (!locked && buy) { <button class="btn btn-primary mb-3">Lưu báo giá</button> }
+</form>
+@if (!locked && buy)
+{
+    <div class="card"><div class="card-header">Chọn nhà cung cấp trúng thầu</div><div class="card-body">
+        <form asp-action="Award" asp-route-id="@Model.Id" method="post" class="row g-2 align-items-end" data-confirm="Chọn nhà cung cấp này và tạo đơn mua nháp?">
+            <div class="col-md-4"><label class="form-label small">Nhà cung cấp</label><select name="vendorId" class="form-select form-select-sm">@foreach (var v in Model.Vendors.Where(v => Complete(v.PartnerId))) { <option value="@v.PartnerId">@v.Partner?.Name – @Total(v.PartnerId).ToMoney()</option> }</select></div>
+            <div class="col-md-3"><label class="form-label small">Kho nhận hàng</label><select name="warehouseId" asp-items="ViewBag.Whs" class="form-select form-select-sm"></select></div>
+            <div class="col-md-3"><button class="btn btn-sm btn-success">Chọn & tạo đơn mua</button></div>
+        </form>
+        <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="mt-2" data-confirm="Hủy RFQ?"><button class="btn btn-sm btn-outline-danger">Hủy RFQ</button></form>
+    </div></div>
+}
+else if (Model.AwardedPartner != null) { <div class="alert alert-success small">Đã chọn nhà cung cấp: <b>@Model.AwardedPartner.Name</b></div> }

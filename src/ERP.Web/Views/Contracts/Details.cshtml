@@ -46,3 +46,28 @@
         </div>
     </div>
 </div>
+@{ var ms = (List<ContractMilestone>)ViewBag.Milestones; var canMs = User.InAny(AppRoles.FinanceView + "," + AppRoles.Sales + "," + AppRoles.Purchasing); }
+<div class="card mt-3"><div class="card-header">Đợt giao hàng & đợt thanh toán theo hợp đồng</div><div class="card-body p-0"><table class="table table-sm align-middle mb-0" data-grid="off">
+    <thead><tr><th>Loại</th><th>Đợt</th><th>Đến hạn</th><th class="num">Giá trị</th><th>Trạng thái</th><th>Ghi chú</th><th></th></tr></thead><tbody>
+    @foreach (var m in ms)
+    {
+        <tr class="@(!m.Done && m.DueDate < DateTime.Today ? "table-danger" : m.Done ? "text-muted" : "")"><td>@m.Kind.GetDisplayName()</td><td>@m.Name</td><td>@m.DueDate.ToDate()</td><td class="num">@(m.Amount == 0 ? "" : m.Amount.ToMoney())</td>
+            <td>@(m.Done ? "Hoàn thành " + m.DoneDate.ToDate() : m.DueDate < DateTime.Today ? "Quá hạn " + (DateTime.Today - m.DueDate).Days + " ngày" : "Chưa đến hạn")</td><td class="small">@m.Note</td>
+            <td class="text-nowrap">@if (canMs) { <form asp-action="ToggleMilestone" asp-route-id="@m.Id" asp-route-contractId="@Model.Id" method="post" class="d-inline"><button class="btn btn-sm btn-light">@(m.Done ? "Bỏ hoàn thành" : "Hoàn thành")</button></form> <form asp-action="DeleteMilestone" asp-route-id="@m.Id" asp-route-contractId="@Model.Id" method="post" class="d-inline"><button class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-x"></i></button></form> }</td></tr>
+    }
+    @if (!ms.Any()) { <tr><td colspan="7" class="text-center text-muted">Chưa khai báo đợt giao hàng / thanh toán.</td></tr> }
+    </tbody>
+    @if (ms.Any(x => x.Kind == MilestoneKind.Payment)) { <tfoot><tr class="fw-bold"><td colspan="3">Cộng các đợt thanh toán</td><td class="num">@ms.Where(x => x.Kind == MilestoneKind.Payment).Sum(x => x.Amount).ToMoney()</td><td colspan="3" class="small fw-normal">Giá trị hợp đồng @Model.Value.ToMoney()</td></tr></tfoot> }
+</table></div>
+@if (canMs)
+{
+    <div class="card-footer"><form asp-action="AddMilestone" asp-route-id="@Model.Id" method="post" class="row g-1">
+        <div class="col-md-2"><select name="kind" asp-items="Html.GetEnumSelectList<MilestoneKind>()" class="form-select form-select-sm"></select></div>
+        <div class="col-md-3"><input name="name" class="form-control form-control-sm" placeholder="Tên đợt (VD: Giao đợt 1, Tạm ứng 30%)" required /></div>
+        <div class="col-md-2"><input type="date" name="dueDate" value="@DateTime.Today.AddDays(30).Iso()" class="form-control form-control-sm" /></div>
+        <div class="col-md-2"><input type="number" name="amount" step="1000" min="0" class="form-control form-control-sm" placeholder="Giá trị" /></div>
+        <div class="col-md-2"><input name="note" class="form-control form-control-sm" placeholder="Ghi chú" /></div>
+        <div class="col-md-1"><button class="btn btn-sm btn-primary w-100">Thêm</button></div>
+    </form></div>
+}
+</div>

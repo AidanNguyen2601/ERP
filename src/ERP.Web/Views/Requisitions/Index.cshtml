@@ -1,0 +1,26 @@
+@model List<PurchaseRequisition>
+@{ ViewData["Title"] = "Đề nghị mua hàng"; RequestStatus? st = ViewBag.Status; bool w = ViewBag.CanWrite; }
+<div class="toolbar">
+    <form method="get" class="d-inline-flex gap-2">
+        <select name="status" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()"><option value="">Mọi trạng thái</option>
+            @foreach (RequestStatus s in Enum.GetValues<RequestStatus>()) { <option value="@s" selected="@(st == s)">@s.GetDisplayName()</option> }</select>
+    </form>
+    <a class="btn btn-sm btn-light" asp-controller="Rfq" asp-action="Index"><i class="bi bi-envelope-paper"></i> Yêu cầu báo giá</a>
+    <a class="btn btn-sm btn-light" asp-controller="PurchaseOrders" asp-action="Index"><i class="bi bi-cart-plus"></i> Đơn mua</a>
+    <span class="ms-auto"></span>
+    @if (w)
+    {
+        <form asp-action="FromLowStock" method="post" class="d-inline" data-confirm="Tạo đề nghị từ các mặt hàng dưới mức tồn tối thiểu?"><button class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-down-circle"></i> Từ tồn tối thiểu</button></form>
+        <form asp-action="FromProduction" method="post" class="d-inline" data-confirm="Tạo đề nghị từ định mức NVL của các lệnh sản xuất chưa chạy?"><button class="btn btn-sm btn-outline-primary"><i class="bi bi-diagram-3"></i> Từ định mức sản xuất</button></form>
+        <a class="btn btn-sm btn-primary" asp-action="Create"><i class="bi bi-plus-lg"></i> Lập đề nghị</a>
+    }
+</div>
+<div class="card"><div class="card-body p-0"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Số</th><th>Ngày</th><th>Bộ phận</th><th>Mục đích</th><th>Nguồn</th><th>Cần trước</th><th class="num">Số dòng</th><th class="num">Giá trị dự kiến</th><th>Trạng thái</th></tr></thead><tbody>
+    @foreach (var p in Model)
+    {
+        <tr><td><a asp-action="Details" asp-route-id="@p.Id"><b>@p.Number</b></a></td><td>@p.Date.ToDate()</td><td class="small">@p.Department</td><td class="small">@p.Purpose</td><td class="small">@p.Source</td><td>@p.RequiredDate.ToDate()</td><td class="num">@p.Lines.Count</td><td class="num">@p.Estimated.ToMoney()</td>
+            <td><span class="badge @(p.Status == RequestStatus.Approved ? "bg-success" : p.Status == RequestStatus.PendingApproval ? "bg-warning text-dark" : p.Status == RequestStatus.Cancelled ? "bg-secondary" : p.Status == RequestStatus.Converted ? "bg-info text-dark" : "bg-light text-dark border")">@p.Status.GetDisplayName()</span></td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="9" class="text-center text-muted py-3">Chưa có đề nghị mua hàng.</td></tr> }
+</tbody></table></div></div>

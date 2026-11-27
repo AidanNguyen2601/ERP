@@ -1,0 +1,18 @@
+@model List<StockLotMove>
+@{ ViewData["Title"] = "Truy xuất nguồn gốc lô / serial"; var partners = (Dictionary<int, string>)ViewBag.Partners; }
+<form class="toolbar" method="get"><input name="lot" value="@ViewBag.Lot" class="form-control form-control-sm" style="max-width:260px" placeholder="Số lô / serial" /><input type="hidden" name="itemId" value="@ViewBag.ItemId" /><button class="btn btn-sm btn-outline-primary">Truy xuất</button>
+    <a class="btn btn-sm btn-light ms-auto" asp-action="Lots">Tồn theo lô</a></form>
+@if (Model.Any())
+{
+    var ins = Model.Where(m => m.Quantity > 0 && !m.DocType.EndsWith("(hủy)")).ToList();
+    <div class="alert alert-light border small"><b>Nguồn nhập:</b> @string.Join("; ", ins.Select(m => $"{m.DocNumber} ngày {m.Date:dd/MM/yyyy}" + (m.PartnerId != null && partners.TryGetValue(m.PartnerId.Value, out var pn) ? " từ " + pn : "") + (m.OriginRef != null ? " (" + m.OriginRef + ")" : "")))
+        · <b>Còn lại trên sổ lô:</b> @Model.Sum(m => m.Quantity).ToQty()</div>
+}
+<div class="card"><div class="card-body p-0"><table class="table table-sm mb-0">
+    <thead><tr><th>Ngày</th><th>Hàng hóa</th><th>Chứng từ</th><th>Loại</th><th>Đối tượng</th><th>Nguồn gốc</th><th class="num">Nhập (+) / xuất (−)</th><th class="num">Giá vốn</th></tr></thead><tbody>
+    @foreach (var m in Model)
+    {
+        <tr><td>@m.Date.ToDate()</td><td class="small">@m.Item?.Code</td><td><a asp-controller="Inventory" asp-action="Details" asp-route-id="@m.InventoryDocId">@m.DocNumber</a></td><td class="small">@m.DocType</td><td class="small">@m.Partner?.Name</td><td class="small">@m.OriginRef</td><td class="num @(m.Quantity < 0 ? "text-danger" : "text-success")">@m.Quantity.ToQty()</td><td class="num">@m.UnitCost.ToMoney()</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="8" class="text-center text-muted py-3">@(string.IsNullOrEmpty(ViewBag.Lot) ? "Nhập số lô / serial để xem nhập từ nhà cung cấp nào, xuất cho phiếu / khách hàng nào." : "Không có biến động của lô này.")</td></tr> }
+</tbody></table></div></div>

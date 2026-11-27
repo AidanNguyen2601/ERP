@@ -1,0 +1,18 @@
+@model List<Partner>
+@{ ViewData["Title"] = "Đánh giá nhà cung cấp"; var stats = (Dictionary<int, SupplierStats>)ViewBag.Stats; var last = (Dictionary<int, SupplierEvaluation>)ViewBag.LastEval; string g = ViewBag.Grade; }
+<div class="toolbar">
+    <form method="get" class="d-inline-flex gap-2"><select name="grade" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()"><option value="">Mọi xếp hạng</option>@foreach (var x in new[] { "A", "B", "C", "D" }) { <option selected="@(g == x)">@x</option> }</select></form>
+    <span class="small text-muted">Chỉ số tự động tính 12 tháng gần nhất. Xếp hạng: A ≥ 8,5 · B ≥ 7 · C ≥ 5 · D &lt; 5.</span>
+    <a class="btn btn-sm btn-light ms-auto" asp-controller="Partners" asp-action="Index" asp-route-type="vendor">Danh mục nhà cung cấp</a>
+</div>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Mã</th><th>Nhà cung cấp</th><th>MST</th><th>Nhóm</th><th>Hạng</th><th class="num">Điểm gần nhất</th><th class="num">Số đơn</th><th class="num">Giao đúng hạn</th><th class="num">Đạt kiểm tra đầu vào</th><th class="num">Giá trị mua</th><th>Trạng thái</th></tr></thead><tbody>
+    @foreach (var v in Model)
+    {
+        var s = stats[v.Id]; var e = last.GetValueOrDefault(v.Id);
+        <tr><td>@v.Code</td><td><a asp-action="Details" asp-route-id="@v.Id">@v.Name</a></td><td class="small">@v.TaxCode</td><td class="small">@v.PartnerGroup</td>
+            <td>@if (v.Grade != null) { <span class="badge @(v.Grade == "A" ? "bg-success" : v.Grade == "B" ? "bg-primary" : v.Grade == "C" ? "bg-warning text-dark" : "bg-danger")">@v.Grade</span> }</td>
+            <td class="num">@(e?.Total.ToString("0.0"))</td><td class="num">@s.Orders</td><td class="num">@(s.Deliveries == 0 ? "–" : s.OnTimePct + "%")</td><td class="num">@(s.QcChecked == 0 ? "–" : s.QcPassPct + "%")</td><td class="num">@s.Purchased.ToMoney()</td>
+            <td>@if (v.IsBlocked) { <span class="badge bg-danger">Tạm ngừng</span> } else if (!v.IsActive) { <span class="badge bg-secondary">Ngưng</span> } else { <span class="badge bg-light text-dark border">Đang giao dịch</span> }</td></tr>
+    }
+</tbody></table></div></div></div>
