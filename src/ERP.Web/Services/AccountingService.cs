@@ -16,10 +16,10 @@ public class AccountingService
 {
     // Tài khoản hệ thống dùng trong hạch toán tự động
     public const string Cash = "1111", Bank = "11211", Receivable = "131", VatIn = "1331", ShortageAsset = "1381",
-        Material = "152", Wip = "154", Finished = "155", Goods = "1561", FixedAssetAcc = "211", AccumDep = "2141",
+        Material = "152", Wip = "154", Finished = "155", Goods = "156", FixedAssetAcc = "211", AccumDep = "2141",
         Payable = "331", VatOut = "33311", Payroll = "3341", SurplusAsset = "3381", OtherPayable = "3388",
         RetainedThisYear = "4212", RevenueGoods = "5111", RevenueProducts = "5112", RevenueServices = "5113",
-        DirectLabor = "622", Overhead = "627", Cogs = "632", AdminServices = "6427", OtherExpense = "811", OtherIncome = "711",
+        DirectLabor = "622", Overhead = "6278", Cogs = "632", AdminServices = "6427", OtherExpense = "811", OtherIncome = "711",
         IncomeSummary = "911";
 
     private readonly ErpDbContext _db;
@@ -51,6 +51,25 @@ public class AccountingService
         if (_rules.TryGetValue(key, out var acc) && acc.IsPostable && acc.IsActive && PostingCatalog.Allows(def, acc.Code)) return acc;
         return await AccAsync(def.DefaultCode!);
     }
+    /// <summary>
+    /// Kết chuyển chi phí theo từng TK cấp 2 (VD 6271…6278): ghi Có mỗi TK theo số phát sinh Nợ còn lại từ đầu tháng đến ngày kết chuyển;
+    /// kết chuyển một phần thì chia theo tỷ lệ; phần vượt (phân bổ theo định mức cao hơn thực tế) ghi vào TK mặc định.
+    /// </summary>
+    public async Task<List<JLine>> CreditByBalanceAsync(string prefix, decimal amount, DateTime date, int fallbackId, string? description = null)
+    {
+        var res = new List<JLine>(); if (amount <= 0) return res;
+        var from = new DateTime(date.Year, date.Month, 1);
+        var nets = (await _db.JournalLines.Where(l => l.Account!.Code.StartsWith(prefix) && l.Account.IsPostable && l.JournalEntry!.Status == DocStatus.Posted && l.JournalEntry.Source != JournalSource.Closing
+                && l.JournalEntry.Date >= from && l.JournalEntry.Date <= date).GroupBy(l => l.AccountId).Select(g => new { g.Key, B = g.Sum(x => x.Debit - x.Credit) }).ToListAsync())
+            .Where(x => x.B > 0).OrderBy(x => x.Key).ToList();
+        var total = nets.Sum(x => x.B);
+        if (total <= 0) { res.Add(new JLine(fallbackId, 0, amount, null, description)); return res; }
+        if (amount >= total) { res.AddRange(nets.Select(x => new JLine(x.Key, 0, x.B, null, description))); if (amount > total) res.Add(new JLine(fallbackId, 0, amount - total, null, description)); return res; }
+        decimal used = 0;
+        for (var k = 0; k < nets.Count; k++) { var a = k == nets.Count - 1 ? amount - used : Math.Round(amount * nets[k].B / total, 0); used += a; if (a != 0) res.Add(new JLine(nets[k].Key, 0, a, null, description)); }
+        return res;
+    }
+
     public async Task<int> RuleAsync(string key) => (await RuleAccountAsync(key)).Id;
     public Task<int> InventoryRuleAsync(ItemType t) => RuleAsync(PostingCatalog.InventoryKey(t));
     public Task<int> RevenueRuleAsync(ItemType? t) => RuleAsync(PostingCatalog.RevenueKey(t));

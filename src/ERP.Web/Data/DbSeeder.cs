@@ -24,6 +24,7 @@ public static class DbSeeder
         {
             await SeedCatalogsAsync(db);
             await EnsureAccountsAsync(db);
+            await Tt99Migration.RunAsync(db);
             await PlatformSeeder.SeedAsync(db, sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ErpSettings>>().Value.PoApprovalThreshold);
             await SeedQualityAsync(db);
             await SeedQcDemoAsync(sp, db);
@@ -36,6 +37,7 @@ public static class DbSeeder
         await SeedCoreAsync(sp, db);
         await SeedCatalogsAsync(db);
         await EnsureAccountsAsync(db);
+        await Tt99Migration.RunAsync(db);
         await PlatformSeeder.SeedAsync(db, sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ErpSettings>>().Value.PoApprovalThreshold);
         await SeedQualityAsync(db);
         await SeedQcDemoAsync(sp, db);
@@ -45,17 +47,8 @@ public static class DbSeeder
         await BackfillPurchaseReturnsAsync(sp, db);
     }
 
-    /// <summary>Tài khoản chi tiết của 521 (giảm trừ doanh thu) dùng cho hàng bán bị trả lại / giảm giá hàng bán; thêm vào hệ thống tài khoản đã có nếu thiếu</summary>
-    private static async Task EnsureAccountsAsync(ErpDbContext db)
-    {
-        var parent = await db.Accounts.FirstOrDefaultAsync(a => a.Code == "521");
-        if (parent == null) return;
-        foreach (var (code, name) in new[] { ("5211", "Chiết khấu thương mại"), ("5212", "Hàng bán bị trả lại"), ("5213", "Giảm giá hàng bán") })
-            if (!await db.Accounts.AnyAsync(a => a.Code == code)) db.Accounts.Add(new Account { Code = code, Name = name, Type = parent.Type });
-        // TK tổng hợp 521 không hạch toán trực tiếp nữa (nếu chưa có phát sinh)
-        if (parent.IsPostable && !await db.JournalLines.AnyAsync(l => l.AccountId == parent.Id)) parent.IsPostable = false;
-        await db.SaveChangesAsync();
-    }
+    /// <summary>Giữ chỗ: TT99 không quy định TK cấp 2 cho 521 (giảm trừ doanh thu ghi trực tiếp TK 521) – xem Tt99Migration</summary>
+    private static Task EnsureAccountsAsync(ErpDbContext db) => Task.CompletedTask;
 
     /// <summary>
     /// Phiếu trả hàng NCR lập trước khi có cơ chế đồng bộ công nợ / thuế / đơn mua: bổ sung bút toán điều chỉnh và cấn trừ hóa đơn.
@@ -260,7 +253,7 @@ public static class DbSeeder
             U("sanxuat", "Đặng Hữu Phước", AppRoles.Production, "Xưởng sản xuất"),
             U("qc", "Hồ Thị Lan", AppRoles.Quality, "Phòng Quản lý chất lượng"));
 
-        // ------------------------------------------------------------ Hệ thống tài khoản (TT200 rút gọn)
+        // ------------------------------------------------------------ Hệ thống tài khoản (Thông tư 99/2025/TT-BTC – Phụ lục II, rút gọn)
         var coa = new (string Code, string Name, AccountType Type, bool Partner)[]
         {
             ("111", "Tiền mặt", AccountType.Asset, false), ("1111", "Tiền Việt Nam", AccountType.Asset, false),
@@ -273,7 +266,7 @@ public static class DbSeeder
             ("152", "Nguyên liệu, vật liệu", AccountType.Asset, false),
             ("154", "Chi phí sản xuất, kinh doanh dở dang", AccountType.Asset, false),
             ("155", "Thành phẩm", AccountType.Asset, false),
-            ("156", "Hàng hóa", AccountType.Asset, false), ("1561", "Giá mua hàng hóa", AccountType.Asset, false),
+            ("156", "Hàng hóa", AccountType.Asset, false),
             ("211", "Tài sản cố định hữu hình", AccountType.Asset, false), ("2111", "Nhà cửa, vật kiến trúc", AccountType.Asset, false),
             ("2112", "Máy móc, thiết bị", AccountType.Asset, false), ("2113", "Phương tiện vận tải, truyền dẫn", AccountType.Asset, false),
             ("2114", "Thiết bị, dụng cụ quản lý", AccountType.Asset, false),
@@ -295,16 +288,23 @@ public static class DbSeeder
             ("521", "Các khoản giảm trừ doanh thu", AccountType.Revenue, false),
             ("621", "Chi phí nguyên liệu, vật liệu trực tiếp", AccountType.Expense, false),
             ("622", "Chi phí nhân công trực tiếp", AccountType.Expense, false),
-            ("627", "Chi phí sản xuất chung", AccountType.Expense, false),
+            ("627", "Chi phí sản xuất chung", AccountType.Expense, false), ("6271", "Chi phí nhân viên phân xưởng", AccountType.Expense, false), ("6272", "Chi phí vật liệu", AccountType.Expense, false),
+            ("6273", "Chi phí dụng cụ sản xuất", AccountType.Expense, false), ("6274", "Chi phí khấu hao TSCĐ", AccountType.Expense, false), ("6275", "Thuế, phí, lệ phí", AccountType.Expense, false),
+            ("6277", "Chi phí dịch vụ mua ngoài", AccountType.Expense, false), ("6278", "Chi phí bằng tiền khác", AccountType.Expense, false),
             ("632", "Giá vốn hàng bán", AccountType.Expense, false),
             ("635", "Chi phí tài chính", AccountType.Expense, false),
-            ("641", "Chi phí bán hàng", AccountType.Expense, false),
+            ("641", "Chi phí bán hàng", AccountType.Expense, false), ("6411", "Chi phí nhân viên", AccountType.Expense, false), ("6412", "Chi phí vật liệu, bao bì", AccountType.Expense, false),
+            ("6413", "Chi phí dụng cụ, đồ dùng", AccountType.Expense, false), ("6414", "Chi phí khấu hao TSCĐ", AccountType.Expense, false), ("6415", "Thuế, phí, lệ phí", AccountType.Expense, false),
+            ("6417", "Chi phí dịch vụ mua ngoài", AccountType.Expense, false), ("6418", "Chi phí bằng tiền khác", AccountType.Expense, false),
             ("642", "Chi phí quản lý doanh nghiệp", AccountType.Expense, false), ("6421", "Chi phí nhân viên quản lý", AccountType.Expense, false),
-            ("6424", "Chi phí khấu hao TSCĐ", AccountType.Expense, false), ("6427", "Chi phí dịch vụ mua ngoài", AccountType.Expense, false),
+            ("6422", "Chi phí vật liệu quản lý", AccountType.Expense, false), ("6423", "Chi phí đồ dùng văn phòng", AccountType.Expense, false),
+            ("6424", "Chi phí khấu hao TSCĐ", AccountType.Expense, false), ("6425", "Thuế, phí và lệ phí", AccountType.Expense, false), ("6426", "Chi phí dự phòng", AccountType.Expense, false), ("6427", "Chi phí dịch vụ mua ngoài", AccountType.Expense, false),
             ("6428", "Chi phí bằng tiền khác", AccountType.Expense, false),
             ("711", "Thu nhập khác", AccountType.Revenue, false),
             ("811", "Chi phí khác", AccountType.Expense, false),
-            ("821", "Chi phí thuế thu nhập doanh nghiệp", AccountType.Expense, false),
+            ("821", "Chi phí thuế thu nhập doanh nghiệp", AccountType.Expense, false), ("8211", "Chi phí thuế TNDN hiện hành", AccountType.Expense, false),
+            ("82111", "Chi phí thuế thu nhập doanh nghiệp hiện hành theo quy định của Luật thuế thu nhập doanh nghiệp", AccountType.Expense, false),
+            ("82112", "Chi phí thuế thu nhập doanh nghiệp bổ sung theo quy định về thuế tối thiểu toàn cầu", AccountType.Expense, false), ("8212", "Chi phí thuế TNDN hoãn lại", AccountType.Expense, false),
             ("911", "Xác định kết quả kinh doanh", AccountType.Result, false)
         };
         var codes = coa.Select(c => c.Code).ToList();
@@ -362,7 +362,7 @@ public static class DbSeeder
         // ------------------------------------------------------------ Tài sản cố định
         var catNx = new AssetCategory { Code = "NX", Name = "Nhà xưởng, vật kiến trúc", AssetAccountId = await A("2111"), DepreciationAccountId = await A("2141"), ExpenseAccountId = await A("6424"), DefaultLifeMonths = 240 };
         var catMm = new AssetCategory { Code = "MM", Name = "Máy móc thiết bị sản xuất", AssetAccountId = await A("2112"), DepreciationAccountId = await A("2141"), ExpenseAccountId = await A("6424"), DefaultLifeMonths = 96 };
-        var catPt = new AssetCategory { Code = "PT", Name = "Phương tiện vận tải", AssetAccountId = await A("2113"), DepreciationAccountId = await A("2141"), ExpenseAccountId = await A("641"), DefaultLifeMonths = 120 };
+        var catPt = new AssetCategory { Code = "PT", Name = "Phương tiện vận tải", AssetAccountId = await A("2113"), DepreciationAccountId = await A("2141"), ExpenseAccountId = await A("6414"), DefaultLifeMonths = 120 };
         var catQl = new AssetCategory { Code = "QL", Name = "Thiết bị quản lý", AssetAccountId = await A("2114"), DepreciationAccountId = await A("2141"), ExpenseAccountId = await A("6424"), DefaultLifeMonths = 36 };
         db.AssetCategories.AddRange(catNx, catMm, catPt, catQl);
         await db.SaveChangesAsync();
@@ -493,13 +493,13 @@ public static class DbSeeder
         async Task MonthEnd(int m, bool payroll = true)
         {
             // Điện, nước xưởng (chi phí SXC) bằng đúng phần đã phân bổ vào giá thành; chi phí văn phòng
-            if (overhead[m] > 0) await Pay(CashVoucherType.Payment, CashPurpose.Other, m, 27, vcb, overhead[m], $"Tiền điện, nước, bảo trì xưởng tháng {D(m, 1):MM/yyyy}", counter: "627");
+            if (overhead[m] > 0) await Pay(CashVoucherType.Payment, CashPurpose.Other, m, 27, vcb, overhead[m], $"Tiền điện, nước, bảo trì xưởng tháng {D(m, 1):MM/yyyy}", counter: "6277");
             await Pay(CashVoucherType.Payment, CashPurpose.Other, m, 28, cashTm, 3_000_000, $"Chi phí văn phòng phẩm, tiếp khách tháng {D(m, 1):MM/yyyy}", counter: "6428");
             if (payroll)
             {
                 var lines = new List<JLine>();
                 if (labor[m] > 0) lines.Add(new JLine(await A("622"), labor[m], 0));
-                lines.Add(new JLine(await A("641"), 12_000_000, 0));
+                lines.Add(new JLine(await A("6411"), 12_000_000, 0));
                 lines.Add(new JLine(await A("6421"), 24_000_000, 0));
                 lines.Add(new JLine(await A("3341"), 0, lines.Sum(x => x.Debit)));
                 await acc.PostAsync(PeriodService.MonthEnd(D(m, 1).Year, D(m, 1).Month), $"Tiền lương phải trả tháng {D(m, 1):MM/yyyy}", JournalSource.Manual, $"BL{D(m, 1):MMyy}", null, lines);
@@ -553,7 +553,7 @@ public static class DbSeeder
         {
             Direction = InvoiceDirection.Purchase, Number = await invoices.NextNumberAsync(InvoiceDirection.Purchase, D(1, 28)), Date = D(1, 28), DueDate = D(1, 28).AddDays(15),
             PartnerId = ncc5.Id, Series = "1C26TVC", InvoiceNo = "0000412", Note = "Cước vận chuyển giao hàng tháng " + D(1, 1).ToString("MM/yyyy"),
-            Lines = { new InvoiceLine { Description = "Cước vận chuyển giao hàng nội thành", Unit = "Tháng", Quantity = 1, UnitPrice = 12_000_000, VatRate = 8, AccountId = await A("641") } }
+            Lines = { new InvoiceLine { Description = "Cước vận chuyển giao hàng nội thành", Unit = "Tháng", Quantity = 1, UnitPrice = 12_000_000, VatRate = 8, AccountId = await A("6417") } }
         };
         await invoices.IssueAsync(dv);
         await Pay(CashVoucherType.Payment, CashPurpose.Other, 1, 28, vcb, 6_000_000, "Lãi vay ngân hàng tháng " + D(1, 1).ToString("MM/yyyy"), counter: "635");

@@ -1,6 +1,6 @@
 @model List<ReportLine>
 @{
-    ViewData["Title"] = "Bảng cân đối kế toán";
+    ViewData["Title"] = "Báo cáo tình hình tài chính";
     var sources = (List<ReportLine>)ViewBag.Sources;
     var ta = Model.Last().Amount; var ts = sources.Last().Amount;
 }

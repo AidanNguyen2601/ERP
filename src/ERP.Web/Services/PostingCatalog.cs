@@ -47,7 +47,7 @@ public static class PostingCatalog
         {
             new(InvMaterial, "Nợ / Có", "Nguyên vật liệu", "152", new[] { "152" }),
             new(InvFinished, "Nợ / Có", "Thành phẩm", "155", new[] { "155" }),
-            new(InvGoods, "Nợ / Có", "Hàng hóa", "1561", new[] { "156" }),
+            new(InvGoods, "Nợ / Có", "Hàng hóa", "156", new[] { "156" }),
         }),
         new("sales-invoice", "Phát hành hóa đơn bán ra", "bi-receipt-cutoff", "Hóa đơn",
             "Ghi nhận doanh thu, thuế GTGT đầu ra và công nợ phải thu khi phát hành hóa đơn bán. Dòng hóa đơn có chọn TK riêng sẽ dùng TK đó.", new PostingLineDef[]
@@ -61,8 +61,8 @@ public static class PostingCatalog
         new("sales-credit", "Hàng bán bị trả lại / giảm giá hàng bán", "bi-receipt", "Hóa đơn",
             "Hóa đơn điều chỉnh giảm cho hóa đơn bán đã phát hành: giảm trừ doanh thu, hoàn thuế GTGT đầu ra, giảm công nợ phải thu (cấn trừ vào hóa đơn gốc). Hàng trả lại được nhập kho theo giá vốn lúc bán (Nợ 15x / Có TK giá vốn ở giao dịch \"Xuất kho giao hàng bán\").", new PostingLineDef[]
         {
-            new(CnSalesReturn, "Nợ", "Hàng bán bị trả lại (giảm trừ doanh thu)", "5212", new[] { "521" }),
-            new(CnPriceReduction, "Nợ", "Giảm giá hàng bán (giảm trừ doanh thu)", "5213", new[] { "521" }),
+            new(CnSalesReturn, "Nợ", "Hàng bán bị trả lại (giảm trừ doanh thu)", "521", new[] { "521" }),
+            new(CnPriceReduction, "Nợ", "Giảm giá hàng bán (giảm trừ doanh thu)", "521", new[] { "521" }),
             new(null, "Nợ", "Thuế GTGT đầu ra được điều chỉnh giảm: TK cấu hình ở \"Phát hành hóa đơn bán ra\""),
             new(null, "Có", "Phải thu khách hàng: TK cấu hình ở \"Phát hành hóa đơn bán ra\""),
         }),
@@ -102,7 +102,7 @@ public static class PostingCatalog
         {
             new(PrdWip, "Nợ / Có", "Chi phí sản xuất kinh doanh dở dang", "154", new[] { "154" }),
             new(PrdLabor, "Có", "Chi phí nhân công trực tiếp kết chuyển", "622", new[] { "622", "334" }),
-            new(PrdOverhead, "Có", "Chi phí sản xuất chung kết chuyển", "627", new[] { "627" }),
+            new(PrdOverhead, "Có", "Chi phí sản xuất chung kết chuyển", "6278", new[] { "627" }),
         }),
         new("stock-count", "Kiểm kê kho", "bi-clipboard2-check", "Kho",
             "Chênh lệch thực tế − sổ sách được định giá theo giá vốn bình quân.", new PostingLineDef[]
@@ -121,7 +121,7 @@ public static class PostingCatalog
             "NCR quyết định trả lại nhà cung cấp: giảm hàng tồn kho theo giá vốn, giảm công nợ phải trả theo giá mua (kèm hoàn thuế GTGT đầu vào, cấn trừ vào hóa đơn mua).", new PostingLineDef[]
         {
             new(QcReturnPayable, "Nợ", "Giảm phải trả nhà cung cấp (theo giá vốn bình quân)", "331", new[] { "331", "1388" }),
-            new(QcReturnVariance, "Nợ / Có", "Chênh lệch giá mua so với giá vốn bình quân khi trả hàng", "632", new[] { "632", "711", "811", "1562" }, "Phần giá mua cao / thấp hơn giá vốn kho được ghi vào đây để công nợ giảm đúng bằng giá trên hóa đơn"),
+            new(QcReturnVariance, "Nợ / Có", "Chênh lệch giá mua so với giá vốn bình quân khi trả hàng", "632", new[] { "632", "711", "811", "156" }, "Phần giá mua cao / thấp hơn giá vốn kho được ghi vào đây để công nợ giảm đúng bằng giá trên hóa đơn"),
             new(null, "Nợ / Có", "Thuế GTGT đầu vào được hoàn (phần đã lập hóa đơn): Nợ 331 / Có TK thuế đầu vào cấu hình ở \"Ghi sổ hóa đơn mua vào\""),
             new(null, "Có", Inventory),
         }),

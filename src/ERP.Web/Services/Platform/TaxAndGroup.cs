@@ -127,7 +127,7 @@ public class TaxService
         if (post && d.Payable != 0)
         {
             var date = d.Quarter == 0 ? new DateTime(d.Year, 12, 31) : new DateTime(d.Year, d.Quarter * 3, 1).AddMonths(1).AddDays(-1);
-            var e = await _acc.IdAsync("821"); var p = await _acc.IdAsync("3334");
+            var e = (await _db.Accounts.AnyAsync(a => a.Code == "82111" && a.IsPostable)) ? await _acc.IdAsync("82111") : await _acc.IdAsync("821"); var p = await _acc.IdAsync("3334");
             var amt = Math.Abs(d.Payable);
             var lines = d.Payable > 0 ? new[] { new JLine(e, amt, 0), new JLine(p, 0, amt) } : new[] { new JLine(p, amt, 0), new JLine(e, 0, amt) };
             var je = await _acc.PostAsync(date, $"Thuế TNDN {(d.Quarter == 0 ? "quyết toán năm" : "tạm tính quý " + d.Quarter)} {d.Year}", JournalSource.Tax, $"TNDN{d.Quarter}{d.Year % 100:00}", d.Id, lines);

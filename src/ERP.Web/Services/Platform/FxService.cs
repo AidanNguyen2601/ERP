@@ -53,22 +53,30 @@ public class FxService
     }
 
     /// <summary>
-    /// Ghi nhận chênh lệch đánh giá lại vào TK 4131 tại ngày đánh giá và tự lập bút toán đảo ngày hôm sau
-    /// (chênh lệch chưa thực hiện chỉ phản ánh trên báo cáo tại thời điểm đánh giá; khi thu / trả thực tế sẽ ghi nhận lãi / lỗ đã thực hiện).
+    /// Đánh giá lại khoản mục tiền tệ có gốc ngoại tệ tại thời điểm lập báo cáo theo Thông tư 99/2025/TT-BTC: chênh lệch ghi ngay vào kết quả kinh doanh –
+    /// lãi ghi Có 515, lỗ ghi Nợ 635 (không treo trên TK 413). Hệ thống theo dõi công nợ từng hóa đơn theo tỷ giá ghi sổ ban đầu, nên tự lập bút toán đảo
+    /// ngày đầu kỳ sau; khi thu / trả thực tế, chênh lệch đã thực hiện được tính lại so với tỷ giá ghi sổ (tổng ảnh hưởng lên kết quả kinh doanh không đổi).
     /// </summary>
     public async Task<(JournalEntry? Entry, int Count)> RevalueAsync(DateTime date)
     {
         var items = await PreviewAsync(date);
         if (items.Count == 0) return (null, 0);
-        var a4131 = await _acc.IdAsync("4131");
+        var gainAcc = await _acc.IdAsync("515"); var lossAcc = await _acc.IdAsync("635");
         var lines = new List<JLine>();
         foreach (var x in items)
         {
-            // Tài sản (phải thu, tiền): chênh lệch dương ghi Nợ; nợ phải trả: giá trị ghi sổ là số dư Có nên chênh lệch dương ghi Có
-            var asset = x.Kind != "Phải trả";
-            var d = x.Diff;
-            if (asset) { if (d > 0) { lines.Add(new JLine(x.AccountId, d, 0, x.PartnerId, x.Ref)); lines.Add(new JLine(a4131, 0, d)); } else { lines.Add(new JLine(a4131, -d, 0)); lines.Add(new JLine(x.AccountId, 0, -d, x.PartnerId, x.Ref)); } }
-            else { if (d > 0) { lines.Add(new JLine(a4131, d, 0)); lines.Add(new JLine(x.AccountId, 0, d, x.PartnerId, x.Ref)); } else { lines.Add(new JLine(x.AccountId, -d, 0, x.PartnerId, x.Ref)); lines.Add(new JLine(a4131, 0, -d)); } }
+            // Tài sản (tiền, phải thu): giá trị tăng là lãi. Nợ phải trả: giá trị (số dư Có) tăng là lỗ
+            var asset = x.Kind != "Phải trả"; var d = x.Diff;
+            if (asset)
+            {
+                if (d > 0) { lines.Add(new JLine(x.AccountId, d, 0, x.PartnerId, x.Ref)); lines.Add(new JLine(gainAcc, 0, d, null, "Lãi đánh giá lại " + x.Ref)); }
+                else { lines.Add(new JLine(lossAcc, -d, 0, null, "Lỗ đánh giá lại " + x.Ref)); lines.Add(new JLine(x.AccountId, 0, -d, x.PartnerId, x.Ref)); }
+            }
+            else
+            {
+                if (d > 0) { lines.Add(new JLine(lossAcc, d, 0, null, "Lỗ đánh giá lại " + x.Ref)); lines.Add(new JLine(x.AccountId, 0, d, x.PartnerId, x.Ref)); }
+                else { lines.Add(new JLine(x.AccountId, -d, 0, x.PartnerId, x.Ref)); lines.Add(new JLine(gainAcc, 0, -d, null, "Lãi đánh giá lại " + x.Ref)); }
+            }
         }
         var je = await _acc.PostAsync(date, $"Đánh giá lại khoản mục tiền tệ có gốc ngoại tệ ngày {date:dd/MM/yyyy}", JournalSource.Fx, $"DGL{date:yyMMdd}", null, lines);
         try { await _acc.ReverseAsync(je.Id, date.AddDays(1), "Đảo đánh giá lại tỷ giá đầu kỳ sau"); }

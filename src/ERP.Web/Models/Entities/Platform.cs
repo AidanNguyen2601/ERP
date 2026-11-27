@@ -537,7 +537,7 @@ public class AccountMapping
     public int Id { get; set; }
     /// <summary>TT133, TT99, IFRS...</summary>
     [Required, StringLength(20)] public string Standard { get; set; } = string.Empty;
-    /// <summary>Đầu số TK theo hệ thống đang dùng (TT200)</summary>
+    /// <summary>Đầu số TK theo hệ thống đang dùng (TT99)</summary>
     [Required, StringLength(10)] public string FromPrefix { get; set; } = string.Empty;
     [Required, StringLength(10)] public string ToCode { get; set; } = string.Empty;
     [Required, StringLength(200)] public string ToName { get; set; } = string.Empty;

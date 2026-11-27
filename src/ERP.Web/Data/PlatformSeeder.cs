@@ -43,7 +43,6 @@ public static class PlatformSeeder
         await Root("153", "Công cụ, dụng cụ", AccountType.Asset);
         await Acc("6423", "Chi phí đồ dùng văn phòng", "642");
         await Root("413", "Chênh lệch tỷ giá hối đoái", AccountType.Equity);
-        await Acc("4131", "Chênh lệch tỷ giá do đánh giá lại các khoản mục tiền tệ có gốc ngoại tệ", "413");
 
         // ---------------- Tiền tệ & tỷ giá (tỷ giá mẫu – cập nhật theo tỷ giá thực tế trước khi dùng)
         if (!await db.Currencies.AnyAsync())
@@ -87,8 +86,12 @@ public static class PlatformSeeder
             ["Payroll.EmpBhxh"] = "8", ["Payroll.EmpBhyt"] = "1.5", ["Payroll.EmpBhtn"] = "1", ["Payroll.ErBhxh"] = "17.5", ["Payroll.ErBhyt"] = "3", ["Payroll.ErBhtn"] = "1", ["Payroll.ErKpcd"] = "2",
             ["Payroll.PersonalDeduction"] = "15500000", ["Payroll.DependentDeduction"] = "6200000", ["Payroll.InsuranceCap"] = "46800000", ["Payroll.StandardDays"] = "26",
             ["Payroll.PitBrackets"] = "5000000:5;10000000:10;18000000:15;32000000:20;52000000:25;80000000:30;0:35",
-            ["Cit.Rate"] = "20", ["Accounting.Regime"] = "TT200",
+            ["Cit.Rate"] = "20", ["Accounting.Regime"] = "TT99",
         };
+        // Chuyển chế độ mặc định từ TT200 sang TT99 một lần (không đè lựa chọn khác của người dùng)
+        var regime = await db.SystemSettings.FirstOrDefaultAsync(s => s.Key == "Accounting.Regime");
+        if (regime is { Value: "TT200" } && !await db.SystemSettings.AnyAsync(s => s.Key == "Accounting.Tt99Migrated")) { regime.Value = "TT99"; regime.UpdatedAt = DateTime.Now; }
+        if (!await db.SystemSettings.AnyAsync(s => s.Key == "Accounting.Tt99Migrated")) db.SystemSettings.Add(new SystemSetting { Key = "Accounting.Tt99Migrated", Value = "true" });
         var have = (await db.SystemSettings.Select(s => s.Key).ToListAsync()).ToHashSet();
         foreach (var (k, v) in defaults.Where(x => !have.Contains(x.Key))) db.SystemSettings.Add(new SystemSetting { Key = k, Value = v });
 
@@ -120,14 +123,14 @@ public static class PlatformSeeder
             {
                 ("NV0001", "Trần Quốc Bảo", "Ban Giám đốc", "Giám đốc", 45_000_000, 5_000_000, 2, "6421"),
                 ("NV0002", "Nguyễn Thị Mai", "Phòng Kế toán", "Kế toán trưởng", 22_000_000, 2_000_000, 1, "6421"),
-                ("NV0003", "Lê Minh Tuấn", "Phòng Kinh doanh", "Trưởng phòng kinh doanh", 18_000_000, 3_000_000, 1, "641"),
+                ("NV0003", "Lê Minh Tuấn", "Phòng Kinh doanh", "Trưởng phòng kinh doanh", 18_000_000, 3_000_000, 1, "6411"),
                 ("NV0004", "Phạm Thu Trang", "Phòng Mua hàng", "Chuyên viên mua hàng", 14_000_000, 1_000_000, 0, "6421"),
-                ("NV0005", "Võ Văn Nam", "Kho vận", "Thủ kho", 11_000_000, 1_000_000, 2, "627"),
-                ("NV0006", "Đặng Hữu Phước", "Xưởng sản xuất", "Quản đốc", 16_000_000, 2_000_000, 1, "627"),
-                ("NV0007", "Hồ Thị Lan", "Phòng Quản lý chất lượng", "Trưởng nhóm QC", 13_000_000, 1_000_000, 0, "627"),
+                ("NV0005", "Võ Văn Nam", "Kho vận", "Thủ kho", 11_000_000, 1_000_000, 2, "6271"),
+                ("NV0006", "Đặng Hữu Phước", "Xưởng sản xuất", "Quản đốc", 16_000_000, 2_000_000, 1, "6271"),
+                ("NV0007", "Hồ Thị Lan", "Phòng Quản lý chất lượng", "Trưởng nhóm QC", 13_000_000, 1_000_000, 0, "6271"),
                 ("NV0008", "Nguyễn Văn Hùng", "Xưởng sản xuất", "Thợ mộc", 9_500_000, 500_000, 1, "622"),
                 ("NV0009", "Trần Văn Lợi", "Xưởng sản xuất", "Thợ sơn", 9_000_000, 500_000, 0, "622"),
-                ("NV0010", "Lý Thị Hoa", "Phòng Kinh doanh", "Nhân viên kinh doanh", 10_000_000, 1_500_000, 0, "641"),
+                ("NV0010", "Lý Thị Hoa", "Phòng Kinh doanh", "Nhân viên kinh doanh", 10_000_000, 1_500_000, 0, "6411"),
             };
             foreach (var e in emps)
                 db.Employees.Add(new Employee

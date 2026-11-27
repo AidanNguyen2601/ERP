@@ -43,7 +43,7 @@
                         <div class="form-check"><input class="form-check-input" type="checkbox" name="@f.Key" value="true" id="@f.Key" @(V(f.Key) == "true" ? "checked" : "") /><label class="form-check-label" for="@f.Key">@f.Label</label></div>
                         break;
                     case "regime":
-                        <label class="form-label small">@f.Label</label><select name="@f.Key" class="form-select form-select-sm"><option value="TT200" selected="@(V(f.Key) == "TT200")">Thông tư 200/2014/TT-BTC (thay thế dần bởi TT99/2025)</option><option value="TT133" selected="@(V(f.Key) == "TT133")">Thông tư 133/2016/TT-BTC</option></select>
+                        <label class="form-label small">@f.Label</label><select name="@f.Key" class="form-select form-select-sm"><option value="TT99" selected="@(V(f.Key) == "TT99")">Thông tư 99/2025/TT-BTC (áp dụng từ 01/01/2026, thay thế TT200)</option><option value="TT200" selected="@(V(f.Key) == "TT200")">Thông tư 200/2014/TT-BTC (đã thay thế – chỉ để tham chiếu số liệu cũ)</option><option value="TT133" selected="@(V(f.Key) == "TT133")">Thông tư 133/2016/TT-BTC</option></select>
                         break;
                     case "provider":
                         <label class="form-label small">@f.Label</label><select name="@f.Key" class="form-select form-select-sm"><option value="demo" selected="@(V(f.Key) == "demo")">Demo (giả lập)</option><option value="http" selected="@(V(f.Key) == "http")">Kết nối API nhà cung cấp</option></select>

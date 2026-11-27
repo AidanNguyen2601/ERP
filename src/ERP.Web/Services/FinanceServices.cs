@@ -310,7 +310,7 @@ public class ProductionService
         var wip = await _acc.RuleAsync(PostingCatalog.PrdWip);
         var lines = new List<JLine>();
         if (lab > 0) { lines.Add(new JLine(wip, lab, 0)); lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.PrdLabor), 0, lab)); }
-        if (ohd > 0) { lines.Add(new JLine(wip, ohd, 0)); lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.PrdOverhead), 0, ohd)); }
+        if (ohd > 0) { lines.Add(new JLine(wip, ohd, 0)); lines.AddRange(await _acc.CreditByBalanceAsync("627", ohd, date, await _acc.RuleAsync(PostingCatalog.PrdOverhead), "Kết chuyển chi phí sản xuất chung")); }
         if (lines.Any()) await _acc.PostAsync(date, $"Kết chuyển chi phí nhân công, SXC vào lệnh {po.Number}", JournalSource.Production, po.Number, po.Id, lines);
         po.CompletedQty = completedQty;
         po.UnitCost = Math.Round(po.TotalCost / completedQty, 2);   // hiển thị 2 số lẻ

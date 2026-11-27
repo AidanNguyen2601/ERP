@@ -60,7 +60,7 @@ public class ReportsController : ErpControllerBase
         var d = (at ?? DateTime.Today).Date;
         var (assets, sources) = await _rpt.BalanceSheetAsync(d);
         ViewBag.At = d; ViewBag.Sources = sources;
-        if (export) return Xl("CDKT", "BẢNG CÂN ĐỐI KẾ TOÁN (B01-DN)", $"Tại ngày {d:dd/MM/yyyy}", new[] { "Mã số", "Chỉ tiêu", "Số cuối kỳ" }, new[] { FieldKind.Text, FieldKind.Text, FieldKind.Money },
+        if (export) return Xl("CDKT", "BÁO CÁO TÌNH HÌNH TÀI CHÍNH (B01-DN)", $"Tại ngày {d:dd/MM/yyyy}", new[] { "Mã số", "Chỉ tiêu", "Số cuối kỳ" }, new[] { FieldKind.Text, FieldKind.Text, FieldKind.Money },
             assets.Concat(sources).Select(r => new object?[] { r.Code, new string(' ', r.Indent * 3) + r.Name, r.Amount }));
         return View(assets);
     }

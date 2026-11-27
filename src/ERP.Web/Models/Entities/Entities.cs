@@ -63,7 +63,7 @@ public static class AppRoles
 // =====================================================================
 //  KẾ TOÁN TỔNG HỢP
 // =====================================================================
-/// <summary>Hệ thống tài khoản kế toán (theo Thông tư 200/2014/TT-BTC, rút gọn)</summary>
+/// <summary>Hệ thống tài khoản kế toán (theo Thông tư 99/2025/TT-BTC, thay thế Thông tư 200/2014, rút gọn)</summary>
 public class Account
 {
     public int Id { get; set; }

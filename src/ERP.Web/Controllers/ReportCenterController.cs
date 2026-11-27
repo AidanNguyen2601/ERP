@@ -25,7 +25,7 @@ public class ReportCenterController : ErpControllerBase
         Add(fin, "Kế toán – tài chính", "Sổ cái / sổ chi tiết tài khoản", "Chi tiết phát sinh từng tài khoản kèm tài khoản đối ứng.", "bi-journal-bookmark", "Ledger", "Reports");
         Add(fin, "Kế toán – tài chính", "Sổ nhật ký chung (S03a-DN)", "Toàn bộ bút toán đã ghi sổ theo thứ tự thời gian; xuất Excel.", "bi-journal-text", "GeneralJournal", "StandardReports");
         Add(fin, "Kế toán – tài chính", "Báo cáo kết quả hoạt động kinh doanh (B02-DN)", "Doanh thu, giá vốn, chi phí, lợi nhuận, so sánh cùng kỳ.", "bi-graph-up-arrow", "IncomeStatement", "Reports");
-        Add(fin, "Kế toán – tài chính", "Bảng cân đối kế toán (B01-DN)", "Tài sản, nợ phải trả, vốn chủ sở hữu tại một ngày.", "bi-bank", "BalanceSheet", "Reports");
+        Add(fin, "Kế toán – tài chính", "Báo cáo tình hình tài chính (B01-DN, TT99)", "Tài sản, nợ phải trả, vốn chủ sở hữu tại một ngày.", "bi-bank", "BalanceSheet", "Reports");
         Add(fin, "Kế toán – tài chính", "Báo cáo lưu chuyển tiền tệ (B03-DN)", "Dòng tiền theo hoạt động kinh doanh, đầu tư, tài chính; tự đối chiếu số dư tiền.", "bi-cash-stack", "CashFlowStatement", "StandardReports");
         Add(fin, "Kế toán – tài chính", "Bảng kê thuế GTGT", "Hóa đơn đầu ra, đầu vào, điều chỉnh giảm và số thuế phải nộp.", "bi-percent", "VatReport", "Invoices");
         Add(fin, "Kế toán – tài chính", "Đối chiếu phân hệ – kế toán", "24 phép kiểm tra kho, mua, bán, công nợ, quỹ, TSCĐ, thuế khớp sổ cái.", "bi-check2-square", "Index", "Reconciliation");
