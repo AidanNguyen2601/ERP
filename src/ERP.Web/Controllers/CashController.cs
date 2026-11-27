@@ -157,5 +157,6 @@ public class CashController : ErpControllerBase
         var bal = new Dictionary<int, decimal>();
         foreach (var a in await Db.CashAccounts.Include(c => c.Account).ToListAsync()) bal[a.Id] = await _cash.BalanceAsync(a);
         ViewBag.Balances = bal;
+        ViewBag.CashCurrencies = await Db.CashAccounts.ToDictionaryAsync(c => c.Id, c => c.CurrencyCode);
     }
 }

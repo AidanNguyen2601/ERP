@@ -1,0 +1,39 @@
+@model List<TaxService.MatchRow>
+@{
+    ViewData["Title"] = "Đối chiếu hóa đơn với cổng thuế";
+    DateTime f = ViewBag.From, t = ViewBag.To; int pc = ViewBag.PortalCount;
+    string Badge(string s) => s switch { "Khớp" => "bg-success", "Lệch số tiền" => "bg-danger", "Chưa có dữ liệu cổng thuế" => "bg-secondary", _ => "bg-warning text-dark" };
+}
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@f.Iso()" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@t.Iso()" class="form-control form-control-sm" /></div>
+    <button class="btn btn-sm btn-outline-primary">Đối chiếu</button>
+    <a class="btn btn-sm btn-light" asp-action="Vat"><i class="bi bi-file-earmark-text"></i> Tờ khai GTGT</a>
+    <span class="ms-auto small text-muted">@pc hóa đơn từ cổng thuế trong kỳ</span>
+</form>
+@if (User.CanAccounting())
+{
+    <div class="card mb-3"><div class="card-body">
+        <form asp-action="ImportPortal" method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+            <input type="hidden" name="from" value="@f.Iso()" /><input type="hidden" name="to" value="@t.Iso()" />
+            <div class="col-md-3"><label class="form-label small">Loại bảng kê</label><select name="direction" class="form-select form-select-sm"><option value="Purchase">Hóa đơn mua vào (đầu vào)</option><option value="Sales">Hóa đơn bán ra (đầu ra)</option></select></div>
+            <div class="col-md-5"><label class="form-label small">File Excel tải từ hoadondientu.gdt.gov.vn</label><input type="file" name="file" accept=".xlsx,.csv" class="form-control form-control-sm" required /></div>
+            <div class="col-md-2"><button class="btn btn-sm btn-primary w-100"><i class="bi bi-upload"></i> Nhập</button></div>
+        </form>
+        <div class="small text-muted mt-1">Cột cần có: Ký hiệu, Số hóa đơn, Ngày lập, MST người bán / người mua, Tên, Tổng tiền chưa thuế, Tổng tiền thuế. Khớp theo MST đối tác + số hóa đơn.</div>
+    </div></div>
+}
+<div class="d-flex gap-2 mb-2 flex-wrap">@foreach (var g in Model.GroupBy(r => r.Status)) { <span class="badge @Badge(g.Key)">@g.Key: @g.Count()</span> }</div>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Kết quả</th><th>Loại</th><th>Ký hiệu</th><th>Số HĐ</th><th>Ngày</th><th>MST</th><th>Đối tác</th><th class="num">Trên sổ: tiền hàng</th><th class="num">Thuế</th><th class="num">Cổng thuế: tiền hàng</th><th class="num">Thuế</th></tr></thead>
+    <tbody>
+    @foreach (var r in Model)
+    {
+        <tr><td><span class="badge @Badge(r.Status)">@r.Status</span></td><td class="small">@(r.Direction == InvoiceDirection.Sales ? "Bán ra" : "Mua vào")</td><td class="small">@r.Series</td>
+            <td>@if (r.InvoiceId != null) { <a asp-controller="Invoices" asp-action="Details" asp-route-id="@r.InvoiceId">@r.InvoiceNo</a> } else { @r.InvoiceNo }</td>
+            <td>@r.Date.ToDate()</td><td class="small">@r.TaxCode</td><td class="small">@r.Partner</td>
+            <td class="num">@r.SysAmount?.ToMoney()</td><td class="num">@r.SysVat?.ToMoney()</td><td class="num">@r.PortalAmount?.ToMoney()</td><td class="num">@r.PortalVat?.ToMoney()</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="11" class="text-center text-muted py-3">Không có hóa đơn trong kỳ.</td></tr> }
+    </tbody>
+</table></div></div></div>

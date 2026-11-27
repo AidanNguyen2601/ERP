@@ -1,11 +1,12 @@
 @model Partner
-@{ ViewData["Title"] = Model.Id == 0 ? "Thêm đối tượng" : $"Sửa {Model.Code}"; var acc = User.CanAccounting(); }
+@{ ViewData["Title"] = Model.Id == 0 ? "Thêm đối tượng" : $"Sửa {Model.Code}"; var acc = User.CanAccounting(); var dups = ViewBag.Duplicates as List<string>; }
+@if (dups?.Any() == true) { <div class="alert alert-warning small" style="max-width:900px"><b>Cảnh báo trùng dữ liệu:</b><ul class="mb-0">@foreach (var d in dups) { <li>@d</li> }</ul></div> }
 <div class="card" style="max-width:900px"><div class="card-body">
 <form asp-action="Save" method="post">
     <input type="hidden" asp-for="Id" />
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <div class="row g-3">
-        <div class="col-md-3"><label asp-for="Code" class="form-label"></label><input asp-for="Code" class="form-control" /><span asp-validation-for="Code" class="text-danger small"></span></div>
+        <div class="col-md-3"><label asp-for="Code" class="form-label"></label><input asp-for="Code" class="form-control" placeholder="Để trống: tự sinh" /><span asp-validation-for="Code" class="text-danger small"></span></div>
         <div class="col-md-9"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger small"></span></div>
         <div class="col-md-4"><label asp-for="TaxCode" class="form-label"></label><input asp-for="TaxCode" class="form-control" /><span asp-validation-for="TaxCode" class="text-danger small"></span></div>
         <div class="col-md-8"><label asp-for="Address" class="form-label"></label><input asp-for="Address" class="form-control" /></div>
@@ -14,12 +15,16 @@
         <div class="col-md-4"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" /></div>
         <div class="col-md-4"><label asp-for="PaymentTermDays" class="form-label"></label><input asp-for="PaymentTermDays" type="number" class="form-control" /></div>
         <div class="col-md-4"><label asp-for="CreditLimit" class="form-label"></label><input asp-for="CreditLimit" type="number" step="1000000" class="form-control" readonly="@(!acc)" /><div class="form-text">0 = không giới hạn@(acc ? "" : " · chỉ Kế toán được sửa")</div></div>
+        <div class="col-md-4"><label asp-for="BankAccountNo" class="form-label"></label><input asp-for="BankAccountNo" class="form-control" /></div>
+        <div class="col-md-4"><label asp-for="BankName" class="form-label"></label><input asp-for="BankName" class="form-control" /></div>
+        <div class="col-md-4"><label asp-for="GroupCompanyId" class="form-label"></label><select asp-for="GroupCompanyId" asp-items="ViewBag.Companies" class="form-select" disabled="@(!acc)"><option value="">-- Không (bên ngoài tập đoàn) --</option></select><div class="form-text">Dùng để loại trừ giao dịch nội bộ khi hợp nhất</div></div>
         <div class="col-md-4 pt-4">
             <div class="form-check"><input asp-for="IsCustomer" class="form-check-input" /><label asp-for="IsCustomer" class="form-check-label"></label></div>
             <div class="form-check"><input asp-for="IsVendor" class="form-check-input" /><label asp-for="IsVendor" class="form-check-label"></label></div>
             <div class="form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div>
         </div>
     </div>
+    @if (dups?.Any() == true && DuplicateService.CanOverride(User)) { <div class="form-check mt-3"><input class="form-check-input" type="checkbox" name="confirmDuplicate" value="true" id="cdup" /><label class="form-check-label text-danger" for="cdup">Tôi đã kiểm tra – vẫn lưu dù trùng</label></div> }
     <div class="mt-4"><button class="btn btn-primary">Lưu</button> <a asp-action="Index" asp-route-type="@(Model.IsCustomer ? "customer" : "vendor")" class="btn btn-light">Hủy</a></div>
 </form>
 </div></div>

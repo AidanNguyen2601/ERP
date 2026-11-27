@@ -16,20 +16,20 @@
             <button type="button" class="nav-group" data-group-toggle title="Yêu thích"><i class="bi bi-star-fill gico fav-color"></i><span class="txt">Yêu thích</span><i class="bi bi-chevron-down caret"></i></button>
             <div class="nav-items" data-fav-list data-fav-mode="side"></div>
         </div>
-        <a class="nav-item @(Menu.Home.Active(ctx) ? "active" : "")" href="@homeUrl" title="@Menu.Home.Title"><i class="bi @Menu.Home.Icon"></i><span class="txt">@Menu.Home.Title</span></a>
+        <a class="nav-item @(Menu.Home.Active(ctx) ? "active" : "")" href="@homeUrl" title="@Lang.T(Context, Menu.Home.Title)"><i class="bi @Menu.Home.Icon"></i><span class="txt">@Lang.T(Context, Menu.Home.Title)</span></a>
         @foreach (var (g, items) in groups)
         {
             var groupActive = items.Any(i => i.Active(ctx));
             <div class="nav-sec open @(groupActive ? "has-active" : "")" data-group="@g.Key">
-                <button type="button" class="nav-group" data-group-toggle title="@g.Title"><i class="bi @g.Icon gico"></i><span class="txt">@g.Title</span><i class="bi bi-chevron-down caret"></i></button>
+                <button type="button" class="nav-group" data-group-toggle title="@Lang.T(Context, g.Title)"><i class="bi @g.Icon gico"></i><span class="txt">@Lang.T(Context, g.Title)</span><i class="bi bi-chevron-down caret"></i></button>
                 <div class="nav-items">
-                    <div class="flyout-title">@g.Title</div>
+                    <div class="flyout-title">@Lang.T(Context, g.Title)</div>
                     @foreach (var i in items)
                     {
                         var url = i.Url(Url);
-                        <a class="nav-item @(i.Active(ctx) ? "active" : "")" href="@url" title="@i.Title" data-search="@i.Title @g.Title">
-                            <i class="bi @i.Icon"></i><span class="txt">@i.Title</span>
-                            <span class="fav-toggle" role="button" tabindex="0" data-fav-url="@url" data-fav-title="@i.Title" data-fav-icon="@i.Icon" title="Thêm / bỏ yêu thích"><i class="bi bi-star"></i></span>
+                        <a class="nav-item @(i.Active(ctx) ? "active" : "")" href="@url" title="@Lang.T(Context, i.Title)" data-search="@Lang.T(Context, i.Title) @Lang.T(Context, g.Title)">
+                            <i class="bi @i.Icon"></i><span class="txt">@Lang.T(Context, i.Title)</span>
+                            <span class="fav-toggle" role="button" tabindex="0" data-fav-url="@url" data-fav-title="@Lang.T(Context, i.Title)" data-fav-icon="@i.Icon" title="Thêm / bỏ yêu thích"><i class="bi bi-star"></i></span>
                         </a>
                     }
                 </div>
@@ -43,7 +43,7 @@ else
     <nav class="hnav hnav-@Model">
         <a class="hbrand" href="@homeUrl"><i class="bi bi-grid-3x3-gap-fill"></i> ERP<span>Suite</span></a>
         <div class="hnav-scroll">
-            <a class="hlink @(Menu.Home.Active(ctx) ? "active" : "")" href="@homeUrl"><i class="bi @Menu.Home.Icon"></i><span>@Menu.Home.Title</span></a>
+            <a class="hlink @(Menu.Home.Active(ctx) ? "active" : "")" href="@homeUrl"><i class="bi @Menu.Home.Icon"></i><span>@Lang.T(Context, Menu.Home.Title)</span></a>
             <div class="@(up ? "dropup" : "dropdown") fav-sec" hidden>
                 <button type="button" class="hlink dropdown-toggle" data-bs-toggle="dropdown" data-fixed-dropdown><i class="bi bi-star-fill fav-color"></i><span>Yêu thích</span></button>
                 <div class="dropdown-menu shadow" data-fav-list data-fav-mode="dropdown"></div>
@@ -52,14 +52,14 @@ else
             {
                 <div class="@(up ? "dropup" : "dropdown")">
                     <button type="button" class="hlink dropdown-toggle @(items.Any(i => i.Active(ctx)) ? "active" : "")" data-bs-toggle="dropdown" data-fixed-dropdown>
-                        <i class="bi @g.Icon"></i><span>@g.Title</span></button>
+                        <i class="bi @g.Icon"></i><span>@Lang.T(Context, g.Title)</span></button>
                     <div class="dropdown-menu shadow">
                         @foreach (var i in items)
                         {
                             var url = i.Url(Url);
                             <a class="dropdown-item d-flex align-items-center gap-2 @(i.Active(ctx) ? "active" : "")" href="@url">
-                                <i class="bi @i.Icon"></i><span class="flex-grow-1">@i.Title</span>
-                                <span class="fav-toggle" role="button" tabindex="0" data-fav-url="@url" data-fav-title="@i.Title" data-fav-icon="@i.Icon" title="Thêm / bỏ yêu thích"><i class="bi bi-star"></i></span>
+                                <i class="bi @i.Icon"></i><span class="flex-grow-1">@Lang.T(Context, i.Title)</span>
+                                <span class="fav-toggle" role="button" tabindex="0" data-fav-url="@url" data-fav-title="@Lang.T(Context, i.Title)" data-fav-icon="@i.Icon" title="Thêm / bỏ yêu thích"><i class="bi bi-star"></i></span>
                             </a>
                         }
                     </div>

@@ -1,0 +1,19 @@
+@model List<ScaleTicket>
+@{ ViewData["Title"] = "Phiếu cân điện tử"; DateTime f = ViewBag.From, t = ViewBag.To; }
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@f.Iso()" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@t.Iso()" class="form-control form-control-sm" /></div>
+    <button class="btn btn-sm btn-outline-primary">Xem</button>
+    <span class="ms-auto small text-muted">Thiết bị cân đẩy dữ liệu qua <code>POST /api/v1/scale-readings</code> (cấp khóa tại Kết nối API).</span>
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Số phiếu</th><th>Thời điểm</th><th>Chiều</th><th>Xe</th><th>Hàng</th><th>Đối tác</th><th class="num">Tổng (kg)</th><th class="num">Bì (kg)</th><th class="num">Hàng (kg)</th><th>Chứng từ</th><th>Thiết bị</th></tr></thead><tbody>
+    @foreach (var s in Model)
+    {
+        <tr><td><b>@s.TicketNo</b></td><td>@s.WeighedAt.ToString("dd/MM/yyyy HH:mm")</td><td>@(s.Direction == "OUT" ? "Xuất" : "Nhập")</td><td>@s.VehicleNo</td><td class="small">@(s.Item?.Name ?? s.ItemCode)</td><td class="small">@s.PartnerCode</td>
+            <td class="num">@s.GrossKg.ToQty()</td><td class="num">@s.TareKg.ToQty()</td><td class="num fw-bold">@s.NetKg.ToQty()</td><td class="small">@s.Reference</td><td class="small text-muted">@s.Device</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="11" class="text-center text-muted py-3">Chưa có phiếu cân trong kỳ.</td></tr> }
+    </tbody>
+    @if (Model.Any()) { <tfoot><tr class="fw-bold"><td colspan="8">Cộng</td><td class="num">@Model.Sum(s => s.NetKg).ToQty()</td><td colspan="2"></td></tr></tfoot> }
+</table></div></div></div>

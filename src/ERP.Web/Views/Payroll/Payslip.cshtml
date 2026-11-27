@@ -1,0 +1,29 @@
+@model PayrollLine
+@{
+    Layout = null; var run = (PayrollRun)ViewBag.Run; var e = Model.Employee!;
+}
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8" /><title>Phiếu lương @e.Code @run.Month/@run.Year</title>
+<style>body{font-family:Arial,sans-serif;font-size:13px;max-width:640px;margin:24px auto;color:#111}h2{text-align:center;margin:4px 0}table{width:100%;border-collapse:collapse;margin-top:10px}td{padding:5px 6px;border-bottom:1px solid #ddd}td.n{text-align:right}tr.b td{font-weight:bold;border-top:2px solid #333}@@media print{button{display:none}}</style></head>
+<body>
+<h2>PHIẾU LƯƠNG THÁNG @run.Month.ToString("00")/@run.Year</h2>
+<div>Nhân viên: <b>@e.Code – @e.FullName</b> · @e.Department · @e.Position</div>
+<div>Số tài khoản: @e.BankAccountNo @e.BankName</div>
+<table>
+    <tr><td>Lương cơ bản</td><td class="n">@Model.BaseSalary.ToMoney()</td></tr>
+    <tr><td>Ngày công thực tế / chuẩn</td><td class="n">@Model.WorkDays.ToQty() / @run.StandardDays.ToQty()</td></tr>
+    <tr><td>Lương theo ngày công</td><td class="n">@Model.SalaryByDays.ToMoney()</td></tr>
+    <tr><td>Lương làm thêm giờ</td><td class="n">@Model.Overtime.ToMoney()</td></tr>
+    <tr><td>Phụ cấp chịu thuế</td><td class="n">@Model.Allowance.ToMoney()</td></tr>
+    <tr><td>Phụ cấp không chịu thuế</td><td class="n">@Model.NonTaxAllowance.ToMoney()</td></tr>
+    <tr class="b"><td>Tổng thu nhập</td><td class="n">@Model.Gross.ToMoney()</td></tr>
+    <tr><td>BHXH (8%)</td><td class="n">-@Model.EmpBhxh.ToMoney()</td></tr>
+    <tr><td>BHYT (1,5%)</td><td class="n">-@Model.EmpBhyt.ToMoney()</td></tr>
+    <tr><td>BHTN (1%)</td><td class="n">-@Model.EmpBhtn.ToMoney()</td></tr>
+    <tr><td>Giảm trừ gia cảnh</td><td class="n">@Model.FamilyDeduction.ToMoney()</td></tr>
+    <tr><td>Thu nhập tính thuế</td><td class="n">@Model.TaxableIncome.ToMoney()</td></tr>
+    <tr><td>Thuế TNCN</td><td class="n">-@Model.Pit.ToMoney()</td></tr>
+    <tr class="b"><td>THỰC LĨNH</td><td class="n">@Model.Net.ToMoney()</td></tr>
+</table>
+<p style="margin-top:24px"><button onclick="window.print()">In phiếu lương</button></p>
+</body></html>

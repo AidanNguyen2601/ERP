@@ -1,0 +1,23 @@
+@model List<RecurringJournal>
+@{ ViewData["Title"] = "Bút toán định kỳ & phân bổ"; var canPost = User.CanAccounting(); }
+<div class="toolbar">
+    <span class="small text-muted">Kết chuyển cuối kỳ thực hiện tại <a asp-controller="Reports" asp-action="Periods">Khóa sổ & kết chuyển</a>; khấu hao TSCĐ tại <a asp-controller="Assets" asp-action="Index">Tài sản cố định</a>; phân bổ CCDC tại <a asp-controller="Tools" asp-action="Index">Công cụ dụng cụ</a>.</span>
+    @if (canPost)
+    {
+        <form asp-action="Generate" method="post" class="d-flex gap-1 ms-auto"><input type="date" name="asOf" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /><button class="btn btn-sm btn-outline-primary text-nowrap"><i class="bi bi-play"></i> Sinh bút toán đến hạn</button></form>
+        <a class="btn btn-sm btn-primary" asp-action="Edit"><i class="bi bi-plus-lg"></i> Định kỳ</a>
+        <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-allocation="true"><i class="bi bi-diagram-2"></i> Phân bổ</a>
+    }
+</div>
+<div class="card"><div class="card-body p-0"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Tên mẫu</th><th>Loại</th><th>Định khoản</th><th>Chu kỳ</th><th>Kỳ tới</th><th>Kết thúc</th><th>Ghi sổ</th><th>Lần chạy cuối</th><th></th></tr></thead><tbody>
+    @foreach (var r in Model)
+    {
+        <tr class="@(r.IsActive ? "" : "text-muted")"><td><b>@r.Name</b><div class="small text-muted">@r.Description</div></td><td>@(r.IsAllocation ? "Phân bổ" : "Định kỳ")</td>
+            <td class="small">@if (r.IsAllocation) { <span>TK nguồn @r.SourceAccount?.Code → @string.Join(", ", r.Lines.Select(l => $"{l.Account?.Code}{(string.IsNullOrEmpty(l.Department) ? "" : " (" + l.Department + ")")} {l.Percent:0.##}%"))</span> }
+                else { @foreach (var l in r.Lines) { <div>@(l.Debit > 0 ? "Nợ" : "Có") @l.Account?.Code: @((l.Debit + l.Credit).ToMoney())</div> } }</td>
+            <td>@r.IntervalMonths tháng, ngày @r.DayOfMonth</td><td>@r.NextDate.ToDate()</td><td>@r.EndDate.ToDate()</td><td class="small">@(r.AutoPost ? "Tự ghi sổ" : "Lập nháp")</td><td class="small">@r.LastRunAt?.ToString("dd/MM/yyyy HH:mm")</td>
+            <td class="text-nowrap">@if (canPost) { <a class="btn btn-sm btn-light" asp-action="Edit" asp-route-id="@r.Id"><i class="bi bi-pencil"></i></a> <form asp-action="Delete" asp-route-id="@r.Id" method="post" class="d-inline" data-confirm="Xóa mẫu?"><button class="btn btn-sm btn-light text-danger"><i class="bi bi-trash"></i></button></form> }</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="9" class="text-center text-muted py-3">Chưa có mẫu bút toán định kỳ.</td></tr> }
+</tbody></table></div></div>

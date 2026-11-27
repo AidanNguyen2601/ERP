@@ -1,0 +1,49 @@
+@using ERP.Web.Controllers
+@model PayrollRun
+@{
+    ViewData["Title"] = $"Bảng lương tháng {Model.Month:00}/{Model.Year}";
+    var ap = ViewBag.Approval as ApprovalRequest;
+    decimal S(Func<PayrollLine, decimal> f) => Model.Lines.Sum(f);
+}
+<div class="toolbar">
+    <span class="badge @(Model.Status == DocStatus.Posted ? "bg-success" : Model.Status == DocStatus.Cancelled ? "bg-secondary" : "bg-warning text-dark")">@Model.Status.GetDisplayName()</span>
+    <span class="small text-muted">@(Model.Branch?.Name ?? "Toàn công ty") · ngày công chuẩn @Model.StandardDays</span>
+    @if (ap != null) { <a class="small" asp-controller="Approvals" asp-action="Index">Phê duyệt: @ap.Status.GetDisplayName() – @WorkflowService.Describe(ap)</a> }
+    @if (Model.JournalEntryId != null) { <a class="btn btn-sm btn-light" asp-controller="Journals" asp-action="Details" asp-route-id="@Model.JournalEntryId"><i class="bi bi-journal-text"></i> Bút toán lương</a> }
+    <span class="ms-auto"></span>
+    @if (Model.Status == DocStatus.Draft)
+    {
+        <form asp-action="Recalculate" asp-route-id="@Model.Id" method="post" class="d-inline"><button class="btn btn-sm btn-light"><i class="bi bi-arrow-repeat"></i> Tính lại</button></form>
+        <form asp-action="Submit" asp-route-id="@Model.Id" method="post" class="d-inline" data-confirm="Gửi duyệt / hạch toán bảng lương?"><button class="btn btn-sm btn-primary"><i class="bi bi-send-check"></i> Duyệt & hạch toán</button></form>
+    }
+    @if (Model.Status != DocStatus.Cancelled)
+    {
+        <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="d-inline-flex gap-1"><input name="reason" class="form-control form-control-sm" placeholder="Lý do hủy" required /><button class="btn btn-sm btn-outline-danger">Hủy</button></form>
+    }
+</div>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0" style="font-size:.85rem">
+    <thead><tr><th>Mã</th><th>Họ tên</th><th>Bộ phận</th><th class="num">Lương CB</th><th class="num">Công</th><th class="num">Lương theo công</th><th class="num">Làm thêm</th><th class="num">Phụ cấp</th>
+        <th class="num">Tổng TN</th><th class="num">BH NLĐ</th><th class="num">Giảm trừ GC</th><th class="num">TN tính thuế</th><th class="num">Thuế TNCN</th><th class="num">Thực lĩnh</th><th class="num">BH DN chịu</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var l in Model.Lines.OrderBy(x => x.Employee?.Code))
+    {
+        <tr><td>@l.Employee?.Code</td><td>@l.Employee?.FullName</td><td class="small">@l.Department (@l.ExpenseAccount)</td><td class="num">@l.BaseSalary.ToMoney()</td><td class="num">@l.WorkDays.ToQty()</td>
+            <td class="num">@l.SalaryByDays.ToMoney()</td><td class="num">@l.Overtime.ToMoney()</td><td class="num">@((l.Allowance + l.NonTaxAllowance).ToMoney())</td><td class="num"><b>@l.Gross.ToMoney()</b></td>
+            <td class="num">@l.EmpTotal.ToMoney()</td><td class="num">@l.FamilyDeduction.ToMoney()</td><td class="num">@l.TaxableIncome.ToMoney()</td><td class="num">@l.Pit.ToMoney()</td><td class="num"><b>@l.Net.ToMoney()</b></td><td class="num">@l.ErTotal.ToMoney()</td>
+            <td><a asp-action="Payslip" asp-route-id="@Model.Id" asp-route-lineId="@l.Id" title="Phiếu lương" target="_blank"><i class="bi bi-printer"></i></a></td></tr>
+    }
+    </tbody>
+    <tfoot><tr class="fw-bold"><td colspan="5">Cộng</td><td class="num">@S(l => l.SalaryByDays).ToMoney()</td><td class="num">@S(l => l.Overtime).ToMoney()</td><td class="num">@S(l => l.Allowance + l.NonTaxAllowance).ToMoney()</td><td class="num">@S(l => l.Gross).ToMoney()</td>
+        <td class="num">@S(l => l.EmpTotal).ToMoney()</td><td></td><td class="num">@S(l => l.TaxableIncome).ToMoney()</td><td class="num">@S(l => l.Pit).ToMoney()</td><td class="num">@S(l => l.Net).ToMoney()</td><td class="num">@S(l => l.ErTotal).ToMoney()</td><td></td></tr></tfoot>
+</table></div></div></div>
+<div class="row g-3 mt-1">
+    <div class="col-md-6"><div class="card"><div class="card-header">Các khoản trích theo lương</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off">
+        <thead><tr><th></th><th class="num">NLĐ</th><th class="num">Doanh nghiệp</th><th class="num">Cộng</th></tr></thead><tbody>
+        <tr><td>BHXH (3383)</td><td class="num">@S(l => l.EmpBhxh).ToMoney()</td><td class="num">@S(l => l.ErBhxh).ToMoney()</td><td class="num">@S(l => l.EmpBhxh + l.ErBhxh).ToMoney()</td></tr>
+        <tr><td>BHYT (3384)</td><td class="num">@S(l => l.EmpBhyt).ToMoney()</td><td class="num">@S(l => l.ErBhyt).ToMoney()</td><td class="num">@S(l => l.EmpBhyt + l.ErBhyt).ToMoney()</td></tr>
+        <tr><td>BHTN (3386)</td><td class="num">@S(l => l.EmpBhtn).ToMoney()</td><td class="num">@S(l => l.ErBhtn).ToMoney()</td><td class="num">@S(l => l.EmpBhtn + l.ErBhtn).ToMoney()</td></tr>
+        <tr><td>KPCĐ (3382)</td><td class="num">0</td><td class="num">@S(l => l.ErKpcd).ToMoney()</td><td class="num">@S(l => l.ErKpcd).ToMoney()</td></tr>
+        <tr><td>Thuế TNCN (3335)</td><td class="num">@S(l => l.Pit).ToMoney()</td><td></td><td class="num">@S(l => l.Pit).ToMoney()</td></tr>
+    </tbody></table></div></div></div>
+    @if (!string.IsNullOrEmpty(Model.Note)) { <div class="col-md-6"><div class="alert alert-secondary small">@Model.Note</div></div> }
+</div>

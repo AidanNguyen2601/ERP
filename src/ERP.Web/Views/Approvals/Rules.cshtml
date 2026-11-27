@@ -1,0 +1,38 @@
+@model List<ApprovalRule>
+@{ ViewData["Title"] = "Quy tắc phê duyệt"; }
+<div class="alert alert-info small">Chứng từ có giá trị từ <b>mức áp dụng</b> trở lên phải qua các <b>cấp duyệt</b> tương ứng (cấp 1 xong mới đến cấp 2...). Cùng một cấp có nhiều quy tắc thì một người trong số đó duyệt là đủ cho quy tắc của mình,
+    và cấp chỉ hoàn tất khi mọi quy tắc của cấp đã duyệt. Không có quy tắc nào áp dụng thì chứng từ không cần duyệt. Thay đổi áp dụng cho chứng từ gửi duyệt sau khi lưu.</div>
+<div class="card mb-3"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm align-middle mb-0" data-grid="off">
+    <thead><tr><th>Loại chứng từ</th><th>Cấp</th><th>Tên bước</th><th class="num">Áp dụng từ</th><th>Chi nhánh</th><th>Người duyệt</th><th>Trạng thái</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var r in Model)
+    {
+        <tr class="@(r.IsActive ? "" : "text-muted")"><td>@r.DocType.GetDisplayName()</td><td>@r.Level</td><td>@r.Name</td><td class="num">@r.MinAmount.ToMoney()</td><td class="small">@(r.Branch?.Name ?? "Mọi chi nhánh")</td>
+            <td>@(r.ApproverUser != null ? r.ApproverUser.FullName : AppRoles.DisplayName(r.ApproverRole ?? ""))</td><td>@(r.IsActive ? "Áp dụng" : "Ngưng")</td>
+            <td class="text-end"><button type="button" class="btn btn-sm btn-light" onclick='fill(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new { r.Id, DocType = (int)r.DocType, r.Level, r.Name, r.MinAmount, r.BranchId, r.ApproverRole, r.ApproverUserId, r.IsActive })))'>Sửa</button>
+                <form asp-action="DeleteRule" asp-route-id="@r.Id" method="post" class="d-inline" data-confirm="Xóa quy tắc?"><button class="btn btn-sm btn-light text-danger"><i class="bi bi-trash"></i></button></form></td></tr>
+    }
+    </tbody>
+</table></div></div></div>
+<div class="card" style="max-width:900px"><div class="card-header" id="ruleTitle">Thêm quy tắc duyệt</div><div class="card-body">
+<form asp-action="SaveRule" method="post" class="row g-2" id="ruleForm">
+    <input type="hidden" name="Id" value="0" />
+    <div class="col-md-4"><label class="form-label small">Loại chứng từ</label><select name="DocType" class="form-select form-select-sm" asp-items="Html.GetEnumSelectList<ApprovalDocType>()"></select></div>
+    <div class="col-md-2"><label class="form-label small">Cấp</label><input name="Level" type="number" min="1" max="9" value="1" class="form-control form-control-sm" /></div>
+    <div class="col-md-6"><label class="form-label small">Tên bước duyệt</label><input name="Name" class="form-control form-control-sm" required placeholder="VD: Trưởng phòng mua hàng duyệt" /></div>
+    <div class="col-md-4"><label class="form-label small">Áp dụng từ giá trị (VND)</label><input name="MinAmount" type="number" step="1000" value="0" class="form-control form-control-sm" /></div>
+    <div class="col-md-4"><label class="form-label small">Chi nhánh</label><select name="BranchId" asp-items="ViewBag.Branches" class="form-select form-select-sm"><option value="">Mọi chi nhánh</option></select></div>
+    <div class="col-md-4"><label class="form-label small">Vai trò duyệt</label><select name="ApproverRole" class="form-select form-select-sm"><option value="">--</option>@foreach (var r in AppRoles.All) { <option value="@r">@AppRoles.DisplayName(r)</option> }</select></div>
+    <div class="col-md-6"><label class="form-label small">Hoặc người duyệt cụ thể</label><select name="ApproverUserId" asp-items="ViewBag.Users" class="form-select form-select-sm"><option value="">--</option></select></div>
+    <div class="col-md-6 d-flex align-items-end"><div class="form-check"><input class="form-check-input" type="checkbox" name="IsActive" value="true" id="ra" checked /><label class="form-check-label" for="ra">Đang áp dụng</label></div></div>
+    <div class="col-12"><button class="btn btn-sm btn-primary">Lưu quy tắc</button> <button type="reset" class="btn btn-sm btn-light" onclick="document.getElementById('ruleTitle').textContent='Thêm quy tắc duyệt';document.querySelector('#ruleForm [name=Id]').value=0">Thêm mới</button></div>
+</form></div></div>
+@section Scripts {
+<script>
+function fill(r) {
+    const f = document.getElementById('ruleForm');
+    for (const [k, v] of Object.entries(r)) { const el = f.querySelector(`[name=${k}]`); if (!el) continue; if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? ''; }
+    document.getElementById('ruleTitle').textContent = 'Sửa quy tắc: ' + r.Name; f.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+}

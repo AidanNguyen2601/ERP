@@ -39,7 +39,8 @@ public class SalesCreditService
     private readonly InventoryService _inv;
     private readonly AccountingService _acc;
     private readonly CurrentUser _user;
-    public SalesCreditService(ErpDbContext db, InventoryService inv, AccountingService acc, CurrentUser user) { _db = db; _inv = inv; _acc = acc; _user = user; }
+    private readonly EInvoiceService _einv;
+    public SalesCreditService(ErpDbContext db, InventoryService inv, AccountingService acc, CurrentUser user, EInvoiceService einv) { _db = db; _inv = inv; _acc = acc; _user = user; _einv = einv; }
 
     /// <summary>Đã điều chỉnh giảm theo từng dòng hóa đơn (chứng từ chưa hủy)</summary>
     public async Task<Dictionary<int, CreditedLine>> CreditedAsync(int invoiceId) =>
@@ -142,6 +143,7 @@ public class SalesCreditService
         var applied = Math.Min(note.Total, Math.Max(0, inv.Total - inv.PaidAmount));
         if (applied > 0) { inv.PaidAmount += applied; note.Offsets.Add(new SalesCreditOffset { InvoiceId = inv.Id, Amount = applied }); }
         note.Unapplied = note.Total - applied;
+        note.EInvoiceLookupCode = await _einv.AdjustAsync(inv, note);
         await _db.SaveChangesAsync();
         return note;
     }

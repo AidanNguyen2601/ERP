@@ -6,7 +6,7 @@ namespace ERP.Web.Models.Entities;
 // =====================================================================
 //  NGƯỜI DÙNG & PHÂN QUYỀN
 // =====================================================================
-public class AppUser
+public partial class AppUser
 {
     public int Id { get; set; }
     [Required, StringLength(50)][Display(Name = "Tên đăng nhập")] public string Username { get; set; } = string.Empty;
@@ -91,7 +91,7 @@ public class FiscalPeriod
 }
 
 /// <summary>Chứng từ kế toán (bút toán) – mọi nghiệp vụ đều sinh ra bút toán ở đây</summary>
-public class JournalEntry
+public partial class JournalEntry
 {
     public int Id { get; set; }
     [Required, StringLength(30)][Display(Name = "Số chứng từ")] public string Number { get; set; } = string.Empty;
@@ -113,7 +113,7 @@ public class JournalEntry
     [NotMapped] public decimal TotalCredit => Lines.Sum(l => l.Credit);
 }
 
-public class JournalLine
+public partial class JournalLine
 {
     public int Id { get; set; }
     public int JournalEntryId { get; set; }
@@ -130,7 +130,7 @@ public class JournalLine
 // =====================================================================
 //  ĐỐI TÁC (KHÁCH HÀNG / NHÀ CUNG CẤP)
 // =====================================================================
-public class Partner
+public partial class Partner
 {
     public int Id { get; set; }
     [Required(ErrorMessage = "Nhập mã"), StringLength(20)][Display(Name = "Mã đối tượng")] public string Code { get; set; } = string.Empty;
@@ -168,7 +168,7 @@ public class Item
     [NotMapped] public string Display => $"{Code} – {Name}";
 }
 
-public class Warehouse
+public partial class Warehouse
 {
     public int Id { get; set; }
     [Required(ErrorMessage = "Nhập mã"), StringLength(20)][Display(Name = "Mã kho")] public string Code { get; set; } = string.Empty;
@@ -207,7 +207,7 @@ public class StockMove
 }
 
 /// <summary>Phiếu nhập / xuất / chuyển kho / kiểm kê</summary>
-public class InventoryDoc
+public partial class InventoryDoc
 {
     public int Id { get; set; }
     [Required, StringLength(30)][Display(Name = "Số phiếu")] public string Number { get; set; } = string.Empty;
@@ -252,7 +252,7 @@ public class InventoryDocLine
 // =====================================================================
 //  MUA HÀNG
 // =====================================================================
-public class PurchaseOrder
+public partial class PurchaseOrder
 {
     public int Id { get; set; }
     [Required, StringLength(30)][Display(Name = "Số đơn mua")] public string Number { get; set; } = string.Empty;
@@ -298,7 +298,7 @@ public class PurchaseOrderLine
 // =====================================================================
 //  BÁN HÀNG
 // =====================================================================
-public class SalesOrder
+public partial class SalesOrder
 {
     public int Id { get; set; }
     [Required, StringLength(30)][Display(Name = "Số đơn bán")] public string Number { get; set; } = string.Empty;
@@ -342,7 +342,7 @@ public class SalesOrderLine
 // =====================================================================
 //  HÓA ĐƠN (bán ra / mua vào)
 // =====================================================================
-public class Invoice
+public partial class Invoice
 {
     public int Id { get; set; }
     [Display(Name = "Loại")] public InvoiceDirection Direction { get; set; }
@@ -373,7 +373,7 @@ public class Invoice
     [NotMapped] public bool IsOverdue => Outstanding > 0 && DueDate < DateTime.Today;
 }
 
-public class InvoiceLine
+public partial class InvoiceLine
 {
     public int Id { get; set; }
     public int InvoiceId { get; set; }
@@ -399,7 +399,7 @@ public class InvoiceLine
 // =====================================================================
 //  TIỀN (QUỸ & NGÂN HÀNG)
 // =====================================================================
-public class CashAccount
+public partial class CashAccount
 {
     public int Id { get; set; }
     [Required(ErrorMessage = "Nhập mã"), StringLength(20)][Display(Name = "Mã")] public string Code { get; set; } = string.Empty;
@@ -412,7 +412,7 @@ public class CashAccount
     [Display(Name = "Đang sử dụng")] public bool IsActive { get; set; } = true;
 }
 
-public class CashVoucher
+public partial class CashVoucher
 {
     public int Id { get; set; }
     [Required, StringLength(30)][Display(Name = "Số phiếu")] public string Number { get; set; } = string.Empty;
@@ -439,7 +439,7 @@ public class CashVoucher
 }
 
 /// <summary>Phân bổ tiền thu / chi vào từng hóa đơn (cấn trừ công nợ)</summary>
-public class PaymentAllocation
+public partial class PaymentAllocation
 {
     public int Id { get; set; }
     public int CashVoucherId { get; set; }
@@ -466,7 +466,7 @@ public class AssetCategory
     [Range(1, 600)][Display(Name = "Thời gian KH mặc định (tháng)")] public int DefaultLifeMonths { get; set; } = 60;
 }
 
-public class FixedAsset
+public partial class FixedAsset
 {
     public int Id { get; set; }
     [Required(ErrorMessage = "Nhập mã"), StringLength(30)][Display(Name = "Mã tài sản")] public string Code { get; set; } = string.Empty;
@@ -540,7 +540,7 @@ public class BomLine
     public decimal ScrapPct { get; set; }
 }
 
-public class ProductionOrder
+public partial class ProductionOrder
 {
     public int Id { get; set; }
     [Required, StringLength(30)][Display(Name = "Số lệnh SX")] public string Number { get; set; } = string.Empty;
@@ -803,7 +803,7 @@ public class InvoiceOffset
 ///  – Giảm giá hàng bán: Nợ 5213 + Nợ 33311 / Có 131, không nhập kho
 /// Giá trị điều chỉnh được cấn trừ vào công nợ hóa đơn; phần hóa đơn đã thanh toán hết ghi nhận là khách còn được ghi có (Unapplied).
 /// </summary>
-public class SalesCreditNote
+public partial class SalesCreditNote
 {
     public int Id { get; set; }
     [Required, StringLength(30)][Display(Name = "Số chứng từ")] public string Number { get; set; } = string.Empty;

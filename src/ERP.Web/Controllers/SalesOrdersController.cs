@@ -67,7 +67,7 @@ public class SalesOrdersController : ErpControllerBase
         if (so.Status != SoStatus.Draft) { Error("Chỉ sửa đơn nháp."); return RedirectToAction(nameof(Details), new { id }); }
         var f = new OrderForm
         {
-            Id = so.Id, Number = so.Number, Date = so.Date, PartnerId = so.CustomerId, WarehouseId = so.WarehouseId, DeliveryDate = so.DeliveryDate, Note = so.Note,
+            Id = so.Id, Number = so.Number, Date = so.Date, PartnerId = so.CustomerId, WarehouseId = so.WarehouseId, DeliveryDate = so.DeliveryDate, Note = so.Note, ContractId = so.ContractId,
             Lines = so.Lines.Select(l => new LineInput { Id = l.Id, ItemId = l.ItemId, Quantity = l.Quantity, UnitPrice = l.UnitPrice, DiscountPct = l.DiscountPct, VatRate = l.VatRate }).ToList()
         };
         await FormDataAsync(f);
@@ -96,7 +96,7 @@ public class SalesOrdersController : ErpControllerBase
             if (so.Status != SoStatus.Draft) throw new BusinessException("Đơn đã xác nhận, không sửa được.");
             Db.SalesOrderLines.RemoveRange(so.Lines.ToList()); so.Lines.Clear();
         }
-        so.Date = form.Date.Date; so.CustomerId = form.PartnerId; so.WarehouseId = form.WarehouseId; so.DeliveryDate = form.DeliveryDate.Date; so.Note = form.Note;
+        so.Date = form.Date.Date; so.CustomerId = form.PartnerId; so.WarehouseId = form.WarehouseId; so.DeliveryDate = form.DeliveryDate.Date; so.Note = form.Note; so.ContractId = form.ContractId;
         foreach (var l in lines) so.Lines.Add(new SalesOrderLine { ItemId = l.ItemId!.Value, Quantity = l.Quantity, UnitPrice = l.UnitPrice, DiscountPct = l.DiscountPct, VatRate = l.VatRate });
         SalesService.Recalc(so);
         await Db.SaveChangesAsync();
@@ -116,6 +116,7 @@ public class SalesOrdersController : ErpControllerBase
             if (warn != null) TempData["Warning"] = warn;
             Success($"Đã xác nhận đơn {so.Number}, chuyển kho chuẩn bị giao hàng.");
         }
+        catch (PendingApprovalException ex) { TempData["Warning"] = ex.Message; }
         catch (BusinessException ex) { Error(ex.Message); }
         return RedirectToAction(nameof(Details), new { id });
     }
@@ -171,6 +172,7 @@ public class SalesOrdersController : ErpControllerBase
     {
         ViewBag.Partners = await CustomersAsync(f.PartnerId);
         ViewBag.Whs = await WarehousesAsync(f.WarehouseId);
+        ViewBag.Contracts = await ContractsAsync(ContractType.Sale, f.ContractId);
         ViewBag.LineOptions = new LineEditorOptions { Items = await ItemsAsync(i => i.Type != ItemType.Material), PriceSource = "sale", ShowDiscount = true, Lines = f.Lines, PriceLabel = "Đơn giá bán" };
         var stock = (await Db.StockLevels.ToListAsync()).GroupBy(s => s.ItemId).ToDictionary(g => g.Key, g => g.Sum(x => x.Quantity));
         ViewBag.StockHint = stock;

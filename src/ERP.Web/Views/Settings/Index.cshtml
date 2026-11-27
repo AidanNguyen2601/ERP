@@ -1,0 +1,67 @@
+@using ERP.Web.Controllers
+@{
+    ViewData["Title"] = "Tham số hệ thống";
+    var vals = (Dictionary<string, string>)ViewBag.Values; var rules = (Dictionary<string, CodeRule>)ViewBag.Rules;
+    string V(string k) => vals.TryGetValue(k, out var v) ? v : "";
+    var canEdit = User.InAny(AppRoles.Admin + "," + AppRoles.Accountant);
+}
+<div class="toolbar">
+    <a class="btn btn-sm btn-light" asp-action="Currencies"><i class="bi bi-currency-exchange"></i> Tiền tệ & tỷ giá</a>
+    <a class="btn btn-sm btn-light" asp-controller="Approvals" asp-action="Rules"><i class="bi bi-diagram-3"></i> Quy tắc phê duyệt</a>
+    <a class="btn btn-sm btn-light" asp-controller="Org" asp-action="Index"><i class="bi bi-building"></i> Công ty & chi nhánh</a>
+    @if (User.IsAdmin()) { <a class="btn btn-sm btn-light" asp-action="Api"><i class="bi bi-plug"></i> Kết nối API</a> }
+</div>
+<form method="post">
+<fieldset @(canEdit ? "" : "disabled")>
+<div class="row g-3">
+    <div class="col-xl-6">
+        <div class="card mb-3"><div class="card-header">Quy tắc đặt mã danh mục</div><div class="card-body p-0"><table class="table table-sm align-middle mb-0" data-grid="off">
+            <thead><tr><th>Danh mục</th><th style="width:110px">Tiền tố</th><th style="width:90px">Số chữ số</th><th>Ví dụ</th><th>Bắt buộc theo quy tắc</th></tr></thead><tbody>
+            @foreach (var (t, n) in SettingsController.CodeTargets)
+            {
+                var r = rules.GetValueOrDefault(t);
+                <tr><td>@n</td><td><input name="prefix.@t" value="@r?.Prefix" class="form-control form-control-sm" maxlength="10" /></td>
+                    <td><input name="digits.@t" type="number" min="2" max="8" value="@(r?.Digits ?? 3)" class="form-control form-control-sm" /></td>
+                    <td class="small text-muted">@(r == null ? "" : r.Prefix + "1".PadLeft(r.Digits, '0'))</td>
+                    <td><input type="checkbox" class="form-check-input" name="enforce.@t" value="true" @(r?.Enforce == true ? "checked" : "") /></td></tr>
+            }
+            </tbody></table>
+            <div class="small text-muted p-2">Để trống mã khi thêm mới (hoặc khi nhập Excel) thì hệ thống tự sinh mã kế tiếp. "Bắt buộc" = từ chối mã nhập tay không đúng quy tắc.</div>
+        </div></div>
+    </div>
+    <div class="col-xl-6">
+        @foreach (var g in SettingsController.Fields.GroupBy(f => f.Group))
+        {
+            <div class="card mb-3" id="@(g.Key == "Tiền lương" ? "payroll" : "")"><div class="card-header">@g.Key</div><div class="card-body row g-2">
+            @foreach (var f in g)
+            {
+                <div class="@(f.Kind == "bool" ? "col-12" : f.Key == "Payroll.PitBrackets" ? "col-12" : "col-md-6")">
+                @switch (f.Kind)
+                {
+                    case "bool":
+                        <input type="hidden" name="@f.Key" value="false" />
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="@f.Key" value="true" id="@f.Key" @(V(f.Key) == "true" ? "checked" : "") /><label class="form-check-label" for="@f.Key">@f.Label</label></div>
+                        break;
+                    case "regime":
+                        <label class="form-label small">@f.Label</label><select name="@f.Key" class="form-select form-select-sm"><option value="TT200" selected="@(V(f.Key) == "TT200")">Thông tư 200/2014/TT-BTC (thay thế dần bởi TT99/2025)</option><option value="TT133" selected="@(V(f.Key) == "TT133")">Thông tư 133/2016/TT-BTC</option></select>
+                        break;
+                    case "provider":
+                        <label class="form-label small">@f.Label</label><select name="@f.Key" class="form-select form-select-sm"><option value="demo" selected="@(V(f.Key) == "demo")">Demo (giả lập)</option><option value="http" selected="@(V(f.Key) == "http")">Kết nối API nhà cung cấp</option></select>
+                        break;
+                    case "secret":
+                        <label class="form-label small">@f.Label</label><input name="@f.Key" type="password" autocomplete="new-password" class="form-control form-control-sm" placeholder="@(V(f.Key) == "" ? "Chưa khai báo" : "••••••• (đã khai báo)")" />
+                        break;
+                    default:
+                        <label class="form-label small">@f.Label</label><input name="@f.Key" value="@V(f.Key)" class="form-control form-control-sm" />
+                        break;
+                }
+                @if (f.Hint != null) { <div class="form-text">@f.Hint</div> }
+                </div>
+            }
+            </div></div>
+        }
+    </div>
+</div>
+@if (canEdit) { <button class="btn btn-primary"><i class="bi bi-save"></i> Lưu tham số</button> }
+</fieldset>
+</form>

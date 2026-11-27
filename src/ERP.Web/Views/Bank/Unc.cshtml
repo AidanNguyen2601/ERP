@@ -1,0 +1,33 @@
+@model CashVoucher
+@{
+    Layout = null; var cfg = (ErpSettings)ViewBag.Company;
+    var amount = Model.IsForeign ? Model.FcAmount : Model.Amount;
+    var benName = Model.ToCashAccount != null ? cfg.CompanyName : Model.Partner?.Name ?? Model.PayerPayee;
+    var benAcc = Model.ToCashAccount?.BankAccountNo ?? Model.Partner?.BankAccountNo; var benBank = Model.ToCashAccount?.BankName ?? Model.Partner?.BankName;
+}
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8" /><title>Ủy nhiệm chi @Model.Number</title>
+<style>body{font-family:"Times New Roman",serif;font-size:14px;max-width:760px;margin:20px auto;color:#000}h2{text-align:center;margin:0}.sub{text-align:center;margin-bottom:14px}
+.box{border:1px solid #000;padding:8px 12px;margin-bottom:8px}.row{display:flex;gap:12px;margin:3px 0}.row b{min-width:170px;font-weight:normal}.sig{display:flex;justify-content:space-around;margin-top:30px;text-align:center}@@media print{button{display:none}}</style></head>
+<body>
+<h2>ỦY NHIỆM CHI</h2>
+<div class="sub">PAYMENT ORDER · Số: @Model.Number · Ngày: @Model.Date.ToDate()</div>
+<div class="box">
+    <div class="row"><b>Tên đơn vị trả tiền:</b> <span>@cfg.CompanyName</span></div>
+    <div class="row"><b>Mã số thuế:</b> <span>@cfg.CompanyTaxCode</span></div>
+    <div class="row"><b>Số tài khoản:</b> <span>@Model.CashAccount?.BankAccountNo</span></div>
+    <div class="row"><b>Tại ngân hàng:</b> <span>@Model.CashAccount?.BankName</span></div>
+</div>
+<div class="box">
+    <div class="row"><b>Tên đơn vị nhận tiền:</b> <span>@benName</span></div>
+    <div class="row"><b>Số tài khoản:</b> <span>@benAcc</span></div>
+    <div class="row"><b>Tại ngân hàng:</b> <span>@benBank</span></div>
+</div>
+<div class="box">
+    <div class="row"><b>Số tiền bằng số:</b> <span><strong>@(Model.IsForeign ? amount.ToString("N2") + " " + Model.CurrencyCode : amount.ToMoney() + " VND")</strong></span></div>
+    <div class="row"><b>Số tiền bằng chữ:</b> <span>@(Model.IsForeign ? "" : VietnameseNumber.ToWords(amount))</span></div>
+    <div class="row"><b>Nội dung thanh toán:</b> <span>@Model.Description</span></div>
+</div>
+<div class="sig"><div><b>Kế toán trưởng</b><br /><i>(Ký, ghi rõ họ tên)</i></div><div><b>Chủ tài khoản</b><br /><i>(Ký, đóng dấu)</i></div><div><b>Ngân hàng A</b><br /><i>Ghi sổ ngày ...</i></div><div><b>Ngân hàng B</b><br /><i>Ghi sổ ngày ...</i></div></div>
+<p style="margin-top:40px"><button onclick="window.print()">In ủy nhiệm chi</button></p>
+</body></html>

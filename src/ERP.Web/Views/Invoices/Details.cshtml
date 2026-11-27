@@ -5,6 +5,18 @@
     var pays = (List<PaymentAllocation>)ViewBag.Payments; var canAcc = User.CanAccounting();
     var creditNotes = (List<SalesCreditNote>)ViewBag.CreditNotes;
 }
+@if (sales && Model.EInvoiceStatus != EInvoiceStatus.None)
+{
+    <div class="alert @(Model.EInvoiceStatus == EInvoiceStatus.Issued ? "alert-success" : Model.EInvoiceStatus == EInvoiceStatus.Error ? "alert-danger" : "alert-secondary") py-2 small d-flex flex-wrap gap-3 align-items-center no-print">
+        <span><i class="bi bi-patch-check"></i> <b>Hóa đơn điện tử:</b> @Model.EInvoiceStatus.GetDisplayName()</span>
+        @if (Model.EInvoiceTaxCode != null) { <span>Mã CQT: <code>@Model.EInvoiceTaxCode</code></span> }
+        @if (Model.EInvoiceLookupCode != null) { <span>Mã tra cứu: <code>@Model.EInvoiceLookupCode</code></span> }
+        @if (Model.EInvoiceSentAt != null) { <span>Gửi lúc @Model.EInvoiceSentAt.Value.ToString("dd/MM/yyyy HH:mm")</span> }
+        <span class="text-muted">@Model.EInvoiceMessage</span>
+        @if (!string.IsNullOrEmpty(Model.EInvoiceXml)) { <a class="ms-auto" asp-action="EInvoiceXml" asp-route-id="@Model.Id"><i class="bi bi-filetype-xml"></i> Tải XML</a> }
+    </div>
+}
+@if (Model.IsForeign) { <div class="alert alert-info py-2 small no-print">Hóa đơn ngoại tệ <b>@Model.CurrencyCode</b> – tỷ giá @Model.ExchangeRate.ToString("N2"): tổng @Model.FcTotal.ToString("N2") @Model.CurrencyCode, đã thanh toán @Model.FcPaid.ToString("N2"), còn @Model.FcOutstanding.ToString("N2") (giá trị ghi sổ VND @Model.Total.ToMoney())</div> }
 <div class="actions mb-3">
     <a class="btn btn-sm btn-light border" asp-action="Index" asp-route-direction="@Model.Direction">← Danh sách</a>
     <button class="btn btn-sm btn-light border" onclick="window.print()">In hóa đơn</button>

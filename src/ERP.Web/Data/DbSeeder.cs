@@ -24,16 +24,20 @@ public static class DbSeeder
         {
             await SeedCatalogsAsync(db);
             await EnsureAccountsAsync(db);
+            await PlatformSeeder.SeedAsync(db, sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ErpSettings>>().Value.PoApprovalThreshold);
             await SeedQualityAsync(db);
             await SeedQcDemoAsync(sp, db);
+            await GroupDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("GroupDemoSeeder"));
             await BackfillPurchaseReturnsAsync(sp, db);
             return;
         }
         await SeedCoreAsync(sp, db);
         await SeedCatalogsAsync(db);
         await EnsureAccountsAsync(db);
+        await PlatformSeeder.SeedAsync(db, sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ErpSettings>>().Value.PoApprovalThreshold);
         await SeedQualityAsync(db);
         await SeedQcDemoAsync(sp, db);
+        await GroupDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("GroupDemoSeeder"));
         await BackfillPurchaseReturnsAsync(sp, db);
     }
 
@@ -103,13 +107,42 @@ public static class DbSeeder
             if (t.Success)
             {
                 var name = t.Groups[1].Success ? t.Groups[1].Value : t.Groups[2].Value;
-                if (existing.Contains(name)) continue;
+                if (existing.Contains(name)) { await AddMissingColumnsAsync(db, name, b); continue; }
                 await db.Database.ExecuteSqlRawAsync(b);
                 created.Add(name);
                 continue;
             }
             var ix = indexRx.Match(b);
             if (ix.Success && created.Contains(ix.Groups[1].Value)) await db.Database.ExecuteSqlRawAsync(b);
+        }
+    }
+
+    /// <summary>Giá trị mặc định cho cột mới NOT NULL thêm vào bảng đã có dữ liệu</summary>
+    private static readonly Dictionary<string, string> ColumnDefaults = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["AllBranches"] = "1", ["ExchangeRate"] = "1", ["CurrencyCode"] = "N'VND'",
+    };
+
+    /// <summary>Thêm các cột có trong model nhưng chưa có trong bảng (dựa trên lệnh CREATE TABLE do EF sinh). Không sửa / xóa cột cũ.</summary>
+    private static async Task AddMissingColumnsAsync(ErpDbContext db, string table, string createSql)
+    {
+        var cols = (await db.Database.SqlQueryRaw<string>("SELECT COLUMN_NAME AS [Value] FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = {0}", table).ToListAsync())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var colRx = new System.Text.RegularExpressions.Regex(@"^\s*\[(\w+)\]\s+(.+?)\s+(NOT NULL|NULL)\b", System.Text.RegularExpressions.RegexOptions.Multiline);
+        foreach (System.Text.RegularExpressions.Match m in colRx.Matches(createSql))
+        {
+            var name = m.Groups[1].Value; var type = m.Groups[2].Value.Trim();
+            if (cols.Contains(name) || type.Contains("IDENTITY", StringComparison.OrdinalIgnoreCase)) continue;
+            string sql;
+            if (m.Groups[3].Value == "NULL") sql = $"ALTER TABLE [{table}] ADD [{name}] {type} NULL";
+            else
+            {
+                var def = ColumnDefaults.TryGetValue(name, out var d) ? d
+                    : type.StartsWith("nvarchar", StringComparison.OrdinalIgnoreCase) || type.StartsWith("varchar", StringComparison.OrdinalIgnoreCase) ? "N''"
+                    : type.StartsWith("datetime", StringComparison.OrdinalIgnoreCase) || type.StartsWith("date", StringComparison.OrdinalIgnoreCase) ? "'1900-01-01'" : "0";
+                sql = $"ALTER TABLE [{table}] ADD [{name}] {type} NOT NULL CONSTRAINT [DF_{table}_{name}] DEFAULT {def}";
+            }
+            await db.Database.ExecuteSqlRawAsync(sql);
         }
     }
 

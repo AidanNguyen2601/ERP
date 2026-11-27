@@ -19,6 +19,11 @@
         <div class="col-md-3"><label asp-for="Date" class="form-label"></label><input asp-for="Date" type="date" class="form-control" /></div>
         <div class="col-md-3"><label asp-for="DueDate" class="form-label"></label><input asp-for="DueDate" type="date" class="form-control" /><span asp-validation-for="DueDate" class="text-danger small"></span></div>
         <div class="col-md-9"><label asp-for="Note" class="form-label"></label><input asp-for="Note" class="form-control" /></div>
+        <div class="col-md-2"><label asp-for="CurrencyCode" class="form-label"></label>
+            @if (editable) { <select asp-for="CurrencyCode" class="form-select" asp-items="ViewBag.Currencies" onchange="document.getElementById('fxRate').closest('div').style.display = this.value === 'VND' ? 'none' : ''"></select> }
+            else { <input asp-for="CurrencyCode" class="form-control" readonly /> }</div>
+        <div class="col-md-2" style="@(Model.CurrencyCode == "VND" ? "display:none" : "")"><label asp-for="ExchangeRate" class="form-label"></label><input asp-for="ExchangeRate" id="fxRate" type="number" step="0.01" class="form-control" readonly="@(!editable)" /><div class="form-text">0 = lấy tỷ giá ngày hóa đơn</div></div>
+        <div class="col-md-5"><label asp-for="ContractId" class="form-label"></label><select asp-for="ContractId" class="form-select" asp-items="ViewBag.Contracts"><option value="">-- Không theo hợp đồng --</option></select></div>
     </div>
 </div></div>
 <div class="card mb-3"><div class="card-body">

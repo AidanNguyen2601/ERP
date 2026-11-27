@@ -1,0 +1,58 @@
+@model List<CostRow>
+@{
+    ViewData["Title"] = "Giá thành sản phẩm";
+    DateTime f = ViewBag.From, t = ViewBag.To; string by = ViewBag.By; int y = ViewBag.Year, m = ViewBag.Month; decimal pool = ViewBag.Pool;
+    var wip = (List<ProductionOrder>)ViewBag.Wip;
+}
+<div class="row g-3 mb-3">
+    <div class="col-lg-7"><div class="card h-100"><div class="card-header">Tập hợp & phân bổ chi phí sản xuất chung (TK 627 → 154)</div><div class="card-body">
+        <form method="get" class="d-flex gap-2 align-items-end mb-2">
+            <div><label class="form-label small mb-0">Tháng</label><select name="month" class="form-select form-select-sm">@for (var i = 1; i <= 12; i++) { <option value="@i" selected="@(i == m)">@i</option> }</select></div>
+            <div><label class="form-label small mb-0">Năm</label><input name="year" type="number" value="@y" class="form-control form-control-sm" style="width:90px" /></div>
+            <button class="btn btn-sm btn-outline-primary">Xem</button>
+            <div class="ms-3">Chi phí SXC còn chờ phân bổ tháng @m.ToString("00")/@y: <b class="fs-6">@pool.ToMoney()</b></div>
+        </form>
+        <table class="table table-sm mb-2" data-grid="off"><thead><tr><th>Lệnh đang sản xuất</th><th>Sản phẩm</th><th class="num">SL</th><th class="num">CP NVL</th><th class="num">CP nhân công</th><th class="num">CP SXC (đã PB)</th></tr></thead><tbody>
+            @foreach (var o in wip) { <tr><td><a asp-controller="Production" asp-action="Details" asp-route-id="@o.Id">@o.Number</a></td><td class="small">@o.Item?.Name</td><td class="num">@o.Quantity.ToQty()</td><td class="num">@o.MaterialCost.ToMoney()</td><td class="num">@o.LaborCost.ToMoney()</td><td class="num">@o.OverheadCost.ToMoney() (@o.AllocatedOverhead.ToMoney())</td></tr> }
+            @if (!wip.Any()) { <tr><td colspan="6" class="text-muted text-center">Không có lệnh đang sản xuất để nhận phân bổ.</td></tr> }
+        </tbody></table>
+        @if (User.CanAccounting() && wip.Any())
+        {
+            <form asp-action="Allocate" method="post" class="d-flex gap-2 align-items-end" data-confirm="Phân bổ chi phí sản xuất chung cho các lệnh đang sản xuất?">
+                <input type="hidden" name="year" value="@y" /><input type="hidden" name="month" value="@m" />
+                <div><label class="form-label small mb-0">Tiêu thức</label><select name="basis" class="form-select form-select-sm"><option value="material">Chi phí NVL trực tiếp</option><option value="qty">Số lượng sản phẩm</option></select></div>
+                <div><label class="form-label small mb-0">Số tiền phân bổ</label><input name="amount" type="number" step="1000" placeholder="@pool.ToMoney()" class="form-control form-control-sm" /></div>
+                <button class="btn btn-sm btn-primary">Phân bổ</button>
+            </form>
+        }
+    </div></div></div>
+    <div class="col-lg-5"><div class="card h-100"><div class="card-body small">
+        <b>Quy trình tính giá thành</b>
+        <ol class="mb-0 ps-3">
+            <li>Xuất NVL cho lệnh sản xuất → Nợ 154 / Có 152 (chi phí NVL trực tiếp theo giá bình quân).</li>
+            <li>Lương công nhân trực tiếp (622) và quản lý xưởng (627) hạch toán từ <a asp-controller="Payroll" asp-action="Index">bảng lương</a>; khấu hao máy móc, CCDC xưởng vào 627.</li>
+            <li>Cuối tháng phân bổ chi phí SXC (627) cho các lệnh đang sản xuất theo tiêu thức → Nợ 154 / Có 627.</li>
+            <li>Hoàn thành lệnh: nhân công, SXC định mức + phần đã phân bổ cộng vào giá thành; nhập kho thành phẩm Nợ 155 / Có 154.</li>
+            <li>Báo cáo bên dưới so sánh giá thành thực tế với định mức BOM theo lệnh, sản phẩm hoặc đơn bán (công đoạn = lệnh sản xuất bán thành phẩm).</li>
+        </ol>
+    </div></div></div>
+</div>
+<form class="toolbar" method="get">
+    <input type="hidden" name="year" value="@y" /><input type="hidden" name="month" value="@m" />
+    <div><label class="form-label small mb-0">Hoàn thành từ</label><input type="date" name="from" value="@f.Iso()" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">đến</label><input type="date" name="to" value="@t.Iso()" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Theo</label><select name="by" class="form-select form-select-sm"><option value="order" selected="@(by == "order")">Lệnh sản xuất</option><option value="product" selected="@(by == "product")">Sản phẩm</option><option value="salesorder" selected="@(by == "salesorder")">Đơn bán hàng</option></select></div>
+    <button class="btn btn-sm btn-outline-primary">Xem</button>
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Mã</th><th>Tên</th><th class="num">SL hoàn thành</th><th class="num">NVL</th><th class="num">Nhân công</th><th class="num">SXC</th><th class="num">Tổng giá thành</th><th class="num">Giá thành đơn vị</th><th class="num">Định mức</th><th class="num">Chênh lệch</th></tr></thead>
+    <tbody>
+    @foreach (var r in Model)
+    {
+        <tr><td><b>@r.Key</b></td><td>@r.Name</td><td class="num">@r.Qty.ToQty()</td><td class="num">@r.Material.ToMoney()</td><td class="num">@r.Labor.ToMoney()</td><td class="num">@r.Overhead.ToMoney()</td><td class="num fw-bold">@r.Total.ToMoney()</td>
+            <td class="num">@r.Unit.ToMoney()</td><td class="num">@r.Std.ToMoney()</td><td class="num @(r.Variance > 0 ? "text-danger" : "text-success")">@r.Variance.ToMoney() @(r.Std == 0 ? "" : $"({r.Variance * 100 / r.Std:0.#}%)")</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="10" class="text-center text-muted py-3">Không có lệnh sản xuất hoàn thành trong kỳ.</td></tr> }
+    </tbody>
+    @if (Model.Any()) { <tfoot><tr class="fw-bold"><td colspan="3">Cộng</td><td class="num">@Model.Sum(r => r.Material).ToMoney()</td><td class="num">@Model.Sum(r => r.Labor).ToMoney()</td><td class="num">@Model.Sum(r => r.Overhead).ToMoney()</td><td class="num">@Model.Sum(r => r.Total).ToMoney()</td><td></td><td class="num">@Model.Sum(r => r.Std).ToMoney()</td><td class="num">@Model.Sum(r => r.Variance).ToMoney()</td></tr></tfoot> }
+</table></div></div></div>

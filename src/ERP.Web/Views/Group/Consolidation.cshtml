@@ -1,0 +1,48 @@
+@model ConsolidationResult
+@{
+    ViewData["Title"] = "Hợp nhất báo cáo tài chính";
+    DateTime f = ViewBag.From, t = ViewBag.To; var all = (List<Company>)ViewBag.All; var ids = (int[])ViewBag.Ids;
+    var cs = Model.Companies;
+    decimal S(string p) => Model.Sum(p, r => r.Consolidated);
+    // Chỉ tiêu tóm tắt (số dư Nợ dương; nguồn vốn / doanh thu đổi dấu)
+    var assets = Model.Rows.Where(r => r.Code[0] is '1' or '2').Sum(r => r.Consolidated);
+    var liab = -Model.Rows.Where(r => r.Code[0] == '3').Sum(r => r.Consolidated);
+    var equity = -Model.Rows.Where(r => r.Code[0] == '4').Sum(r => r.Consolidated);
+    var profit = -Model.Rows.Where(r => r.Code[0] is '5' or '6' or '7' or '8').Sum(r => r.Consolidated);
+    var revenue = -(S("511") + S("515") + S("711"));
+}
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@f.Iso()" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@t.Iso()" class="form-control form-control-sm" /></div>
+    <div class="d-flex gap-2 align-items-center">@foreach (var c in all) { <div class="form-check"><input class="form-check-input" type="checkbox" name="companyIds" value="@c.Id" id="c@(c.Id)" @(ids.Contains(c.Id) ? "checked" : "") /><label class="form-check-label small" for="c@(c.Id)">@c.Code @(c.IsParent ? "(mẹ)" : "")</label></div> }</div>
+    <button class="btn btn-sm btn-outline-primary">Hợp nhất</button>
+    <button class="btn btn-sm btn-light" name="excel" value="true"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+    <a class="btn btn-sm btn-light ms-auto" asp-controller="Org" asp-action="Index"><i class="bi bi-building"></i> Công ty & chi nhánh</a>
+</form>
+<div class="row g-3 mb-3">
+    <div class="col"><div class="card card-body"><div class="small text-muted">Tổng tài sản hợp nhất</div><div class="fs-5 fw-bold">@assets.ToMoney()</div></div></div>
+    <div class="col"><div class="card card-body"><div class="small text-muted">Nợ phải trả</div><div class="fs-5 fw-bold">@liab.ToMoney()</div></div></div>
+    <div class="col"><div class="card card-body"><div class="small text-muted">Vốn chủ sở hữu (chưa gồm LN kỳ)</div><div class="fs-5 fw-bold">@equity.ToMoney()</div></div></div>
+    <div class="col"><div class="card card-body"><div class="small text-muted">Doanh thu & thu nhập hợp nhất</div><div class="fs-5 fw-bold">@revenue.ToMoney()</div></div></div>
+    <div class="col"><div class="card card-body"><div class="small text-muted">Lợi nhuận trước thuế hợp nhất (kỳ)</div><div class="fs-5 fw-bold @(profit < 0 ? "text-danger" : "text-success")">@profit.ToMoney()</div></div></div>
+</div>
+@if (Model.Eliminations.Any() || Model.Notes.Any())
+{
+    <div class="card mb-3"><div class="card-header">Bút toán loại trừ</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+        @foreach (var e in Model.Eliminations) { <tr><td>@e.Desc</td><td>Nợ @e.Debit / Có @e.Credit</td><td class="num fw-bold">@e.Amount.ToMoney()</td></tr> }
+        @if (!Model.Eliminations.Any()) { <tr><td class="text-muted">Không có giao dịch nội bộ cần loại trừ (khai báo đối tác là công ty trong tập đoàn tại danh mục khách hàng / NCC).</td></tr> }
+    </tbody></table>
+    @if (Model.Notes.Any()) { <ul class="small text-muted mb-2 mt-2">@foreach (var n in Model.Notes) { <li>@n</li> }</ul> }
+    </div></div>
+}
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0" style="font-size:.85rem">
+    <thead><tr><th>TK</th><th>Tên tài khoản</th>@foreach (var c in cs) { <th class="num">@c.Code</th> }<th class="num">Cộng gộp</th><th class="num">Loại trừ</th><th class="num">Hợp nhất</th></tr></thead>
+    <tbody>
+    @foreach (var r in Model.Rows)
+    {
+        <tr><td>@r.Code</td><td class="small">@r.Name</td>@foreach (var c in cs) { <td class="num">@r.ByCompany.GetValueOrDefault(c.Id).ToMoney()</td> }
+            <td class="num">@r.Total.ToMoney()</td><td class="num @(r.Elimination != 0 ? "text-primary fw-bold" : "")">@(r.Elimination == 0 ? "" : r.Elimination.ToMoney())</td><td class="num fw-bold">@r.Consolidated.ToMoney()</td></tr>
+    }
+    @if (!Model.Rows.Any()) { <tr><td colspan="@(5 + cs.Count)" class="text-center text-muted py-3">Không có số liệu.</td></tr> }
+    </tbody>
+</table></div><div class="small text-muted p-2">Số dư Nợ dương, số dư Có âm. Tài khoản tài sản / nguồn vốn lấy số dư đến ngày; doanh thu / chi phí lấy phát sinh trong kỳ (không gồm kết chuyển).</div></div></div>

@@ -1,0 +1,30 @@
+@using ERP.Web.Controllers
+@model List<ContractsController.Row>
+@{ ViewData["Title"] = "Hợp đồng"; ContractType? type = ViewBag.Type; ContractStatus? status = ViewBag.Status; }
+<form class="toolbar" method="get">
+    <select name="type" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()"><option value="">Mọi loại</option>
+        @foreach (ContractType t in Enum.GetValues<ContractType>()) { <option value="@t" selected="@(type == t)">@t.GetDisplayName()</option> }</select>
+    <select name="status" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()"><option value="">Mọi trạng thái</option>
+        @foreach (ContractStatus s in Enum.GetValues<ContractStatus>()) { <option value="@s" selected="@(status == s)">@s.GetDisplayName()</option> }</select>
+    <input name="q" value="@ViewBag.Q" class="form-control form-control-sm" style="max-width:240px" placeholder="Số HĐ, nội dung, đối tác" />
+    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-search"></i></button>
+    <span class="ms-auto"></span>
+    <a class="btn btn-sm btn-primary" asp-action="Edit" asp-route-type="Sale"><i class="bi bi-plus-lg"></i> Hợp đồng bán</a>
+    <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-type="Purchase"><i class="bi bi-plus-lg"></i> Hợp đồng mua</a>
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Số HĐ</th><th>Loại</th><th>Đối tác</th><th>Nội dung</th><th>Ngày ký</th><th>Hết hạn</th><th class="num">Giá trị HĐ</th><th class="num">Đã đặt hàng</th><th class="num">Đã xuất HĐ</th><th class="num">Đã thanh toán</th><th class="num">Còn nợ</th><th class="num">Quá hạn</th><th>Trạng thái</th></tr></thead>
+    <tbody>
+    @foreach (var r in Model)
+    {
+        var c = r.Contract;
+        <tr><td><a asp-action="Details" asp-route-id="@c.Id"><b>@c.Number</b></a></td><td class="small">@c.Type.GetDisplayName()</td><td>@c.Partner?.Name</td><td class="small">@c.Title</td>
+            <td>@c.SignDate.ToDate()</td><td class="@(c.EndDate < DateTime.Today && c.Status == ContractStatus.Active ? "text-danger" : "")">@c.EndDate.ToDate()</td>
+            <td class="num">@c.Value.ToMoney()</td><td class="num">@r.Ordered.ToMoney()</td><td class="num">@r.Invoiced.ToMoney()</td><td class="num">@r.Paid.ToMoney()</td><td class="num"><b>@r.Outstanding.ToMoney()</b></td>
+            <td class="num text-danger">@(r.Overdue > 0 ? r.Overdue.ToMoney() : "")</td>
+            <td><span class="badge @(c.Status == ContractStatus.Active ? "bg-success" : c.Status == ContractStatus.Completed ? "bg-secondary" : "bg-dark")">@c.Status.GetDisplayName()</span></td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="13" class="text-center text-muted py-3">Chưa có hợp đồng.</td></tr> }
+    </tbody>
+    @if (Model.Any()) { <tfoot><tr class="fw-bold"><td colspan="6">Cộng</td><td class="num">@Model.Sum(r => r.Contract.Value).ToMoney()</td><td class="num">@Model.Sum(r => r.Ordered).ToMoney()</td><td class="num">@Model.Sum(r => r.Invoiced).ToMoney()</td><td class="num">@Model.Sum(r => r.Paid).ToMoney()</td><td class="num">@Model.Sum(r => r.Outstanding).ToMoney()</td><td class="num">@Model.Sum(r => r.Overdue).ToMoney()</td><td></td></tr></tfoot> }
+</table></div></div></div>

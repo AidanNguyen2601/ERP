@@ -4,6 +4,8 @@
 <div class="actions mb-3">
     <a class="btn btn-sm btn-light border" asp-action="Index">← Danh sách</a>
     <button class="btn btn-sm btn-light border" onclick="window.print()">In phiếu</button>
+    @if (Model.Type != CashVoucherType.Receipt && Model.CashAccount?.Type == CashAccountType.Bank) { <a class="btn btn-sm btn-light border" asp-controller="Bank" asp-action="Unc" asp-route-id="@Model.Id" target="_blank"><i class="bi bi-bank"></i> In ủy nhiệm chi</a> }
+    @if (Model.IsForeign) { <span class="badge bg-info text-dark">@Model.FcAmount.ToString("N2") @Model.CurrencyCode × @Model.ExchangeRate.ToString("N2")@(Model.FxDifference != 0 ? $" · CL tỷ giá {Model.FxDifference:N0}" : "")</span> }
     @if (Model.JournalEntryId.HasValue) { <a class="btn btn-sm btn-light border" asp-controller="Journals" asp-action="Details" asp-route-id="@Model.JournalEntryId">Xem bút toán</a> }
     @if (User.CanAccounting() && Model.Status == DocStatus.Posted)
     {

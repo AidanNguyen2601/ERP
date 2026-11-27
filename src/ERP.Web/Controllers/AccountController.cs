@@ -42,6 +42,8 @@ public class AccountController : Controller
         if (user == null || !user.IsActive ||
             _hasher.VerifyHashedPassword(user, user.PasswordHash, vm.Password) == PasswordVerificationResult.Failed)
         {
+            _db.AuditUserName = vm.Username; _db.AuditIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+            await _db.LogAsync("Đăng nhập thất bại", "AppUser", "Người dùng", user?.Id, vm.Username);
             ModelState.AddModelError(string.Empty, "Tên đăng nhập hoặc mật khẩu không đúng, hoặc tài khoản đã bị khóa.");
             return View(vm);
         }
@@ -55,11 +57,16 @@ public class AccountController : Controller
             new(ClaimsExtensions.DepartmentClaim, user.Department)
         };
 
+        claims.AddRange(ERP.Web.Services.BranchScope.ClaimsFor(user));
+        Response.Cookies.Append(ERP.Web.Infrastructure.Lang.Cookie, user.Language == "en" ? "en" : "vi", new CookieOptions { IsEssential = true, SameSite = SameSiteMode.Lax, Expires = DateTimeOffset.Now.AddYears(1) });
         var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal,
             new AuthenticationProperties { IsPersistent = vm.RememberMe });
 
         user.LastLoginAt = DateTime.Now;
+        _db.AuditUserId = user.Id; _db.AuditUserName = user.FullName; _db.AuditIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+        await _db.LogAsync("Đăng nhập", "AppUser", "Người dùng", user.Id, user.Username);
+        _db.AuditUserId = null;
         await _db.SaveChangesAsync();
 
         if (!string.IsNullOrEmpty(vm.ReturnUrl) && Url.IsLocalUrl(vm.ReturnUrl))

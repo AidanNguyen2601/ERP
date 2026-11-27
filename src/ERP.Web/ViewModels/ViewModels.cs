@@ -33,6 +33,9 @@ public class UserFormViewModel
     [StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu tối thiểu 6 ký tự")][DataType(DataType.Password)][Display(Name = "Mật khẩu")] public string? Password { get; set; }
     [Required][Display(Name = "Vai trò")] public string Role { get; set; } = AppRoles.Sales;
     [Display(Name = "Kích hoạt")] public bool IsActive { get; set; } = true;
+    [Display(Name = "Chi nhánh chính")] public int? BranchId { get; set; }
+    [Display(Name = "Được xem / làm việc tất cả chi nhánh")] public bool AllBranches { get; set; } = true;
+    [Display(Name = "Ngôn ngữ giao diện")] public string? Language { get; set; }
 }
 
 // ===================================================================== Dòng chứng từ dùng chung
@@ -79,6 +82,7 @@ public class OrderForm
     [Required(ErrorMessage = "Chọn kho")][Display(Name = "Kho")] public int? WarehouseId { get; set; }
     [DataType(DataType.Date)][Display(Name = "Ngày giao")] public DateTime DeliveryDate { get; set; } = DateTime.Today.AddDays(5);
     [StringLength(500)][Display(Name = "Ghi chú")] public string? Note { get; set; }
+    [Display(Name = "Hợp đồng")] public int? ContractId { get; set; }
     public string? Number { get; set; }
     public List<LineInput> Lines { get; set; } = new();
 }
@@ -86,6 +90,9 @@ public class OrderForm
 public class InvoiceForm
 {
     public int Id { get; set; }
+    [Display(Name = "Loại tiền")] public string CurrencyCode { get; set; } = "VND";
+    [Display(Name = "Tỷ giá")] public decimal ExchangeRate { get; set; } = 1;
+    [Display(Name = "Hợp đồng")] public int? ContractId { get; set; }
     public InvoiceDirection Direction { get; set; } = InvoiceDirection.Sales;
     [DataType(DataType.Date)][Display(Name = "Ngày hóa đơn")] public DateTime Date { get; set; } = DateTime.Today;
     [DataType(DataType.Date)][Display(Name = "Hạn thanh toán")] public DateTime DueDate { get; set; } = DateTime.Today.AddDays(30);
@@ -145,6 +152,7 @@ public class CashVoucherForm
     [Display(Name = "Đối tượng")] public int? PartnerId { get; set; }
     [Display(Name = "TK đối ứng")] public int? CounterAccountId { get; set; }
     [Display(Name = "Thanh toán cho hóa đơn")] public int? InvoiceId { get; set; }
+    [Display(Name = "Tỷ giá")] public decimal? ExchangeRate { get; set; }
     [Range(1, 1_000_000_000_000, ErrorMessage = "Số tiền phải lớn hơn 0")][Display(Name = "Số tiền")] public decimal Amount { get; set; }
     [Required(ErrorMessage = "Nhập diễn giải"), StringLength(500)][Display(Name = "Diễn giải")] public string Description { get; set; } = string.Empty;
     [StringLength(150)][Display(Name = "Người nộp / nhận")] public string? PayerPayee { get; set; }

@@ -1,0 +1,35 @@
+@model List<ToolItem>
+@{ ViewData["Title"] = "Công cụ dụng cụ"; var runs = (List<ToolAllocationRun>)ViewBag.Runs; var canPost = User.CanAccounting(); var t = DateTime.Today; }
+<div class="toolbar">
+    <a class="btn btn-sm btn-light" asp-action="Index" asp-route-all="@(!(bool)ViewBag.All)">@(ViewBag.All ? "Chỉ CCDC đang phân bổ" : "Xem cả CCDC đã phân bổ hết / báo hỏng")</a>
+    <a class="btn btn-sm btn-light" asp-action="Transfers"><i class="bi bi-arrow-left-right"></i> Điều chuyển TSCĐ</a>
+    @if (canPost)
+    {
+        <form asp-action="Run" method="post" class="d-flex gap-1 ms-auto" data-confirm="Phân bổ chi phí CCDC cho tháng đã chọn?">
+            <select name="month" class="form-select form-select-sm">@for (var i = 1; i <= 12; i++) { <option value="@i" selected="@(i == t.Month)">Tháng @i</option> }</select>
+            <input name="year" type="number" value="@t.Year" class="form-control form-control-sm" style="width:90px" />
+            <button class="btn btn-sm btn-outline-primary text-nowrap"><i class="bi bi-calculator"></i> Phân bổ tháng</button></form>
+        <a class="btn btn-sm btn-primary" asp-action="Create"><i class="bi bi-plus-lg"></i> Ghi tăng CCDC</a>
+    }
+</div>
+<div class="card mb-3"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover align-middle mb-0">
+    <thead><tr><th>Mã</th><th>Tên CCDC</th><th>Bộ phận sử dụng</th><th class="num">SL</th><th>Ngày bắt đầu</th><th class="num">Số tháng PB</th><th class="num">Giá trị</th><th class="num">PB / tháng</th><th class="num">Đã phân bổ</th><th class="num">Còn lại</th><th>TK chi phí</th><th>Trạng thái</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var x in Model)
+    {
+        <tr><td><b>@x.Code</b></td><td>@x.Name</td><td class="small">@x.Department</td><td class="num">@x.Quantity.ToQty()</td><td>@x.StartDate.ToDate()</td><td class="num">@x.Months</td>
+            <td class="num">@x.Cost.ToMoney()</td><td class="num">@x.Monthly.ToMoney()</td><td class="num">@x.Allocated.ToMoney()</td><td class="num">@x.Remaining.ToMoney()</td><td class="small">@x.ExpenseAccount?.Code</td>
+            <td><span class="badge @(x.Status == ToolStatus.InUse ? "bg-success" : "bg-secondary")">@x.Status.GetDisplayName()</span></td>
+            <td>@if (canPost && x.Status == ToolStatus.InUse)
+            {
+                <form asp-action="Retire" asp-route-id="@x.Id" method="post" class="d-flex gap-1" data-confirm="Báo hỏng và phân bổ nốt giá trị còn lại?"><input type="hidden" name="date" value="@t.Iso()" /><input name="reason" class="form-control form-control-sm" style="width:120px" placeholder="Lý do" /><button class="btn btn-sm btn-light text-danger text-nowrap">Báo hỏng</button></form>
+            }</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="13" class="text-center text-muted py-3">Chưa có công cụ dụng cụ.</td></tr> }
+    </tbody>
+    <tfoot><tr class="fw-bold"><td colspan="6">Cộng</td><td class="num">@Model.Sum(x => x.Cost).ToMoney()</td><td class="num">@Model.Where(x => x.Status == ToolStatus.InUse).Sum(x => Math.Min(x.Monthly, x.Remaining)).ToMoney()</td><td class="num">@Model.Sum(x => x.Allocated).ToMoney()</td><td class="num">@Model.Sum(x => x.Remaining).ToMoney()</td><td colspan="3"></td></tr></tfoot>
+</table></div></div></div>
+<div class="card" style="max-width:640px"><div class="card-header">Các kỳ đã phân bổ</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+    @foreach (var r in runs) { <tr><td>Tháng @r.Month.ToString("00")/@r.Year</td><td class="num">@r.Total.ToMoney()</td><td><a asp-controller="Journals" asp-action="Details" asp-route-id="@r.JournalEntryId">Bút toán</a></td><td class="small text-muted">@r.CreatedBy · @r.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td></tr> }
+    @if (!runs.Any()) { <tr><td class="text-muted text-center">Chưa phân bổ kỳ nào.</td></tr> }
+</tbody></table></div></div>

@@ -1,0 +1,29 @@
+@{
+    ViewData["Title"] = "Ma trận phân quyền";
+    var users = (List<AppUser>)ViewBag.Users;
+    var roles = AppRoles.All;
+    System.Security.Claims.ClaimsPrincipal Fake(string role) => new(new System.Security.Claims.ClaimsIdentity(new[] { new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, role) }, "x"));
+}
+<p class="small text-muted">Quyền theo <b>chức năng</b>: mỗi vai trò thấy các chức năng dưới đây (một số thao tác ghi sổ, duyệt còn kiểm tra thêm ở từng màn hình). Quyền theo <b>dữ liệu / đơn vị</b>: người dùng bị giới hạn chi nhánh chỉ thấy chứng từ chi nhánh mình.
+    <b>Duyệt</b>: theo <a asp-controller="Approvals" asp-action="Rules">quy tắc phê duyệt</a>.</p>
+<div class="card mb-3"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-bordered mb-0 small" data-grid="off">
+    <thead><tr><th>Nhóm / chức năng</th>@foreach (var r in roles) { <th class="text-center">@AppRoles.DisplayName(r)</th> }</tr></thead>
+    <tbody>
+    @foreach (var g in Menu.Groups)
+    {
+        <tr class="table-light"><td colspan="@(roles.Length + 1)" class="fw-semibold"><i class="bi @g.Icon me-1"></i>@g.Title</td></tr>
+        foreach (var i in g.Items)
+        {
+            <tr><td class="ps-4">@i.Title</td>@foreach (var r in roles) { var ok = i.Visible == null || i.Visible(Fake(r)); <td class="text-center">@if (ok) { <i class="bi bi-check-lg good"></i> }</td> }</tr>
+        }
+    }
+    </tbody>
+</table></div></div></div>
+<div class="card"><div class="card-header">Phạm vi dữ liệu theo người dùng</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off">
+    <thead><tr><th>Tên đăng nhập</th><th>Họ tên</th><th>Vai trò</th><th>Chi nhánh làm việc</th><th>Phạm vi xem</th><th></th></tr></thead><tbody>
+    @foreach (var u in users)
+    {
+        <tr><td>@u.Username</td><td>@u.FullName</td><td>@AppRoles.DisplayName(u.Role)</td><td>@u.Branch?.Name</td><td>@(u.AllBranches ? "Mọi chi nhánh" : "Chỉ chi nhánh làm việc")</td>
+            <td>@if (User.IsAdmin()) { <a asp-controller="Users" asp-action="Edit" asp-route-id="@u.Id">Sửa</a> }</td></tr>
+    }
+</tbody></table></div></div>

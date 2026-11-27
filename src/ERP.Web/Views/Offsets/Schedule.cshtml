@@ -1,0 +1,42 @@
+@model List<Invoice>
+@{
+    ViewData["Title"] = "Lịch thanh toán nợ phải trả";
+    int weeks = ViewBag.Weeks; decimal funds = ViewBag.Funds; var receipts = (List<(DateTime DueDate, decimal Amt)>)ViewBag.Receipts;
+    var today = DateTime.Today; var monday = today.AddDays(-(((int)today.DayOfWeek + 6) % 7));
+    DateTime Pay(Invoice i) => i.PlannedPayDate ?? i.DueDate;
+    var buckets = Enumerable.Range(0, weeks).Select(w => (From: monday.AddDays(7 * w), To: monday.AddDays(7 * w + 6))).ToList();
+    var bal = funds;
+}
+<form class="toolbar" method="get">
+    <label class="small">Số tuần</label><input name="weeks" type="number" min="2" max="26" value="@weeks" class="form-control form-control-sm" style="width:80px" />
+    <button class="btn btn-sm btn-outline-primary">Xem</button>
+    <a class="btn btn-sm btn-light" asp-action="Index"><i class="bi bi-arrow-left-right"></i> Bù trừ công nợ</a>
+    <a class="btn btn-sm btn-light" asp-controller="Debts" asp-action="Index" asp-route-kind="ap"><i class="bi bi-box-arrow-up-right"></i> Công nợ phải trả</a>
+</form>
+<div class="card mb-3"><div class="card-header">Dự báo dòng tiền theo tuần (số dư tiền VND hiện có: <b>@funds.ToMoney()</b>)</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0" data-grid="off">
+    <thead><tr><th>Tuần</th><th class="num">Phải trả đến hạn</th><th class="num">Dự kiến thu</th><th class="num">Số dư dự kiến cuối tuần</th></tr></thead><tbody>
+    @{
+        var overduePay = Model.Where(i => Pay(i) < monday).Sum(i => i.Outstanding); var overdueRec = receipts.Where(r => r.DueDate < monday).Sum(r => r.Amt);
+        bal += overdueRec - overduePay;
+    }
+    <tr class="table-warning"><td>Quá hạn (trước @monday.ToDate())</td><td class="num">@overduePay.ToMoney()</td><td class="num">@overdueRec.ToMoney()</td><td class="num">@bal.ToMoney()</td></tr>
+    @foreach (var b in buckets)
+    {
+        var pay = Model.Where(i => Pay(i) >= b.From && Pay(i) <= b.To).Sum(i => i.Outstanding); var rec = receipts.Where(r => r.DueDate >= b.From && r.DueDate <= b.To).Sum(r => r.Amt);
+        bal += rec - pay;
+        <tr class="@(bal < 0 ? "table-danger" : "")"><td>@b.From.ToString("dd/MM") – @b.To.ToString("dd/MM/yyyy")</td><td class="num">@pay.ToMoney()</td><td class="num">@rec.ToMoney()</td><td class="num fw-bold">@bal.ToMoney()</td></tr>
+    }
+</tbody></table></div></div></div>
+<form asp-action="Plan" method="post">
+<div class="card"><div class="card-header d-flex">Hóa đơn mua chưa thanh toán <button class="btn btn-sm btn-primary ms-auto">Lưu ngày dự kiến trả</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm align-middle mb-0" data-grid="off">
+    <thead><tr><th>Nhà cung cấp</th><th>Hóa đơn</th><th>Ngày HĐ</th><th>Hạn thanh toán</th><th style="width:160px">Dự kiến trả</th><th class="num">Còn phải trả</th><th></th></tr></thead><tbody>
+    @foreach (var i in Model)
+    {
+        <tr class="@(i.DueDate < today ? "table-danger" : i.DueDate <= today.AddDays(7) ? "table-warning" : "")"><td>@i.Partner?.Name</td><td><a asp-controller="Invoices" asp-action="Details" asp-route-id="@i.Id">@i.Series @i.InvoiceNo</a></td><td>@i.Date.ToDate()</td><td>@i.DueDate.ToDate()</td>
+            <td><input type="hidden" name="invoiceId" value="@i.Id" /><input type="date" name="planned" value="@(i.PlannedPayDate?.Iso())" class="form-control form-control-sm" /></td>
+            <td class="num">@i.Outstanding.ToMoney() @(i.IsForeign ? $"({i.FcOutstanding:N2} {i.CurrencyCode})" : "")</td>
+            <td><a class="btn btn-sm btn-light" asp-controller="Cash" asp-action="Create" asp-route-type="Payment" asp-route-invoiceId="@i.Id" title="Lập phiếu chi / UNC"><i class="bi bi-cash"></i></a></td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="7" class="text-center text-muted py-3">Không có công nợ phải trả.</td></tr> }
+</tbody></table></div></div></div>
+</form>

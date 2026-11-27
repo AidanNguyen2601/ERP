@@ -23,7 +23,12 @@ public enum JournalSource
     [Display(Name = "Khấu hao TSCĐ")] Depreciation = 7,
     [Display(Name = "Tài sản cố định")] FixedAsset = 8,
     [Display(Name = "Sản xuất")] Production = 9,
-    [Display(Name = "Kết chuyển cuối kỳ")] Closing = 10
+    [Display(Name = "Kết chuyển cuối kỳ")] Closing = 10,
+    [Display(Name = "Tiền lương")] Payroll = 11,
+    [Display(Name = "Chênh lệch tỷ giá")] Fx = 12,
+    [Display(Name = "Phân bổ / định kỳ")] Allocation = 13,
+    [Display(Name = "Thuế")] Tax = 14,
+    [Display(Name = "Bù trừ công nợ")] Offset = 15
 }
 
 public enum DocStatus

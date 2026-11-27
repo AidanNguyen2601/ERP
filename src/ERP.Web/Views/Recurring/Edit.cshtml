@@ -1,0 +1,58 @@
+@model RecurringJournal
+@{
+    ViewData["Title"] = (Model.Id == 0 ? "Thêm " : "Sửa ") + (Model.IsAllocation ? "bút toán phân bổ" : "bút toán định kỳ");
+    var accs = (List<Account>)ViewBag.Accounts; var lines = Model.Lines.ToList();
+}
+<form asp-action="Edit" method="post">
+<input type="hidden" asp-for="Id" /><input type="hidden" asp-for="IsAllocation" />
+<div class="card mb-3"><div class="card-body">
+    <div asp-validation-summary="All" class="alert alert-danger py-2 empty-hide"></div>
+    <div class="row g-3">
+        <div class="col-md-4"><label class="form-label">Tên mẫu</label><input asp-for="Name" class="form-control" placeholder="VD: Phân bổ tiền thuê nhà xưởng" /></div>
+        <div class="col-md-8"><label class="form-label">Diễn giải bút toán</label><input asp-for="Description" class="form-control" /></div>
+        <div class="col-md-2"><label class="form-label">Chu kỳ (tháng)</label><input asp-for="IntervalMonths" type="number" min="1" max="12" class="form-control" /></div>
+        <div class="col-md-2"><label class="form-label">Ngày trong tháng</label><input asp-for="DayOfMonth" type="number" min="1" max="31" class="form-control" /></div>
+        <div class="col-md-3"><label class="form-label">Kỳ tới</label><input asp-for="NextDate" type="date" class="form-control" /></div>
+        <div class="col-md-3"><label class="form-label">Kết thúc (tùy chọn)</label><input asp-for="EndDate" type="date" class="form-control" /></div>
+        <div class="col-md-2 d-flex flex-column justify-content-end">
+            <div class="form-check"><input asp-for="AutoPost" class="form-check-input" /><label asp-for="AutoPost" class="form-check-label">Tự ghi sổ</label></div>
+            <div class="form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label">Đang dùng</label></div></div>
+        @if (Model.IsAllocation)
+        {
+            <div class="col-md-6"><label class="form-label">TK nguồn cần phân bổ</label><select asp-for="SourceAccountId" class="form-select"><option value="">-- Chọn --</option>@foreach (var a in accs) { <option value="@a.Id" selected="@(a.Id == Model.SourceAccountId)">@a.Code – @a.Name</option> }</select>
+                <div class="form-text">Mỗi kỳ lấy số phát sinh Nợ − Có trong tháng của TK nguồn (VD 6277 chi phí điện chung, 6427 thuê văn phòng) chia cho các TK / bộ phận theo tỷ lệ.</div></div>
+        }
+    </div>
+</div></div>
+<div class="card mb-3"><div class="card-body">
+    <table class="table table-sm" id="lines" data-grid="off"><thead><tr><th>Tài khoản</th><th>Đối tượng</th><th>Bộ phận</th>@if (Model.IsAllocation) { <th class="num" style="width:120px">Tỷ lệ %</th> } else { <th class="num" style="width:160px">Nợ</th><th class="num" style="width:160px">Có</th> }<th></th></tr></thead>
+    <tbody>
+    @for (var i = 0; i < lines.Count; i++)
+    {
+        var l = lines[i];
+        <tr><td><select name="lines[@i].AccountId" class="form-select form-select-sm"><option value="0">-- TK --</option>@foreach (var a in accs) { <option value="@a.Id" selected="@(a.Id == l.AccountId)">@a.Code – @a.Name</option> }</select></td>
+            <td><select name="lines[@i].PartnerId" class="form-select form-select-sm"><option value="">--</option>@foreach (var p in (SelectList)ViewBag.Partners) { <option value="@p.Value" selected="@(p.Value == l.PartnerId?.ToString())">@p.Text</option> }</select></td>
+            <td><input name="lines[@i].Department" value="@l.Department" list="depts" class="form-control form-control-sm" /></td>
+            @if (Model.IsAllocation) { <td><input name="lines[@i].Percent" type="number" step="0.01" value="@l.Percent.Raw()" class="form-control form-control-sm" /></td> }
+            else { <td><input name="lines[@i].Debit" type="number" step="1" value="@l.Debit.Raw()" class="form-control form-control-sm" /></td><td><input name="lines[@i].Credit" type="number" step="1" value="@l.Credit.Raw()" class="form-control form-control-sm" /></td> }
+            <td><button type="button" class="btn btn-sm btn-link text-danger" onclick="this.closest('tr').remove()"><i class="bi bi-x"></i></button></td></tr>
+    }
+    </tbody></table>
+    <datalist id="depts">@foreach (string d in ViewBag.Depts) { <option value="@d"></option> }</datalist>
+    <button type="button" class="btn btn-sm btn-light" onclick="addLine()"><i class="bi bi-plus"></i> Thêm dòng</button>
+</div></div>
+<button class="btn btn-primary">Lưu</button> <a asp-action="Index" class="btn btn-light">Hủy</a>
+</form>
+@section Scripts {
+<script>
+function addLine() {
+    const tb = document.querySelector('#lines tbody'), first = tb.querySelector('tr'), n = tb.querySelectorAll('tr').length + Date.now() % 1000;
+    const tr = first.cloneNode(true);
+    tr.querySelectorAll('[name]').forEach(el => { el.name = el.name.replace(/lines\[\d+\]/, 'lines[' + n + ']'); if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = ''; });
+    tb.appendChild(tr);
+}
+document.querySelector('form').addEventListener('submit', () => {
+    document.querySelectorAll('#lines tbody tr').forEach((tr, i) => tr.querySelectorAll('[name]').forEach(el => el.name = el.name.replace(/lines\[\d+\]/, 'lines[' + i + ']')));
+});
+</script>
+}

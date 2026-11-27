@@ -12,6 +12,9 @@
         <div class="col-md-6"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" /></div>
         <div class="col-md-6"><label asp-for="Role" class="form-label"></label><select asp-for="Role" class="form-select" asp-items="ViewBag.Roles"></select></div>
         <div class="col-md-6"><label asp-for="Password" class="form-label"></label><input asp-for="Password" class="form-control" placeholder="@(Model.Id == 0 ? "" : "Để trống nếu không đổi")" /><span asp-validation-for="Password" class="text-danger small"></span></div>
+        <div class="col-md-6"><label asp-for="BranchId" class="form-label"></label><select asp-for="BranchId" asp-items="ViewBag.Branches" class="form-select"><option value="">-- Không gắn chi nhánh --</option></select><div class="form-text">Chứng từ do người này lập mặc định thuộc chi nhánh chính</div></div>
+        <div class="col-md-6"><label asp-for="Language" class="form-label"></label><select asp-for="Language" class="form-select"><option value="vi">Tiếng Việt</option><option value="en">English</option></select></div>
+        <div class="col-12 form-check ms-2"><input asp-for="AllBranches" class="form-check-input" /><label asp-for="AllBranches" class="form-check-label"></label><div class="form-text">Bỏ chọn: chỉ thấy dữ liệu (chứng từ, công nợ, kho, quỹ) của chi nhánh chính – phân quyền theo dữ liệu / đơn vị.</div></div>
         <div class="col-12 form-check ms-2"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div>
     </div>
     <div class="mt-4"><button class="btn btn-primary">Lưu</button> <a asp-action="Index" class="btn btn-light">Hủy</a></div>

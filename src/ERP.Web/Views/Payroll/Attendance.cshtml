@@ -1,0 +1,31 @@
+@model List<Employee>
+@{
+    int y = ViewBag.Year, m = ViewBag.Month; var att = (Dictionary<int, Attendance>)ViewBag.Att; decimal std = ViewBag.StdDays;
+    ViewData["Title"] = $"Chấm công tháng {m:00}/{y}";
+}
+<form class="toolbar" method="get">
+    <select name="month" class="form-select form-select-sm" style="width:auto">@for (var i = 1; i <= 12; i++) { <option value="@i" selected="@(i == m)">Tháng @i</option> }</select>
+    <input name="year" type="number" value="@y" class="form-control form-control-sm" style="width:100px" />
+    <button class="btn btn-sm btn-outline-primary">Xem</button>
+    <a class="btn btn-sm btn-light" asp-controller="Import" asp-action="Index"><i class="bi bi-fingerprint"></i> Nhập từ máy chấm công (Excel/CSV)</a>
+    <a class="btn btn-sm btn-light ms-auto" asp-action="Index"><i class="bi bi-cash-coin"></i> Bảng lương</a>
+</form>
+<div class="alert alert-info small">Ngày công chuẩn: <b>@std</b>. Nhân viên chưa chấm công sẽ được tính đủ ngày công chuẩn khi lập bảng lương. Dữ liệu từ máy chấm công có thể đẩy qua API <code>POST /api/v1/attendance</code>.</div>
+<form method="post" asp-action="Attendance">
+    <input type="hidden" name="year" value="@y" /><input type="hidden" name="month" value="@m" />
+    <div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0" data-grid="off">
+        <thead><tr><th>Mã</th><th>Họ tên</th><th>Phòng ban</th><th style="width:130px">Ngày công</th><th style="width:130px">Giờ làm thêm</th><th style="width:130px">Ngày nghỉ</th><th>Nguồn</th></tr></thead>
+        <tbody>
+        @foreach (var e in Model)
+        {
+            var a = att.GetValueOrDefault(e.Id);
+            <tr><td>@e.Code<input type="hidden" name="employeeId" value="@e.Id" /></td><td>@e.FullName</td><td class="small">@e.Department</td>
+                <td><input name="workDays" type="number" step="0.5" min="0" max="31" value="@((a?.WorkDays ?? std).ToString(System.Globalization.CultureInfo.InvariantCulture))" class="form-control form-control-sm" /></td>
+                <td><input name="overtime" type="number" step="0.5" min="0" value="@((a?.OvertimeHours ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture))" class="form-control form-control-sm" /></td>
+                <td><input name="leave" type="number" step="0.5" min="0" value="@((a?.LeaveDays ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture))" class="form-control form-control-sm" /></td>
+                <td class="small text-muted">@(a?.Source ?? "Chưa chấm")</td></tr>
+        }
+        </tbody>
+    </table></div></div></div>
+    @if (Model.Any()) { <button class="btn btn-primary mt-2">Lưu chấm công</button> }
+</form>

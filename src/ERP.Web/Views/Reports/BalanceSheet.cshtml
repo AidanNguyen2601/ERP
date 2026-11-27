@@ -4,6 +4,7 @@
     var sources = (List<ReportLine>)ViewBag.Sources;
     var ta = Model.Last().Amount; var ts = sources.Last().Amount;
 }
+<div class="d-flex justify-content-end mb-2 no-print"><a class="btn btn-sm btn-outline-success" href="@(Context.Request.Path + Context.Request.QueryString + (Context.Request.QueryString.HasValue ? "&" : "?") + "export=true")"><i class="bi bi-file-earmark-excel"></i> Xuất Excel</a></div>
 <partial name="_GlNav" />
 <form class="toolbar" method="get">
     <div><label class="form-label small mb-0">Tại ngày</label><input type="date" name="at" value="@(((DateTime)ViewBag.At).Iso())" class="form-control form-control-sm" /></div>

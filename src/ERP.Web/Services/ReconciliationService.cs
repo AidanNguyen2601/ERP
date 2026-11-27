@@ -263,8 +263,9 @@ public class ReconciliationService
         var inv = (await _db.Invoices.AsNoTracking().Where(i => i.Direction == InvoiceDirection.Sales && i.Status == InvoiceStatus.Issued)
             .Select(i => new { i.PartnerId, O = i.Total - i.PaidAmount }).ToListAsync()).GroupBy(x => x.PartnerId ?? 0).ToDictionary(g => g.Key, g => g.Sum(x => x.O));
         var vouchers = await _db.CashVouchers.AsNoTracking().Where(v => v.Status == DocStatus.Posted && v.Purpose == CashPurpose.CustomerReceipt)
-            .Select(v => new { v.PartnerId, v.Amount, Alloc = v.Allocations.Sum(a => a.Amount) }).ToListAsync();
-        var unalloc = vouchers.GroupBy(v => v.PartnerId ?? 0).ToDictionary(g => g.Key, g => g.Sum(v => v.Amount - v.Alloc));
+            .Select(v => new { v.PartnerId, v.Amount, v.FxDifference, Alloc = v.Allocations.Sum(a => a.Amount) }).ToListAsync();
+        // Phần tiền chưa cấn trừ: số tiền phiếu − giá trị ghi sổ đã cấn trừ − chênh lệch tỷ giá đã thực hiện (đã hạch toán 515 / 635, không qua 131 / 331)
+        var unalloc = vouchers.GroupBy(v => v.PartnerId ?? 0).ToDictionary(g => g.Key, g => g.Sum(v => v.Amount - v.Alloc - v.FxDifference));
         // Hóa đơn điều chỉnh giảm đã giảm TK 131 nhưng phần hóa đơn gốc đã thanh toán hết chưa cấn trừ được (khách còn được ghi có)
         var creditUnapplied = (await _db.SalesCreditNotes.AsNoTracking().Where(n => n.Status == DocStatus.Posted && n.Unapplied > 0).Select(n => new { n.CustomerId, n.Unapplied }).ToListAsync())
             .GroupBy(x => x.CustomerId).ToDictionary(g => g.Key, g => g.Sum(x => x.Unapplied));
@@ -297,8 +298,9 @@ public class ReconciliationService
             .Select(l => new { l.PurchaseOrder!.VendorId, V = (l.ReceivedQty - l.ReturnedQty - l.InvoicedQty) * l.UnitPrice }).ToListAsync();
         var grni = pols.GroupBy(x => x.VendorId ?? 0).ToDictionary(g => g.Key, g => g.Sum(x => Math.Round(x.V, 0)));
         var vouchers = await _db.CashVouchers.AsNoTracking().Where(v => v.Status == DocStatus.Posted && v.Purpose == CashPurpose.VendorPayment)
-            .Select(v => new { v.PartnerId, v.Amount, Alloc = v.Allocations.Sum(a => a.Amount) }).ToListAsync();
-        var unalloc = vouchers.GroupBy(v => v.PartnerId ?? 0).ToDictionary(g => g.Key, g => g.Sum(v => v.Amount - v.Alloc));
+            .Select(v => new { v.PartnerId, v.Amount, v.FxDifference, Alloc = v.Allocations.Sum(a => a.Amount) }).ToListAsync();
+        // Phần tiền chưa cấn trừ: số tiền phiếu − giá trị ghi sổ đã cấn trừ − chênh lệch tỷ giá đã thực hiện (đã hạch toán 515 / 635, không qua 131 / 331)
+        var unalloc = vouchers.GroupBy(v => v.PartnerId ?? 0).ToDictionary(g => g.Key, g => g.Sum(v => v.Amount - v.Alloc - v.FxDifference));
         // Giá trị trả hàng đã lập hóa đơn nhưng chưa cấn trừ được vào hóa đơn nào (nhà cung cấp còn nợ lại)
         var retUnapplied = (await _db.PurchaseReturns.AsNoTracking().Where(r => r.Unapplied > 0).Select(r => new { r.PurchaseOrderLine!.PurchaseOrder!.VendorId, r.Unapplied }).ToListAsync())
             .GroupBy(x => x.VendorId ?? 0).ToDictionary(g => g.Key, g => g.Sum(x => x.Unapplied));
@@ -391,7 +393,7 @@ public class ReconciliationService
         {
             var issued = docs.Where(d => d.OriginId == o.Id && d.Type == InvDocType.Issue).Sum(d => d.Amt);
             var received = docs.Where(d => d.OriginId == o.Id && d.Type == InvDocType.Receipt).Sum(d => d.Amt);
-            var labor = o.Status == ProductionStatus.Completed ? o.LaborCost + o.OverheadCost : 0;
+            var labor = o.LaborCost + o.OverheadCost;   // gồm phần chi phí SXC đã phân bổ cho lệnh đang sản xuất
             var rest = issued + labor - received;
             sub += rest;
             // Lệnh đã hoàn thành phải kết chuyển hết chi phí sang thành phẩm

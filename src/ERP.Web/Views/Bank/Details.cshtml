@@ -1,0 +1,63 @@
+@model BankStatement
+@{
+    ViewData["Title"] = Model.Name;
+    var unmatched = (List<CashVoucher>)ViewBag.Unmatched; decimal book = ViewBag.BookBalance;
+    var foreign = Model.CashAccount!.CurrencyCode != "VND"; var canPost = User.CanAccounting();
+    var stEnd = Model.OpeningBalance + Model.Lines.Sum(l => l.Amount);
+    var unBank = Model.Lines.Where(l => l.CashVoucherId == null).ToList();
+    var bookOnly = unmatched.Where(v => v.Date <= Model.ToDate).ToList();
+    decimal S(CashVoucher v) => BankService.Signed(v, Model.CashAccountId, foreign);
+}
+<div class="toolbar">
+    <span class="badge bg-light text-dark border">@Model.CashAccount.Code – @Model.CashAccount.Name (@Model.CashAccount.CurrencyCode)</span>
+    <span class="small text-muted">@Model.FromDate.ToDate() – @Model.ToDate.ToDate()</span>
+    @if (canPost)
+    {
+        <form asp-action="AutoMatch" asp-route-id="@Model.Id" method="post" class="d-inline ms-auto"><button class="btn btn-sm btn-outline-primary"><i class="bi bi-magic"></i> Tự khớp lại</button></form>
+        <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline" data-confirm="Xóa sao kê này?"><button class="btn btn-sm btn-light text-danger"><i class="bi bi-trash"></i></button></form>
+    }
+</div>
+<div class="card mb-3"><div class="card-header">Bảng đối chiếu số dư đến @Model.ToDate.ToDate()</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off" style="max-width:720px"><tbody>
+    <tr><td>Số dư theo sao kê ngân hàng</td><td class="num fw-bold">@Model.ClosingBalance.ToString("N2")</td></tr>
+    @if (Math.Abs(stEnd - Model.ClosingBalance) > 0.009m) { <tr class="table-warning"><td class="small">Lưu ý: số dư đầu + phát sinh trên file = @stEnd.ToString("N2"), lệch số dư cuối ngân hàng</td><td></td></tr> }
+    <tr><td class="ps-4">(+) Phiếu chi đã ghi sổ, ngân hàng chưa trừ</td><td class="num">@(-bookOnly.Where(v => S(v) < 0).Sum(S)).ToString("N2")</td></tr>
+    <tr><td class="ps-4">(−) Phiếu thu đã ghi sổ, ngân hàng chưa ghi có</td><td class="num">@bookOnly.Where(v => S(v) > 0).Sum(S).ToString("N2")</td></tr>
+    <tr><td class="ps-4">(−) Giao dịch trên sao kê chưa ghi sổ</td><td class="num">@unBank.Sum(l => l.Amount).ToString("N2")</td></tr>
+    @{ var adjusted = Model.ClosingBalance - bookOnly.Sum(S) - unBank.Sum(l => l.Amount); }
+    <tr><td>Số dư ngân hàng điều chỉnh</td><td class="num fw-bold">@adjusted.ToString("N2")</td></tr>
+    <tr><td>Số dư trên sổ kế toán @(foreign ? "(nguyên tệ)" : "")</td><td class="num fw-bold">@book.ToString("N2")</td></tr>
+    <tr class="@(Math.Abs(adjusted - book) < 0.01m ? "table-success" : "table-danger")"><td>Chênh lệch chưa giải thích</td><td class="num fw-bold">@((adjusted - book).ToString("N2"))</td></tr>
+</tbody></table></div></div>
+<div class="card mb-3"><div class="card-header">Giao dịch trên sao kê</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm align-middle mb-0" data-grid="off">
+    <thead><tr><th>Ngày</th><th>Nội dung</th><th>Tham chiếu</th><th class="num">Số tiền</th><th>Phiếu trên sổ</th><th>Xử lý</th></tr></thead><tbody>
+    @foreach (var l in Model.Lines.OrderBy(x => x.Date).ThenBy(x => x.Id))
+    {
+        <tr class="@(l.CashVoucherId == null ? "table-warning" : "")"><td>@l.Date.ToDate()</td><td class="small">@l.Description</td><td class="small">@l.Reference</td><td class="num @(l.Amount < 0 ? "text-danger" : "text-success")">@l.Amount.ToString("N2")</td>
+            <td>@if (l.CashVoucher != null) { <a asp-controller="Cash" asp-action="Details" asp-route-id="@l.CashVoucherId">@l.CashVoucher.Number</a> <span class="badge bg-light text-dark border">@(l.MatchType == "auto" ? "tự động" : l.MatchType == "created" ? "lập từ sao kê" : "thủ công")</span> }</td>
+            <td>
+            @if (canPost && l.CashVoucherId != null) { <form asp-action="Unmatch" asp-route-id="@Model.Id" method="post" class="d-inline"><input type="hidden" name="lineId" value="@l.Id" /><button class="btn btn-sm btn-link p-0">Bỏ khớp</button></form> }
+            @if (canPost && l.CashVoucherId == null)
+            {
+                var cands = unmatched.Where(v => S(v) == l.Amount).ToList();
+                if (cands.Any())
+                {
+                    <form asp-action="Match" asp-route-id="@Model.Id" method="post" class="d-flex gap-1 mb-1"><input type="hidden" name="lineId" value="@l.Id" />
+                        <select name="voucherId" class="form-select form-select-sm">@foreach (var v in cands) { <option value="@v.Id">@v.Number – @v.Date.ToDate() – @v.Partner?.Name</option> }</select><button class="btn btn-sm btn-outline-primary">Khớp</button></form>
+                }
+                <form asp-action="CreateVoucher" asp-route-id="@Model.Id" method="post" class="d-flex gap-1"><input type="hidden" name="lineId" value="@l.Id" />
+                    <select name="purpose" class="form-select form-select-sm" style="width:170px">
+                        @if (l.Amount > 0) { <option value="@((int)CashPurpose.CustomerReceipt)">Khách hàng trả tiền</option> } else { <option value="@((int)CashPurpose.VendorPayment)">Trả nhà cung cấp</option> }
+                        <option value="@((int)CashPurpose.Other)">Khác (chọn TK)</option></select>
+                    <select name="partnerId" asp-items="ViewBag.Partners" class="form-select form-select-sm" style="width:170px"><option value="">Đối tượng</option></select>
+                    <select name="counterAccountId" asp-items="ViewBag.Counter" class="form-select form-select-sm" style="width:150px"><option value="">TK đối ứng</option></select>
+                    <button class="btn btn-sm btn-primary text-nowrap">Lập phiếu</button></form>
+            }
+            </td></tr>
+    }
+</tbody></table></div></div></div>
+@if (bookOnly.Any())
+{
+    <div class="card"><div class="card-header">Phiếu trên sổ chưa có trên sao kê</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+        @foreach (var v in bookOnly) { <tr><td>@v.Date.ToDate()</td><td><a asp-controller="Cash" asp-action="Details" asp-route-id="@v.Id">@v.Number</a></td><td class="small">@v.Description</td><td class="num">@S(v).ToString("N2")</td></tr> }
+    </tbody></table></div></div>
+}

@@ -1,0 +1,47 @@
+@using ERP.Web.Controllers
+@{
+    ViewData["Title"] = "Duyệt chứng từ";
+    var inbox = (List<ApprovalRequest>)ViewBag.Inbox; var mine = (List<ApprovalRequest>)ViewBag.Mine;
+    var recent = (List<ApprovalRequest>)ViewBag.Recent; var all = (List<ApprovalRequest>)ViewBag.AllPending;
+    string Badge(ApprovalStatus s) => s switch { ApprovalStatus.Pending => "bg-warning text-dark", ApprovalStatus.Approved => "bg-success", ApprovalStatus.Rejected => "bg-danger", _ => "bg-secondary" };
+}
+<div class="d-flex justify-content-end mb-2">@if (User.InAny(AppRoles.Admin + "," + AppRoles.Director)) { <a class="btn btn-sm btn-outline-primary" asp-action="Rules"><i class="bi bi-diagram-3"></i> Cấu hình quy tắc duyệt</a> }</div>
+<div class="card mb-3"><div class="card-header"><i class="bi bi-inbox me-1"></i> Chờ tôi duyệt <span class="badge bg-warning text-dark">@inbox.Count</span></div><div class="card-body p-0">
+    @if (!inbox.Any()) { <div class="p-3 text-muted small">Không có chứng từ nào chờ bạn duyệt.</div> }
+    @foreach (var r in inbox)
+    {
+        <div class="p-3 border-bottom">
+            <div class="d-flex flex-wrap justify-content-between gap-2">
+                <div><span class="badge bg-light text-dark border">@r.DocType.GetDisplayName()</span> <a href="@ApprovalsController.DocUrl(Url, r.DocType, r.DocId)"><b>@r.DocNumber</b></a> – @r.Summary
+                    <div class="small text-muted">Giá trị <b>@r.Amount.ToMoney()</b> · gửi bởi @r.RequestedBy?.FullName lúc @r.RequestedAt.ToDateTime() · @WorkflowService.Describe(r)</div></div>
+                <form asp-action="Act" asp-route-id="@r.Id" method="post" class="d-flex gap-1 align-items-start">
+                    <input name="comment" class="form-control form-control-sm" style="width:220px" placeholder="Ý kiến (tùy chọn)" />
+                    <button class="btn btn-sm btn-success" name="approve" value="true"><i class="bi bi-check2"></i> Duyệt</button>
+                    <button class="btn btn-sm btn-outline-danger" name="approve" value="false" data-confirm-click="Từ chối chứng từ này?"><i class="bi bi-x"></i> Từ chối</button>
+                </form>
+            </div>
+            <div class="flow mt-2">@foreach (var s in r.Steps.OrderBy(x => x.Level)) { <span class="step @(s.Status == ApprovalStatus.Approved ? "done" : s.Level == r.CurrentLevel ? "current" : "")">Cấp @s.Level: @s.Name</span><span class="arrow">›</span> }</div>
+        </div>
+    }
+</div></div>
+@if (all.Any())
+{
+    <div class="card mb-3"><div class="card-header">Toàn bộ chứng từ đang chờ duyệt</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off">
+        <thead><tr><th>Loại</th><th>Chứng từ</th><th class="num">Giá trị</th><th>Người gửi</th><th>Tình trạng</th></tr></thead><tbody>
+        @foreach (var r in all) { <tr><td class="small">@r.DocType.GetDisplayName()</td><td><a href="@ApprovalsController.DocUrl(Url, r.DocType, r.DocId)">@r.DocNumber</a></td><td class="num">@r.Amount.ToMoney()</td><td class="small">@r.RequestedBy?.FullName</td><td class="small">@WorkflowService.Describe(r)</td></tr> }
+    </tbody></table></div></div>
+}
+<div class="row g-3">
+    <div class="col-lg-6"><div class="card h-100"><div class="card-header">Yêu cầu do tôi gửi</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+        @foreach (var r in mine) { <tr><td class="small">@r.RequestedAt.ToDate()</td><td><a href="@ApprovalsController.DocUrl(Url, r.DocType, r.DocId)">@r.DocNumber</a></td><td class="num small">@r.Amount.ToMoney()</td><td><span class="badge @Badge(r.Status)">@r.Status.GetDisplayName()</span></td></tr> }
+        @if (!mine.Any()) { <tr><td class="text-muted small p-3">Chưa gửi duyệt chứng từ nào.</td></tr> }
+    </tbody></table></div></div></div>
+    <div class="col-lg-6"><div class="card h-100"><div class="card-header">Đã xử lý gần đây</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+        @foreach (var r in recent)
+        {
+            var last = r.Steps.Where(s => s.ActedAt != null).OrderByDescending(s => s.ActedAt).FirstOrDefault();
+            <tr><td class="small">@r.CompletedAt.ToDate()</td><td><a href="@ApprovalsController.DocUrl(Url, r.DocType, r.DocId)">@r.DocNumber</a></td><td><span class="badge @Badge(r.Status)">@r.Status.GetDisplayName()</span></td><td class="small">@last?.ActedByName @(string.IsNullOrEmpty(last?.Comment) ? "" : "– " + last.Comment)</td></tr>
+        }
+    </tbody></table></div></div></div>
+</div>
+@section Scripts { <script>document.querySelectorAll('[data-confirm-click]').forEach(b => b.addEventListener('click', e => { if (!confirm(b.getAttribute('data-confirm-click'))) e.preventDefault(); }));</script> }

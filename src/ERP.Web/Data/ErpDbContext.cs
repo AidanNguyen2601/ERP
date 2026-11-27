@@ -7,6 +7,87 @@ public class ErpDbContext : DbContext
 {
     public ErpDbContext(DbContextOptions<ErpDbContext> options) : base(options) { }
 
+    // ------------------------------------------------------------------ Phạm vi chi nhánh & người thao tác (gán theo request)
+    /// <summary>Bật lọc dữ liệu theo chi nhánh cho request hiện tại</summary>
+    public bool BranchFilterOn { get; set; }
+    public int[] ScopeBranchIds { get; set; } = Array.Empty<int>();
+    /// <summary>Chi nhánh gán cho chứng từ mới tạo (chưa chọn chi nhánh)</summary>
+    public int? DefaultBranchId { get; set; }
+    public int? AuditUserId { get; set; }
+    public string? AuditUserName { get; set; }
+    public string? AuditIp { get; set; }
+    /// <summary>Tạm tắt nhật ký (khi ghi chính bảng nhật ký)</summary>
+    private bool _auditing;
+
+    /// <summary>Chạy một đoạn với phạm vi chi nhánh khác (dùng cho báo cáo hợp nhất theo từng công ty)</summary>
+    public async Task<T> WithScopeAsync<T>(int[]? branches, Func<Task<T>> action)
+    {
+        var (on, ids) = (BranchFilterOn, ScopeBranchIds);
+        try { BranchFilterOn = branches != null; ScopeBranchIds = branches ?? Array.Empty<int>(); ChangeTracker.Clear(); return await action(); }
+        finally { BranchFilterOn = on; ScopeBranchIds = ids; ChangeTracker.Clear(); }
+    }
+
+    private static readonly Type[] BranchFiltered =
+    {
+        typeof(JournalEntry), typeof(Invoice), typeof(PurchaseOrder), typeof(SalesOrder), typeof(InventoryDoc), typeof(CashVoucher), typeof(ProductionOrder),
+        typeof(SalesCreditNote), typeof(FixedAsset), typeof(Contract), typeof(PayrollRun), typeof(BankStatement), typeof(DebtOffset), typeof(ToolItem),
+        typeof(VatDeclaration), typeof(CitDeclaration)
+    };
+
+    private void SetBranchFilter<T>(ModelBuilder mb) where T : class, IBranchOwned =>
+        mb.Entity<T>().HasQueryFilter(e => !BranchFilterOn || e.BranchId == null || ScopeBranchIds.Contains(e.BranchId!.Value));
+
+    private static int? _hqBranch;
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess) => SaveChangesAsync(acceptAllChangesOnSuccess).GetAwaiter().GetResult();
+
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        if (_auditing) return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        // Chi nhánh mặc định cho chứng từ mới
+        var added = ChangeTracker.Entries<IBranchOwned>().Where(e => e.State == EntityState.Added && e.Entity.BranchId == null).ToList();
+        if (added.Count > 0)
+        {
+            var branch = DefaultBranchId;
+            if (branch == null)
+            {
+                try { _hqBranch ??= await Branches.IgnoreQueryFilters().OrderBy(b => b.Id).Select(b => (int?)b.Id).FirstOrDefaultAsync(cancellationToken); }
+                catch { /* bảng chưa có (đang khởi tạo) */ }
+                branch = _hqBranch;
+            }
+            foreach (var e in added)
+            {
+                // Phiếu kho / phiếu thu chi lấy chi nhánh của kho / quỹ nếu có
+                if (e.Entity is InventoryDoc d) e.Entity.BranchId = (await Warehouses.FindAsync(new object[] { d.WarehouseId }, cancellationToken))?.BranchId ?? branch;
+                else if (e.Entity is CashVoucher v) e.Entity.BranchId = (await CashAccounts.FindAsync(new object[] { v.CashAccountId }, cancellationToken))?.BranchId ?? branch;
+                else e.Entity.BranchId = branch;
+            }
+        }
+        var pending = AuditUserId == null ? null : AuditTrail.Capture(this);
+        var result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        if (pending is { Count: > 0 })
+        {
+            _auditing = true;
+            try { AuditLogs.AddRange(AuditTrail.Build(pending, AuditUserId, AuditUserName, AuditIp)); await base.SaveChangesAsync(true, cancellationToken); }
+            catch { /* nhật ký không được làm hỏng nghiệp vụ */ }
+            finally { _auditing = false; }
+        }
+        return result;
+    }
+
+    /// <summary>Ghi một dòng nhật ký nghiệp vụ (duyệt, đăng nhập...)</summary>
+    public async Task LogAsync(string action, string entityType, string entityName, object? entityId, string? docNumber, string? changes = null)
+    {
+        _auditing = true;
+        try
+        {
+            AuditLogs.Add(new AuditLog { Action = action, EntityType = entityType, EntityName = entityName, EntityId = entityId?.ToString(), DocNumber = docNumber, Changes = changes, UserId = AuditUserId, UserName = AuditUserName, Ip = AuditIp });
+            await base.SaveChangesAsync(true, default);
+        }
+        catch { }
+        finally { _auditing = false; }
+    }
+
     public DbSet<AppUser> Users => Set<AppUser>();
     // Kế toán tổng hợp
     public DbSet<Account> Accounts => Set<Account>();
@@ -60,6 +141,42 @@ public class ErpDbContext : DbContext
     public DbSet<SalesCreditNote> SalesCreditNotes => Set<SalesCreditNote>();
     public DbSet<SalesCreditLine> SalesCreditLines => Set<SalesCreditLine>();
     public DbSet<SalesCreditOffset> SalesCreditOffsets => Set<SalesCreditOffset>();
+    // Nền tảng: đa công ty, nhật ký, phê duyệt, cài đặt
+    public DbSet<Company> Companies => Set<Company>();
+    public DbSet<Branch> Branches => Set<Branch>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<ApprovalRule> ApprovalRules => Set<ApprovalRule>();
+    public DbSet<ApprovalRequest> ApprovalRequests => Set<ApprovalRequest>();
+    public DbSet<ApprovalStep> ApprovalSteps => Set<ApprovalStep>();
+    public DbSet<CodeRule> CodeRules => Set<CodeRule>();
+    public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
+    public DbSet<ApiClient> ApiClients => Set<ApiClient>();
+    public DbSet<AccountMapping> AccountMappings => Set<AccountMapping>();
+    // Nhân sự, lương
+    public DbSet<Employee> Employees => Set<Employee>();
+    public DbSet<Attendance> Attendances => Set<Attendance>();
+    public DbSet<PayrollRun> PayrollRuns => Set<PayrollRun>();
+    public DbSet<PayrollLine> PayrollLines => Set<PayrollLine>();
+    // Tiền tệ, hợp đồng, công nợ, ngân hàng
+    public DbSet<Currency> Currencies => Set<Currency>();
+    public DbSet<ExchangeRate> ExchangeRates => Set<ExchangeRate>();
+    public DbSet<Contract> Contracts => Set<Contract>();
+    public DbSet<DebtOffset> DebtOffsets => Set<DebtOffset>();
+    public DbSet<DebtOffsetLine> DebtOffsetLines => Set<DebtOffsetLine>();
+    public DbSet<BankStatement> BankStatements => Set<BankStatement>();
+    public DbSet<BankStatementLine> BankStatementLines => Set<BankStatementLine>();
+    // Tài sản, phân bổ, ngân sách, thuế
+    public DbSet<AssetTransfer> AssetTransfers => Set<AssetTransfer>();
+    public DbSet<ToolItem> ToolItems => Set<ToolItem>();
+    public DbSet<ToolAllocationRun> ToolAllocationRuns => Set<ToolAllocationRun>();
+    public DbSet<RecurringJournal> RecurringJournals => Set<RecurringJournal>();
+    public DbSet<RecurringJournalLine> RecurringJournalLines => Set<RecurringJournalLine>();
+    public DbSet<Budget> Budgets => Set<Budget>();
+    public DbSet<BudgetLine> BudgetLines => Set<BudgetLine>();
+    public DbSet<VatDeclaration> VatDeclarations => Set<VatDeclaration>();
+    public DbSet<CitDeclaration> CitDeclarations => Set<CitDeclaration>();
+    public DbSet<TaxPortalInvoice> TaxPortalInvoices => Set<TaxPortalInvoice>();
+    public DbSet<ScaleTicket> ScaleTickets => Set<ScaleTicket>();
 
     /// <summary>Mọi cột tiền / số lượng: decimal(18,2)</summary>
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
@@ -107,6 +224,36 @@ public class ErpDbContext : DbContext
         modelBuilder.Entity<SavedReport>().HasIndex(x => new { x.OwnerId, x.Name });
         modelBuilder.Entity<QcPlanLine>().HasOne(l => l.QcPlan).WithMany(p => p.Lines).HasForeignKey(l => l.QcPlanId);
         modelBuilder.Entity<QcInspectionLine>().HasOne(l => l.QcInspection).WithMany(p => p.Lines).HasForeignKey(l => l.QcInspectionId);
+        modelBuilder.Entity<Company>().HasIndex(x => x.Code).IsUnique();
+        modelBuilder.Entity<Branch>().HasIndex(x => x.Code).IsUnique();
+        modelBuilder.Entity<AuditLog>().HasIndex(x => x.At);
+        modelBuilder.Entity<AuditLog>().HasIndex(x => new { x.EntityType, x.EntityId });
+        modelBuilder.Entity<ApprovalRequest>().HasIndex(x => new { x.DocType, x.DocId });
+        modelBuilder.Entity<CodeRule>().HasIndex(x => x.Target).IsUnique();
+        modelBuilder.Entity<ApiClient>().HasIndex(x => x.KeyPrefix).IsUnique();
+        modelBuilder.Entity<Employee>().HasIndex(x => x.Code).IsUnique();
+        modelBuilder.Entity<Attendance>().HasIndex(x => new { x.EmployeeId, x.Year, x.Month }).IsUnique();
+        modelBuilder.Entity<PayrollRun>().HasIndex(x => new { x.Year, x.Month, x.BranchId });
+        modelBuilder.Entity<Currency>().HasIndex(x => x.Code).IsUnique();
+        modelBuilder.Entity<ExchangeRate>().HasIndex(x => new { x.CurrencyCode, x.Date }).IsUnique();
+        modelBuilder.Entity<Contract>().HasIndex(x => x.Number).IsUnique();
+        modelBuilder.Entity<DebtOffset>().HasIndex(x => x.Number).IsUnique();
+        modelBuilder.Entity<ToolItem>().HasIndex(x => x.Code).IsUnique();
+        modelBuilder.Entity<ToolAllocationRun>().HasIndex(x => new { x.Year, x.Month }).IsUnique();
+        modelBuilder.Entity<AccountMapping>().HasIndex(x => new { x.Standard, x.FromPrefix }).IsUnique();
+        modelBuilder.Entity<ExchangeRate>().Property(x => x.Rate).HasPrecision(18, 4);
+        modelBuilder.Entity<Invoice>().Property(x => x.ExchangeRate).HasPrecision(18, 4);
+        modelBuilder.Entity<CashVoucher>().Property(x => x.ExchangeRate).HasPrecision(18, 4);
+        modelBuilder.Entity<InvoiceLine>().Property(x => x.FcUnitPrice).HasPrecision(18, 4);
+        modelBuilder.Entity<RecurringJournalLine>().Property(x => x.Percent).HasPrecision(9, 4);
+        modelBuilder.Entity<ApprovalStep>().HasOne(s => s.ApprovalRequest).WithMany(r => r.Steps).HasForeignKey(s => s.ApprovalRequestId);
+        modelBuilder.Entity<AppUser>().HasOne(u => u.Branch).WithMany().HasForeignKey(u => u.BranchId);
+
+        // Phạm vi dữ liệu theo chi nhánh (chỉ áp dụng khi người dùng bị giới hạn chi nhánh hoặc đang chọn xem một chi nhánh)
+        foreach (var t in BranchFiltered)
+            typeof(ErpDbContext).GetMethod(nameof(SetBranchFilter), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                .MakeGenericMethod(t).Invoke(this, new object[] { modelBuilder });
+        modelBuilder.Entity<JournalLine>().HasQueryFilter(l => !BranchFilterOn || l.JournalEntry!.BranchId == null || ScopeBranchIds.Contains(l.JournalEntry.BranchId.Value));
 
         // Chứng từ đã phát sinh không xóa dây chuyền
         foreach (var fk in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))

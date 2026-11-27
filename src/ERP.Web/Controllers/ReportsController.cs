@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using ERP.Web.Data;
 using ERP.Web.Models.Entities;
 using ERP.Web.Services;
+using ERP.Web.Services.Reporting;
 
 namespace ERP.Web.Controllers;
 
@@ -16,14 +17,17 @@ public class ReportsController : ErpControllerBase
     private readonly AccountingService _acc;
     public ReportsController(ErpDbContext db, ReportService rpt, PeriodService periods, AccountingService acc) : base(db) { _rpt = rpt; _periods = periods; _acc = acc; }
 
-    public async Task<IActionResult> TrialBalance(DateTime? from, DateTime? to)
+    public async Task<IActionResult> TrialBalance(DateTime? from, DateTime? to, bool export = false)
     {
         var (f, t) = Range(from, to);
         ViewBag.From = f; ViewBag.To = t;
-        return View(await _rpt.TrialBalanceAsync(f, t));
+        var tb = await _rpt.TrialBalanceAsync(f, t);
+        if (export) return Xl("So_can_doi_TK", "BẢNG CÂN ĐỐI SỐ PHÁT SINH", $"Từ {f:dd/MM/yyyy} đến {t:dd/MM/yyyy}", new[] { "Số hiệu TK", "Tên tài khoản", "Dư Nợ đầu kỳ", "Dư Có đầu kỳ", "Phát sinh Nợ", "Phát sinh Có", "Dư Nợ cuối kỳ", "Dư Có cuối kỳ" }, new[] { FieldKind.Text, FieldKind.Text, FieldKind.Money, FieldKind.Money, FieldKind.Money, FieldKind.Money, FieldKind.Money, FieldKind.Money },
+            tb.Select(r => new object?[] { r.Account.Code, r.Account.Name, r.OpenDebit, r.OpenCredit, r.Debit, r.Credit, r.CloseDebit, r.CloseCredit }));
+        return View(tb);
     }
 
-    public async Task<IActionResult> Ledger(string? account, DateTime? from, DateTime? to, int? partnerId)
+    public async Task<IActionResult> Ledger(string? account, DateTime? from, DateTime? to, int? partnerId, bool export = false)
     {
         var (f, t) = Range(from, to);
         account = string.IsNullOrWhiteSpace(account) ? "1111" : account.Trim();
@@ -33,26 +37,37 @@ public class ReportsController : ErpControllerBase
         ViewBag.Account = acc; ViewBag.From = f; ViewBag.To = t; ViewBag.Opening = opening; ViewBag.PartnerId = partnerId;
         ViewBag.Accounts = await Db.Accounts.OrderBy(a => a.Code).ToListAsync();
         ViewBag.Partners = await PartnersAsync(partnerId);
+        if (export) return Xl("So_cai", $"SỔ CÁI TÀI KHOẢN {acc.Code} – {acc.Name}", $"Từ {f:dd/MM/yyyy} đến {t:dd/MM/yyyy} · Số dư đầu kỳ {opening:N0}", new[] { "Ngày", "Số CT", "Diễn giải", "TK đối ứng", "Đối tượng", "Nợ", "Có", "Số dư" }, new[] { FieldKind.Text, FieldKind.Text, FieldKind.Text, FieldKind.Text, FieldKind.Text, FieldKind.Money, FieldKind.Money, FieldKind.Money },
+            rows.Select(r => new object?[] { r.Date.ToString("dd/MM/yyyy"), r.Number, r.Description, r.CounterAccounts, r.PartnerName, r.Debit, r.Credit, r.Balance }));
         return View(rows);
     }
 
-    public async Task<IActionResult> IncomeStatement(DateTime? from, DateTime? to)
+    public async Task<IActionResult> IncomeStatement(DateTime? from, DateTime? to, bool export = false)
     {
         var t = (to ?? DateTime.Today).Date;
         var f = (from ?? new DateTime(t.Year, 1, 1)).Date;
         // So sánh cùng kỳ năm trước
         var pf = f.AddYears(-1); var pt = t.AddYears(-1);
         ViewBag.From = f; ViewBag.To = t; ViewBag.PrevFrom = pf; ViewBag.PrevTo = pt;
-        return View(await _rpt.IncomeStatementAsync(f, t, pf, pt));
+        var is_ = await _rpt.IncomeStatementAsync(f, t, pf, pt);
+        if (export) return Xl("KQHDKD", "BÁO CÁO KẾT QUẢ HOẠT ĐỘNG KINH DOANH (B02-DN)", $"Từ {f:dd/MM/yyyy} đến {t:dd/MM/yyyy}", new[] { "Mã số", "Chỉ tiêu", "Kỳ này", "Cùng kỳ năm trước" }, new[] { FieldKind.Text, FieldKind.Text, FieldKind.Money, FieldKind.Money },
+            is_.Select(r => new object?[] { r.Code, new string(' ', r.Indent * 3) + r.Name, r.Amount, r.Previous }));
+        return View(is_);
     }
 
-    public async Task<IActionResult> BalanceSheet(DateTime? at)
+    public async Task<IActionResult> BalanceSheet(DateTime? at, bool export = false)
     {
         var d = (at ?? DateTime.Today).Date;
         var (assets, sources) = await _rpt.BalanceSheetAsync(d);
         ViewBag.At = d; ViewBag.Sources = sources;
+        if (export) return Xl("CDKT", "BẢNG CÂN ĐỐI KẾ TOÁN (B01-DN)", $"Tại ngày {d:dd/MM/yyyy}", new[] { "Mã số", "Chỉ tiêu", "Số cuối kỳ" }, new[] { FieldKind.Text, FieldKind.Text, FieldKind.Money },
+            assets.Concat(sources).Select(r => new object?[] { r.Code, new string(' ', r.Indent * 3) + r.Name, r.Amount }));
         return View(assets);
     }
+
+    private FileContentResult Xl(string name, string title, string sub, string[] cols, FieldKind[] kinds, IEnumerable<object?[]> rows) =>
+        File(ReportExport.Xlsx(name, title, new[] { HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Options.IOptions<ErpSettings>>().Value.CompanyName, sub }, cols.Select((c, i) => new ReportExport.Col(c, kinds[i])).ToList(), rows, null),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"{name}_{DateTime.Now:yyyyMMdd}.xlsx");
 
     // ------------------------------------------------------------------ Kỳ kế toán
     public async Task<IActionResult> Periods()

@@ -1,0 +1,20 @@
+@model List<ERP.Web.Controllers.ImportController.Kind>
+@{ ViewData["Title"] = "Nhập dữ liệu từ Excel"; }
+<div class="alert alert-info small mb-3">Tải <b>file mẫu</b>, điền dữ liệu (giữ nguyên dòng tiêu đề cột) rồi tải lên. Hệ thống đọc file <b>.xlsx</b> hoặc <b>.csv</b>, hiển thị bản xem trước kèm lỗi và cảnh báo trùng
+    (mã số thuế, tên, mã đối tượng) trước khi ghi. Mã để trống sẽ được sinh tự động theo <a asp-controller="Settings" asp-action="Index">quy tắc đặt mã</a>.</div>
+<div class="row g-3">
+@foreach (var k in Model)
+{
+    <div class="col-md-6 col-xl-4"><div class="card h-100"><div class="card-body">
+        <h6 class="mb-1"><i class="bi bi-file-earmark-spreadsheet text-success me-1"></i>@k.Title</h6>
+        <div class="small text-muted mb-2">@k.Note</div>
+        <div class="small mb-2"><span class="text-muted">Cột:</span> @string.Join(" · ", k.Columns)</div>
+        <form asp-action="Preview" method="post" enctype="multipart/form-data" class="d-flex gap-1">
+            <input type="hidden" name="kind" value="@k.Key" />
+            <input type="file" name="file" accept=".xlsx,.csv,.txt" class="form-control form-control-sm" required />
+            <button class="btn btn-sm btn-primary text-nowrap"><i class="bi bi-upload"></i> Xem trước</button>
+        </form>
+        <a class="small" asp-action="Template" asp-route-kind="@k.Key"><i class="bi bi-download"></i> Tải file mẫu</a>
+    </div></div></div>
+}
+</div>

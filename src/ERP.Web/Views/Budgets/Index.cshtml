@@ -1,0 +1,12 @@
+@model List<Budget>
+@{ ViewData["Title"] = "Ngân sách"; int y = ViewBag.Year; }
+<form class="toolbar" method="get">
+    <input name="year" type="number" value="@y" class="form-control form-control-sm" style="width:90px" /><button class="btn btn-sm btn-outline-primary">Xem</button>
+    @if (User.InAny(AppRoles.Accounting + "," + AppRoles.Director)) { <a class="btn btn-sm btn-primary ms-auto" asp-action="Edit"><i class="bi bi-plus-lg"></i> Lập ngân sách</a> }
+</form>
+<div class="alert alert-info small">Khi ghi sổ chi phí (TK 6xx, 8xx) vượt kế hoạch tháng của khoản mục: chế độ <b>Cảnh báo</b> vẫn ghi sổ và hiện cảnh báo; chế độ <b>Chặn</b> không cho ghi sổ. Bật / tắt kiểm soát tại <a asp-controller="Settings" asp-action="Index">Tham số hệ thống</a>.</div>
+<div class="card"><div class="card-body p-0"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Ngân sách</th><th>Năm</th><th>Chi nhánh</th><th class="num">Số khoản mục</th><th class="num">Tổng kế hoạch năm</th><th>Kiểm soát</th><th>Trạng thái</th></tr></thead><tbody>
+    @foreach (var b in Model) { <tr><td><a asp-action="Details" asp-route-id="@b.Id"><b>@b.Name</b></a></td><td>@b.Year</td><td class="small">@(b.Branch?.Name ?? "Toàn công ty")</td><td class="num">@b.Lines.Count</td><td class="num">@b.Lines.Sum(l => l.Year).ToMoney()</td><td>@b.Control.GetDisplayName()</td><td>@(b.IsActive ? "Áp dụng" : "Ngưng")</td></tr> }
+    @if (!Model.Any()) { <tr><td colspan="7" class="text-center text-muted py-3">Chưa có ngân sách năm @y.</td></tr> }
+</tbody></table></div></div>
