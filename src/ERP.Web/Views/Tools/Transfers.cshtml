@@ -1,0 +1,21 @@
+@model List<AssetTransfer>
+@{ ViewData["Title"] = "Điều chuyển tài sản cố định"; var bn = (Dictionary<int, string>)ViewBag.BranchNames; string B(int? id) => id != null && bn.TryGetValue(id.Value, out var n) ? n : ""; }
+@if (User.CanAccounting())
+{
+    <div class="card mb-3"><div class="card-body">
+        <form asp-action="Transfer" method="post" class="row g-2 align-items-end">
+            <div class="col-md-4"><label class="form-label small">Tài sản</label><select name="assetId" asp-items="ViewBag.Assets" class="form-select form-select-sm" required></select></div>
+            <div class="col-md-2"><label class="form-label small">Ngày điều chuyển</label><input type="date" name="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+            <div class="col-md-2"><label class="form-label small">Bộ phận nhận</label><input name="toDept" list="depts" class="form-control form-control-sm" /><datalist id="depts">@foreach (string d in ViewBag.Depts) { <option value="@d"></option> }</datalist></div>
+            <div class="col-md-2"><label class="form-label small">Chi nhánh nhận</label><select name="toBranch" asp-items="ViewBag.Branches" class="form-select form-select-sm"><option value="">(giữ nguyên)</option></select></div>
+            <div class="col-md-2"><button class="btn btn-sm btn-primary w-100">Điều chuyển</button></div>
+            <div class="col-12"><input name="note" class="form-control form-control-sm" placeholder="Biên bản bàn giao số..., lý do" /></div>
+        </form>
+        <div class="small text-muted mt-2">Khấu hao từ kỳ sau được tính cho bộ phận / chi nhánh mới (báo cáo chi phí theo bộ phận).</div>
+    </div></div>
+}
+<div class="card"><div class="card-body p-0"><table class="table table-sm mb-0">
+    <thead><tr><th>Ngày</th><th>Tài sản</th><th>Từ bộ phận</th><th>Đến bộ phận</th><th>Từ chi nhánh</th><th>Đến chi nhánh</th><th>Ghi chú</th><th>Người lập</th></tr></thead><tbody>
+    @foreach (var t in Model) { <tr><td>@t.Date.ToDate()</td><td><a asp-controller="Assets" asp-action="Details" asp-route-id="@t.FixedAssetId">@t.FixedAsset?.Code</a> @t.FixedAsset?.Name</td><td>@t.FromDepartment</td><td>@t.ToDepartment</td><td class="small">@B(t.FromBranchId)</td><td class="small">@B(t.ToBranchId)</td><td class="small">@t.Note</td><td class="small">@t.CreatedBy</td></tr> }
+    @if (!Model.Any()) { <tr><td colspan="8" class="text-muted text-center py-3">Chưa có điều chuyển.</td></tr> }
+</tbody></table></div></div>

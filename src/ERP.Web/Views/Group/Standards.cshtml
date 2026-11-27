@@ -1,0 +1,39 @@
+@model List<MappedRow>
+@{
+    ViewData["Title"] = "Bảng cân đối theo chuẩn mực / chế độ khác";
+    DateTime f = ViewBag.From, t = ViewBag.To; string std = ViewBag.Standard; var stds = (List<string>)ViewBag.Standards;
+    var maps = (List<AccountMapping>)ViewBag.Mappings; var unmapped = (List<string>)ViewBag.Unmapped;
+}
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Chuẩn mực</label><select name="standard" class="form-select form-select-sm">@foreach (var s in stds.DefaultIfEmpty("TT133")) { <option selected="@(s == std)">@s</option> }</select></div>
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@f.Iso()" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@t.Iso()" class="form-control form-control-sm" /></div>
+    <button class="btn btn-sm btn-outline-primary">Xem</button>
+    <a class="btn btn-sm btn-light" asp-controller="Reports" asp-action="TrialBalance"><i class="bi bi-table"></i> Cân đối theo hệ thống TK gốc</a>
+</form>
+<div class="alert alert-info small">Sổ sách ghi theo hệ thống tài khoản đang áp dụng (TT200 / TT99). Trang này chuyển đổi số liệu sang hệ thống tài khoản của chuẩn mực khác (VD TT133 cho báo cáo công ty nhỏ, hoặc mã khoản mục IFRS / báo cáo tập đoàn)
+    bằng bảng ánh xạ tiền tố TK. Có thể khai báo thêm chuẩn mới (VD "IFRS") ở form bên dưới.</div>
+@if (unmapped.Any()) { <div class="alert alert-warning small">Tài khoản chưa ánh xạ (giữ nguyên số hiệu): @string.Join(", ", unmapped)</div> }
+<div class="row g-3">
+<div class="col-lg-8"><div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>TK (@std)</th><th>Tên</th><th class="num">Dư đầu kỳ</th><th class="num">PS Nợ</th><th class="num">PS Có</th><th class="num">Dư cuối kỳ</th><th>Từ TK gốc</th></tr></thead><tbody>
+    @foreach (var r in Model) { <tr><td><b>@r.Code</b></td><td class="small">@r.Name</td><td class="num">@r.Opening.ToMoney()</td><td class="num">@r.Debit.ToMoney()</td><td class="num">@r.Credit.ToMoney()</td><td class="num">@r.Closing.ToMoney()</td><td class="small text-muted">@r.Sources</td></tr> }
+    </tbody>
+    <tfoot><tr class="fw-bold"><td colspan="2">Cộng</td><td class="num">@Model.Sum(r => r.Opening).ToMoney()</td><td class="num">@Model.Sum(r => r.Debit).ToMoney()</td><td class="num">@Model.Sum(r => r.Credit).ToMoney()</td><td class="num">@Model.Sum(r => r.Closing).ToMoney()</td><td></td></tr></tfoot>
+</table></div></div></div></div>
+<div class="col-lg-4"><div class="card"><div class="card-header">Bảng ánh xạ @std</div>
+    @if (User.CanAccounting())
+    {
+        <div class="card-body"><form asp-action="SaveMapping" method="post" class="row g-1">
+            <div class="col-4"><input name="standard" value="@std" class="form-control form-control-sm" placeholder="Chuẩn" /></div>
+            <div class="col-4"><input name="fromPrefix" class="form-control form-control-sm" placeholder="TK gốc (tiền tố)" required /></div>
+            <div class="col-4"><input name="toCode" class="form-control form-control-sm" placeholder="TK đích" required /></div>
+            <div class="col-9"><input name="toName" class="form-control form-control-sm" placeholder="Tên TK đích" /></div>
+            <div class="col-3"><button class="btn btn-sm btn-primary w-100">Lưu</button></div>
+        </form></div>
+    }
+    <div style="max-height:520px;overflow:auto"><table class="table table-sm mb-0" data-grid="off"><tbody>
+        @foreach (var m in maps) { <tr><td>@m.FromPrefix</td><td>→ <b>@m.ToCode</b></td><td class="small">@m.ToName</td><td>@if (User.CanAccounting()) { <form asp-action="DeleteMapping" asp-route-id="@m.Id" method="post"><button class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-x"></i></button></form> }</td></tr> }
+    </tbody></table></div>
+</div></div>
+</div>

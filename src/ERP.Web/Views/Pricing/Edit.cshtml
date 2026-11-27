@@ -1,0 +1,44 @@
+@model PriceList
+@{
+    ViewData["Title"] = Model.Id == 0 ? "Thêm bảng giá" : $"Sửa bảng giá {Model.Code}"; var items = (List<Item>)ViewBag.Items; var groups = (List<string>)ViewBag.Groups; var cur = (List<string>)ViewBag.Currencies;
+    var lines = Model.Lines.ToList(); var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+<form asp-action="Edit" method="post">
+<input type="hidden" asp-for="Id" />
+<div class="card mb-3"><div class="card-body">
+    <div asp-validation-summary="All" class="alert alert-danger py-2 empty-hide"></div>
+    <div class="row g-3">
+        <div class="col-md-2"><label class="form-label">Mã</label><input asp-for="Code" class="form-control" /></div>
+        <div class="col-md-5"><label class="form-label">Tên bảng giá</label><input asp-for="Name" class="form-control" /></div>
+        <div class="col-md-2"><label class="form-label">Loại tiền</label><select asp-for="CurrencyCode" class="form-select">@foreach (var c in cur) { <option>@c</option> }</select></div>
+        <div class="col-md-3"><label class="form-label">Ưu tiên</label><input asp-for="Priority" type="number" class="form-control" /></div>
+        <div class="col-md-4"><label class="form-label">Khách hàng cụ thể</label><select asp-for="PartnerId" asp-items="ViewBag.Customers" class="form-select"><option value="">-- Không --</option></select></div>
+        <div class="col-md-3"><label class="form-label">Hoặc nhóm khách hàng</label><input asp-for="PartnerGroup" class="form-control" list="grp" /><datalist id="grp">@foreach (var g in groups) { <option value="@g"></option> }</datalist></div>
+        <div class="col-md-2"><label class="form-label">Từ ngày</label><input asp-for="ValidFrom" type="date" class="form-control" /></div>
+        <div class="col-md-2"><label class="form-label">Đến ngày</label><input asp-for="ValidTo" type="date" class="form-control" /></div>
+        <div class="col-md-1 d-flex align-items-end"><div class="form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label">Dùng</label></div></div>
+    </div>
+</div></div>
+<div class="card mb-3"><div class="card-body p-0"><table class="table table-sm align-middle mb-0" id="lines" data-grid="off">
+    <thead><tr><th>Hàng hóa</th><th style="width:140px">Từ số lượng</th><th style="width:170px">Đơn giá (0 = giá chuẩn)</th><th style="width:130px">Chiết khấu %</th><th></th></tr></thead><tbody>
+    @for (var k = 0; k < lines.Count; k++)
+    {
+        var l = lines[k];
+        <tr><td><select name="lines[@k].ItemId" class="form-select form-select-sm"><option value="0">-- Chọn --</option>@foreach (var i in items) { <option value="@i.Id" selected="@(l.ItemId == i.Id)">@i.Code – @i.Name</option> }</select></td>
+            <td><input name="lines[@k].MinQty" type="number" step="any" min="0" value="@l.MinQty.ToString("0.##", inv)" class="form-control form-control-sm" /></td>
+            <td><input name="lines[@k].Price" type="number" step="any" min="0" value="@l.Price.ToString("0.##", inv)" class="form-control form-control-sm" /></td>
+            <td><input name="lines[@k].DiscountPct" type="number" step="0.1" min="0" max="100" value="@l.DiscountPct.ToString("0.##", inv)" class="form-control form-control-sm" /></td>
+            <td><button type="button" class="btn btn-sm btn-link text-danger" onclick="this.closest('tr').remove()"><i class="bi bi-x"></i></button></td></tr>
+    }
+    </tbody></table>
+    <div class="p-2"><button type="button" class="btn btn-sm btn-light" onclick="addRow()"><i class="bi bi-plus"></i> Thêm dòng giá</button> <span class="small text-muted">Cùng một hàng có thể có nhiều bậc số lượng (VD từ 1: 5.000.000; từ 10: 4.700.000).</span></div>
+</div></div>
+<button class="btn btn-primary">Lưu</button> <a class="btn btn-light" asp-action="Index">Hủy</a>
+</form>
+@section Scripts {
+<script>
+function renum() { document.querySelectorAll('#lines tbody tr').forEach((tr, k) => tr.querySelectorAll('[name]').forEach(el => el.name = el.name.replace(/lines\[\d+\]/, 'lines[' + k + ']'))); }
+function addRow() { const tb = document.querySelector('#lines tbody'); const tr = tb.querySelector('tr').cloneNode(true); tr.querySelectorAll('input').forEach(i => i.value = i.name.endsWith('DiscountPct') || i.name.endsWith('Price') || i.name.endsWith('MinQty') ? '0' : ''); tr.querySelector('select').selectedIndex = 0; tb.appendChild(tr); renum(); }
+document.querySelector('form').addEventListener('submit', renum);
+</script>
+}

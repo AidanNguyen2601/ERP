@@ -1,0 +1,42 @@
+@model List<SalesPerformance>
+@{
+    ViewData["Title"] = "Hoa hồng & KPI bán hàng"; int y = ViewBag.Year, m = ViewBag.Month; bool cfg = ViewBag.CanConfig; var tiers = (List<CommissionTier>)ViewBag.Tiers; var targets = (Dictionary<int, decimal>)ViewBag.Targets; var users = (List<AppUser>)ViewBag.SalesUsers;
+}
+<form class="toolbar" method="get">
+    <select name="month" class="form-select form-select-sm" style="width:auto">@for (var i = 1; i <= 12; i++) { <option value="@i" selected="@(i == m)">Tháng @i</option> }</select>
+    <input name="year" type="number" value="@y" class="form-control form-control-sm" style="width:90px" />
+    <button class="btn btn-sm btn-outline-primary">Xem</button><button class="btn btn-sm btn-light" name="export" value="true"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+</form>
+<div class="alert alert-info small">Doanh số = hóa đơn bán đã phát hành trong tháng của các đơn bán do nhân viên phụ trách, trừ hóa đơn điều chỉnh giảm (hàng trả lại, giảm giá). Hoa hồng = doanh số thuần × tỷ lệ của bậc cao nhất đạt được (ưu tiên bậc riêng của nhân viên, rồi bậc theo phòng, rồi bậc chung).</div>
+<div class="card mb-3"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm align-middle mb-0">
+    <thead><tr><th>Nhân viên</th><th>Phòng ban</th><th class="num">Số đơn</th><th class="num">Doanh số</th><th class="num">Trả hàng / giảm giá</th><th class="num">Doanh số thuần</th><th class="num">Chỉ tiêu</th><th style="width:170px">Hoàn thành</th><th class="num">Tỷ lệ HH</th><th class="num">Hoa hồng</th></tr></thead><tbody>
+    @foreach (var r in Model)
+    {
+        <tr><td><b>@r.User.FullName</b></td><td class="small">@r.User.Department</td><td class="num">@r.Orders</td><td class="num">@r.Revenue.ToMoney()</td><td class="num">@r.Returns.ToMoney()</td><td class="num fw-bold">@r.Net.ToMoney()</td><td class="num">@(r.Target == 0 ? "–" : r.Target.ToMoney())</td>
+            <td>@if (r.Target > 0) { <div class="progress" style="height:14px"><div class="progress-bar @(r.AchievePct >= 100 ? "bg-success" : r.AchievePct >= 70 ? "bg-warning" : "bg-danger")" style="width:@Math.Min(100, r.AchievePct).ToString(System.Globalization.CultureInfo.InvariantCulture)%">@r.AchievePct%</div></div> }</td>
+            <td class="num">@r.Rate.ToString("0.##")%</td><td class="num fw-bold text-success">@r.Commission.ToMoney()</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="10" class="text-center text-muted py-3">Chưa có doanh số trong tháng.</td></tr> }
+    </tbody>
+    @if (Model.Any()) { <tfoot><tr class="fw-bold"><td colspan="3">Cộng</td><td class="num">@Model.Sum(r => r.Revenue).ToMoney()</td><td class="num">@Model.Sum(r => r.Returns).ToMoney()</td><td class="num">@Model.Sum(r => r.Net).ToMoney()</td><td class="num">@Model.Sum(r => r.Target).ToMoney()</td><td></td><td></td><td class="num">@Model.Sum(r => r.Commission).ToMoney()</td></tr></tfoot> }
+</table></div></div></div>
+@if (cfg)
+{
+    <div class="row g-3">
+        <div class="col-lg-6"><div class="card"><div class="card-header">Chỉ tiêu doanh số tháng @m/@y</div><div class="card-body">
+            <form asp-action="SaveTargets" method="post"><input type="hidden" name="year" value="@y" /><input type="hidden" name="month" value="@m" />
+                @foreach (var u in users) { <div class="row g-1 mb-1"><div class="col-6 small pt-1">@u.FullName<input type="hidden" name="userId" value="@u.Id" /></div><div class="col-6"><input name="amount" type="number" step="1000000" min="0" value="@targets.GetValueOrDefault(u.Id).ToString("0", System.Globalization.CultureInfo.InvariantCulture)" class="form-control form-control-sm" /></div></div> }
+                <button class="btn btn-sm btn-primary mt-2">Lưu chỉ tiêu</button>
+            </form></div></div></div>
+        <div class="col-lg-6"><div class="card"><div class="card-header">Bậc hoa hồng theo doanh số tháng</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+            @foreach (var t in tiers) { <tr><td>@t.Name</td><td class="small">@(t.User?.FullName ?? t.Department ?? "Chung")</td><td class="num">từ @t.MinRevenue.ToMoney()</td><td class="num">@t.RatePct.ToString("0.##")%</td><td><form asp-action="DeleteTier" asp-route-id="@t.Id" method="post"><button class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-x"></i></button></form></td></tr> }
+            </tbody></table>
+            <form asp-action="SaveTier" method="post" class="row g-1 p-2">
+                <div class="col-md-4"><input name="Name" class="form-control form-control-sm" placeholder="Tên bậc" required /></div>
+                <div class="col-md-3"><select name="UserId" asp-items="ViewBag.Users" class="form-select form-select-sm"><option value="">Chung</option></select></div>
+                <div class="col-md-2"><input name="MinRevenue" type="number" step="1000000" min="0" class="form-control form-control-sm" placeholder="Từ DS" /></div>
+                <div class="col-md-2"><input name="RatePct" type="number" step="0.1" min="0" max="100" class="form-control form-control-sm" placeholder="% HH" required /></div>
+                <div class="col-md-1"><button class="btn btn-sm btn-primary w-100">+</button></div>
+            </form></div></div></div>
+    </div>
+}

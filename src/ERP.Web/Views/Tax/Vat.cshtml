@@ -1,0 +1,58 @@
+@model VatDeclaration
+@{
+    ViewData["Title"] = "Tờ khai thuế GTGT (01/GTGT)";
+    int y = ViewBag.Year, p = ViewBag.Period; var saved = (List<VatDeclaration>)ViewBag.Saved; var ex = ViewBag.Existing as VatDeclaration;
+    var d = Model; var c34 = d.C26 + d.C29 + d.C30 + d.C32; var c35 = d.C31 + d.C33; var c36 = c35 - d.C25;
+}
+<form class="toolbar" method="get">
+    <select name="period" class="form-select form-select-sm" style="width:auto">@for (var i = 1; i <= 12; i++) { <option value="@i" selected="@(i == p)">Tháng @i</option> }@for (var i = 1; i <= 4; i++) { <option value="@(12 + i)" selected="@(12 + i == p)">Quý @i</option> }</select>
+    <input name="year" type="number" value="@y" class="form-control form-control-sm" style="width:90px" />
+    <button class="btn btn-sm btn-outline-primary">Lập tờ khai</button>
+    <a class="btn btn-sm btn-light" asp-controller="Invoices" asp-action="VatReport"><i class="bi bi-list-ul"></i> Bảng kê hóa đơn</a>
+    <a class="btn btn-sm btn-light" asp-action="Match"><i class="bi bi-check2-square"></i> Đối chiếu với cổng thuế</a>
+    <a class="btn btn-sm btn-light" asp-action="VatXml" asp-route-year="@y" asp-route-period="@p"><i class="bi bi-filetype-xml"></i> Xuất XML</a>
+    @if (ex != null) { <span class="badge bg-success ms-auto">Đã lưu @ex.CreatedAt.ToString("dd/MM/yyyy HH:mm") @(ex.JournalEntryId != null ? "· đã hạch toán" : "")</span> }
+</form>
+<div class="row g-3">
+<div class="col-lg-8"><div class="card"><div class="card-header text-center"><b>TỜ KHAI THUẾ GIÁ TRỊ GIA TĂNG</b> – kỳ @TaxService.PeriodName(y, p)</div><div class="card-body p-0">
+<table class="table table-sm mb-0" data-grid="off">
+    <thead><tr><th>STT</th><th>Chỉ tiêu</th><th class="num">Giá trị HHDV (chưa thuế)</th><th class="num">Thuế GTGT</th></tr></thead>
+    <tbody>
+        <tr><td>[22]</td><td>Thuế GTGT còn được khấu trừ kỳ trước chuyển sang</td><td></td><td class="num">@d.C22.ToMoney()</td></tr>
+        <tr class="table-light"><td colspan="4"><b>II. Kê khai thuế GTGT phải nộp NSNN</b></td></tr>
+        <tr><td>[23] [24]</td><td>HHDV mua vào trong kỳ</td><td class="num">@d.C23.ToMoney()</td><td class="num">@d.C24.ToMoney()</td></tr>
+        <tr><td>[25]</td><td>Tổng số thuế GTGT được khấu trừ kỳ này</td><td></td><td class="num">@d.C25.ToMoney()</td></tr>
+        <tr><td>[26]</td><td>HHDV bán ra không chịu thuế GTGT</td><td class="num">@d.C26.ToMoney()</td><td></td></tr>
+        <tr><td>[29]</td><td>HHDV bán ra chịu thuế suất 0%</td><td class="num">@d.C29.ToMoney()</td><td></td></tr>
+        <tr><td>[30] [31]</td><td>HHDV bán ra chịu thuế suất 5%</td><td class="num">@d.C30.ToMoney()</td><td class="num">@d.C31.ToMoney()</td></tr>
+        <tr><td>[32] [33]</td><td>HHDV bán ra chịu thuế suất 8% / 10%</td><td class="num">@d.C32.ToMoney()</td><td class="num">@d.C33.ToMoney()</td></tr>
+        <tr><td>[34] [35]</td><td>Tổng doanh thu và thuế GTGT của HHDV bán ra</td><td class="num">@c34.ToMoney()</td><td class="num">@c35.ToMoney()</td></tr>
+        <tr><td>[36]</td><td>Thuế GTGT phát sinh trong kỳ ([35] − [25])</td><td></td><td class="num">@c36.ToMoney()</td></tr>
+        <tr><td>[37]</td><td>Điều chỉnh giảm thuế GTGT của các kỳ trước</td><td></td><td class="num">@d.C37.ToMoney()</td></tr>
+        <tr><td>[38]</td><td>Điều chỉnh tăng thuế GTGT của các kỳ trước</td><td></td><td class="num">@d.C38.ToMoney()</td></tr>
+        <tr class="fw-bold @(d.C40a > 0 ? "table-warning" : "")"><td>[40a]</td><td>Thuế GTGT phải nộp của hoạt động SXKD trong kỳ</td><td></td><td class="num">@d.C40a.ToMoney()</td></tr>
+        <tr><td>[41]</td><td>Thuế GTGT chưa khấu trừ hết kỳ này</td><td></td><td class="num">@d.C41.ToMoney()</td></tr>
+        <tr class="fw-bold"><td>[43]</td><td>Thuế GTGT còn được khấu trừ chuyển kỳ sau</td><td></td><td class="num">@d.C43.ToMoney()</td></tr>
+    </tbody>
+</table></div></div></div>
+<div class="col-lg-4">
+    @if (User.CanAccounting())
+    {
+        <div class="card mb-3"><div class="card-header">Điều chỉnh & lưu</div><div class="card-body">
+            <form method="get" class="mb-2"><input type="hidden" name="year" value="@y" /><input type="hidden" name="period" value="@p" />
+                <label class="form-label small mb-0">[37] Điều chỉnh giảm</label><input name="c37" type="number" step="1" value="@d.C37.Raw()" class="form-control form-control-sm mb-1" />
+                <label class="form-label small mb-0">[38] Điều chỉnh tăng</label><input name="c38" type="number" step="1" value="@d.C38.Raw()" class="form-control form-control-sm mb-1" />
+                <button class="btn btn-sm btn-light">Tính lại</button></form>
+            <form asp-action="SaveVat" method="post" data-confirm="Lưu tờ khai?">
+                <input type="hidden" name="year" value="@y" /><input type="hidden" name="period" value="@p" /><input type="hidden" name="c37" value="@d.C37.Raw()" /><input type="hidden" name="c38" value="@d.C38.Raw()" />
+                <div class="form-check mb-2"><input class="form-check-input" type="checkbox" name="post" value="true" id="pv" checked /><label class="form-check-label small" for="pv">Hạch toán khấu trừ thuế đầu vào với đầu ra (Nợ 33311 / Có 1331)</label></div>
+                <button class="btn btn-sm btn-primary" @(ex?.JournalEntryId != null ? "disabled" : "")>Lưu tờ khai</button>
+            </form>
+        </div></div>
+    }
+    <div class="card"><div class="card-header">Tờ khai đã lưu</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+        @foreach (var s in saved) { <tr><td><a asp-route-year="@s.Year" asp-route-period="@s.Period">@TaxService.PeriodName(s.Year, s.Period)</a></td><td class="num">Nộp @s.C40a.ToMoney()</td><td class="num">Chuyển @s.C43.ToMoney()</td></tr> }
+        @if (!saved.Any()) { <tr><td class="text-muted text-center">Chưa lưu tờ khai nào.</td></tr> }
+    </tbody></table></div></div>
+</div>
+</div>

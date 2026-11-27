@@ -1,0 +1,16 @@
+@model PurchaseRequisition
+@{ ViewData["Title"] = Model.Id == 0 ? "Lập đề nghị mua hàng" : $"Sửa đề nghị {Model.Number}"; var opts = (LineEditorOptions)ViewBag.LineOptions; }
+<form asp-action="Save" method="post">
+<input type="hidden" asp-for="Id" />
+<div class="card mb-3"><div class="card-body">
+    <div asp-validation-summary="All" class="alert alert-danger py-2 empty-hide"></div>
+    <div class="row g-3">
+        <div class="col-md-3"><label class="form-label">Ngày đề nghị</label><input asp-for="Date" type="date" class="form-control" /></div>
+        <div class="col-md-3"><label class="form-label">Cần hàng trước ngày</label><input asp-for="RequiredDate" type="date" class="form-control" /></div>
+        <div class="col-md-3"><label class="form-label">Bộ phận đề nghị</label><input asp-for="Department" class="form-control" list="depts" /><datalist id="depts">@foreach (string d in ViewBag.Depts) { <option value="@d"></option> }</datalist></div>
+        <div class="col-md-12"><label class="form-label">Mục đích / căn cứ (kế hoạch sản xuất, định mức, dự án...)</label><input asp-for="Purpose" class="form-control" /></div>
+    </div>
+</div></div>
+<div class="card mb-3"><div class="card-body"><partial name="_ItemLines" model="opts" /></div></div>
+<div class="d-flex gap-2"><button class="btn btn-light border" name="submit" value="false">Lưu nháp</button><button class="btn btn-primary" name="submit" value="true">Lưu & gửi duyệt</button><a class="btn btn-light" asp-action="Index">Hủy</a></div>
+</form>

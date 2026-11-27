@@ -32,6 +32,9 @@ public abstract class ErpControllerBase : Controller
     protected async Task<SelectList> CashAccountsAsync(int? selected = null) =>
         new(await Db.CashAccounts.Where(c => c.IsActive || c.Id == selected).OrderBy(c => c.Code)
             .Select(c => new { c.Id, Name = c.Code + " – " + c.Name }).ToListAsync(), "Id", "Name", selected);
+    protected async Task<SelectList> ContractsAsync(ContractType type, int? selected = null) =>
+        new(await Db.Contracts.Include(c => c.Partner).Where(c => c.Type == type && (c.Status == ContractStatus.Active || c.Id == selected)).OrderByDescending(c => c.SignDate)
+            .Select(c => new { c.Id, Name = c.Number + " – " + (c.Partner != null ? c.Partner.Name : "") + " – " + c.Title }).ToListAsync(), "Id", "Name", selected);
     protected async Task<List<Account>> PostableAccountsAsync() =>
         await Db.Accounts.Where(a => a.IsPostable && a.IsActive).OrderBy(a => a.Code).ToListAsync();
     protected async Task<SelectList> AccountSelectAsync(int? selected = null, Func<Account, bool>? filter = null) =>

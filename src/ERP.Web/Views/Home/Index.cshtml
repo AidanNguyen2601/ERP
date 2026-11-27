@@ -15,7 +15,7 @@
     <div class="tiles">
         @foreach (var (g, items) in modules)
         {
-            <a class="tile" href="@items[0].Url(Url)" title="@string.Join(" · ", items.Select(i => i.Title))"><span class="ico" style="background:@g.Tint"><i class="bi @g.Icon"></i></span>@g.Title</a>
+            <a class="tile" href="@items[0].Url(Url)" title="@string.Join(" · ", items.Select(i => Lang.T(Context, i.Title)))"><span class="ico" style="background:@g.Tint"><i class="bi @g.Icon"></i></span>@Lang.T(Context, g.Title)</a>
         }
     </div>
 </div></div>

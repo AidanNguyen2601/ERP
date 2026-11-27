@@ -6,7 +6,7 @@ using ERP.Web.Models.Entities;
 namespace ERP.Web.Services;
 
 /// <summary>Một dòng định khoản: Nợ / Có một tài khoản (có thể kèm đối tượng công nợ)</summary>
-public record JLine(int AccountId, decimal Debit, decimal Credit, int? PartnerId = null, string? Description = null);
+public record JLine(int AccountId, decimal Debit, decimal Credit, int? PartnerId = null, string? Description = null, string? Department = null);
 
 /// <summary>
 /// Sổ cái: mọi nghiệp vụ (hóa đơn, phiếu thu chi, kho, khấu hao, sản xuất) đều ghi sổ qua service này.
@@ -26,7 +26,8 @@ public class AccountingService
     private readonly CurrentUser _user;
     private Dictionary<string, Account>? _byCode;
 
-    public AccountingService(ErpDbContext db, CurrentUser user) { _db = db; _user = user; }
+    private readonly BudgetService _budget;
+    public AccountingService(ErpDbContext db, CurrentUser user, BudgetService budget) { _db = db; _user = user; _budget = budget; }
 
     public async Task<Account> AccAsync(string code)
     {
@@ -34,6 +35,27 @@ public class AccountingService
         return _byCode.TryGetValue(code, out var a) ? a : throw new BusinessException($"Chưa khai báo tài khoản {code} trong hệ thống tài khoản.");
     }
     public async Task<int> IdAsync(string code) => (await AccAsync(code)).Id;
+
+    // ------------------------------------------------------------------ Cấu hình bút toán theo giao dịch
+    private Dictionary<string, Account>? _rules;
+
+    /// <summary>
+    /// Tài khoản hạch toán cho một dòng định khoản đã khai báo trong PostingCatalog:
+    /// tài khoản cấu hình (nếu còn hạch toán được và đúng đầu số cho phép), nếu không thì tài khoản mặc định.
+    /// </summary>
+    public async Task<Account> RuleAccountAsync(string key)
+    {
+        var def = PostingCatalog.Find(key) ?? throw new InvalidOperationException($"Chưa khai báo cấu hình bút toán '{key}'.");
+        _rules ??= await _db.PostingRules.Include(r => r.Account).Where(r => r.Account != null)
+            .ToDictionaryAsync(r => r.Key, r => r.Account!);
+        if (_rules.TryGetValue(key, out var acc) && acc.IsPostable && acc.IsActive && PostingCatalog.Allows(def, acc.Code)) return acc;
+        return await AccAsync(def.DefaultCode!);
+    }
+    public async Task<int> RuleAsync(string key) => (await RuleAccountAsync(key)).Id;
+    public Task<int> InventoryRuleAsync(ItemType t) => RuleAsync(PostingCatalog.InventoryKey(t));
+    public Task<int> RevenueRuleAsync(ItemType? t) => RuleAsync(PostingCatalog.RevenueKey(t));
+    /// <summary>Bỏ bộ nhớ đệm sau khi đổi cấu hình trong cùng request</summary>
+    public void ResetRuleCache() => _rules = null;
 
     public static string InventoryAccount(ItemType t) => t switch
     {
@@ -64,7 +86,7 @@ public class AccountingService
             CreatedById = _user.Id, CreatedAt = DateTime.Now
         };
         foreach (var l in Merge(lines))
-            entry.Lines.Add(new JournalLine { AccountId = l.AccountId, Debit = l.Debit, Credit = l.Credit, PartnerId = l.PartnerId, Description = l.Description });
+            entry.Lines.Add(new JournalLine { AccountId = l.AccountId, Debit = l.Debit, Credit = l.Credit, PartnerId = l.PartnerId, Description = l.Description, Department = l.Department });
         await PostEntryAsync(entry);
         return entry;
     }
@@ -85,6 +107,10 @@ public class AccountingService
         var bad = accounts.Where(a => !a.IsPostable || !a.IsActive).Select(a => a.Code).ToList();
         if (accounts.Count != ids.Count) throw new BusinessException("Bút toán có tài khoản không tồn tại.");
         if (bad.Any()) throw new BusinessException($"Tài khoản {string.Join(", ", bad)} là tài khoản tổng hợp hoặc ngưng sử dụng, hãy chọn tài khoản chi tiết.");
+        // Kiểm soát ngân sách chi phí (cảnh báo / chặn theo cấu hình ngân sách)
+        entry.BranchId ??= _db.DefaultBranchId;
+        var codeOf = accounts.ToDictionary(a => a.Id, a => a.Code);
+        await _budget.CheckAsync(entry, lines.Select(l => (codeOf[l.AccountId], l.Debit - l.Credit, l.Department)));
         var needPartner = accounts.Where(a => a.TrackPartner).Select(a => a.Id).ToHashSet();
         if (lines.Any(l => needPartner.Contains(l.AccountId) && l.PartnerId == null))
             throw new BusinessException("Tài khoản công nợ (131, 331…) phải chọn đối tượng.");
@@ -114,8 +140,8 @@ public class AccountingService
     /// <summary>Gộp các dòng cùng TK + đối tượng + phía Nợ/Có</summary>
     private static IEnumerable<JLine> Merge(IEnumerable<JLine> lines) =>
         lines.Where(l => l.Debit != 0 || l.Credit != 0)
-             .GroupBy(l => (l.AccountId, l.PartnerId, Side: l.Debit > 0))
-             .Select(g => new JLine(g.Key.AccountId, g.Sum(x => x.Debit), g.Sum(x => x.Credit), g.Key.PartnerId, g.First().Description));
+             .GroupBy(l => (l.AccountId, l.PartnerId, l.Department, Side: l.Debit > 0))
+             .Select(g => new JLine(g.Key.AccountId, g.Sum(x => x.Debit), g.Sum(x => x.Credit), g.Key.PartnerId, g.First().Description, g.Key.Department));
 
     // ------------------------------------------------------------------ Số dư
     public IQueryable<JournalLine> PostedLines() => _db.JournalLines.Where(l => l.JournalEntry!.Status == DocStatus.Posted);

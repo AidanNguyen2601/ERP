@@ -1,0 +1,33 @@
+@using ERP.Web.Controllers
+@model List<DebtOffset>
+@{ ViewData["Title"] = "Bù trừ công nợ"; var cands = (List<OffsetsController.Candidate>)ViewBag.Candidates; var canPost = User.CanAccounting(); }
+<div class="toolbar"><a class="btn btn-sm btn-light" asp-action="Schedule"><i class="bi bi-calendar-week"></i> Lịch thanh toán nợ phải trả</a></div>
+<div class="card mb-3"><div class="card-header">Đối tượng vừa là khách hàng vừa là nhà cung cấp, có công nợ hai chiều</div><div class="card-body p-0"><table class="table table-sm align-middle mb-0" data-grid="off">
+    <thead><tr><th>Đối tượng</th><th class="num">Phải thu</th><th class="num">Phải trả</th><th class="num">Có thể bù trừ</th><th></th></tr></thead><tbody>
+    @foreach (var c in cands)
+    {
+        <tr><td><b>@c.Partner.Code</b> – @c.Partner.Name</td><td class="num">@c.Ar.ToMoney()</td><td class="num">@c.Ap.ToMoney()</td><td class="num fw-bold">@Math.Min(c.Ar, c.Ap).ToMoney()</td>
+            <td>@if (canPost)
+            {
+                <form asp-action="Create" method="post" class="d-flex gap-1 justify-content-end" data-confirm="Lập chứng từ bù trừ công nợ (Nợ 331 / Có 131)?">
+                    <input type="hidden" name="partnerId" value="@c.Partner.Id" />
+                    <input type="date" name="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" style="width:140px" />
+                    <input type="number" name="amount" step="1000" max="@Math.Min(c.Ar, c.Ap).Raw()" placeholder="Toàn bộ" class="form-control form-control-sm" style="width:140px" />
+                    <input name="note" placeholder="Biên bản đối chiếu số..." class="form-control form-control-sm" style="width:200px" />
+                    <button class="btn btn-sm btn-primary">Bù trừ</button>
+                </form>
+            }</td></tr>
+    }
+    @if (!cands.Any()) { <tr><td colspan="5" class="text-muted text-center py-3">Không có đối tượng nào có công nợ hai chiều (theo hóa đơn VND chưa thanh toán).</td></tr> }
+</tbody></table></div></div>
+<div class="card"><div class="card-header">Chứng từ bù trừ</div><div class="card-body p-0"><table class="table table-sm mb-0">
+    <thead><tr><th>Số</th><th>Ngày</th><th>Đối tượng</th><th class="num">Số tiền</th><th>Hóa đơn cấn trừ</th><th>Ghi chú</th><th></th></tr></thead><tbody>
+    @foreach (var o in Model)
+    {
+        <tr class="@(o.Status == DocStatus.Cancelled ? "text-muted text-decoration-line-through" : "")"><td>@if (o.JournalEntryId != null) { <a asp-controller="Journals" asp-action="Details" asp-route-id="@o.JournalEntryId">@o.Number</a> } else { @o.Number }</td>
+            <td>@o.Date.ToDate()</td><td>@o.Partner?.Name</td><td class="num">@o.Amount.ToMoney()</td>
+            <td class="small">@string.Join(", ", o.Lines.Select(l => (l.Invoice?.Direction == InvoiceDirection.Sales ? "Bán " : "Mua ") + l.Invoice?.InvoiceNo + ": " + l.Amount.ToMoney()))</td><td class="small">@o.Note</td>
+            <td>@if (o.Status == DocStatus.Posted && canPost) { <form asp-action="Cancel" asp-route-id="@o.Id" method="post" class="d-flex gap-1"><input name="reason" class="form-control form-control-sm" placeholder="Lý do hủy" required /><button class="btn btn-sm btn-outline-danger">Hủy</button></form> }</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="7" class="text-muted text-center py-3">Chưa có chứng từ bù trừ.</td></tr> }
+</tbody></table></div></div>

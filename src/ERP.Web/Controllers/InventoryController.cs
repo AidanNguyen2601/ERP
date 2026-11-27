@@ -75,7 +75,7 @@ public class InventoryController : ErpControllerBase
         {
             Id = d.Id, Type = d.Type, Date = d.Date, WarehouseId = d.WarehouseId, ToWarehouseId = d.ToWarehouseId, PartnerId = d.PartnerId, CounterAccountId = d.CounterAccountId,
             Reason = d.Reason, Number = d.Number,
-            Lines = d.Lines.Select(l => new LineInput { Id = l.Id, ItemId = l.ItemId, Quantity = l.Quantity, UnitPrice = l.UnitCost, CountedQty = l.CountedQty }).ToList()
+            Lines = d.Lines.Select(l => new LineInput { Id = l.Id, ItemId = l.ItemId, Quantity = l.Quantity, UnitPrice = l.UnitCost, CountedQty = l.CountedQty, LotNo = l.LotNo, ExpiryDate = l.ExpiryDate, BinId = l.BinId, ToBinId = l.ToBinId }).ToList()
         };
         await LoadAsync(f);
         return View("Form", f);
@@ -86,6 +86,7 @@ public class InventoryController : ErpControllerBase
     {
         if (!CanWrite) return Denied();
         var lines = form.Lines.Where(l => l.ItemId != null).ToList();
+        await UomService.NormalizeAsync(Db, lines);
         if (!lines.Any()) ModelState.AddModelError("", "Nhập ít nhất một dòng hàng.");
         if (form.Type is InvDocType.Receipt or InvDocType.Issue && form.CounterAccountId == null) ModelState.AddModelError(nameof(form.CounterAccountId), "Chọn tài khoản đối ứng.");
         if (form.Type == InvDocType.Transfer && (form.ToWarehouseId == null || form.ToWarehouseId == form.WarehouseId)) ModelState.AddModelError(nameof(form.ToWarehouseId), "Chọn kho nhận khác kho xuất.");
@@ -108,7 +109,8 @@ public class InventoryController : ErpControllerBase
         d.Date = form.Date.Date; d.WarehouseId = form.WarehouseId!.Value; d.ToWarehouseId = form.Type == InvDocType.Transfer ? form.ToWarehouseId : null;
         d.PartnerId = form.PartnerId; d.CounterAccountId = form.Type is InvDocType.Receipt or InvDocType.Issue ? form.CounterAccountId : null; d.Reason = form.Reason;
         foreach (var l in lines)
-            d.Lines.Add(new InventoryDocLine { ItemId = l.ItemId!.Value, Quantity = form.Type == InvDocType.Adjustment ? 0 : l.Quantity, CountedQty = l.CountedQty, UnitCost = form.Type == InvDocType.Receipt ? l.UnitPrice : 0 });
+            d.Lines.Add(new InventoryDocLine { ItemId = l.ItemId!.Value, Quantity = form.Type == InvDocType.Adjustment ? 0 : l.Quantity, CountedQty = l.CountedQty, UnitCost = form.Type == InvDocType.Receipt ? l.UnitPrice : 0,
+                LotNo = string.IsNullOrWhiteSpace(l.LotNo) ? null : l.LotNo.Trim(), ExpiryDate = l.ExpiryDate, BinId = l.BinId, ToBinId = form.Type == InvDocType.Transfer ? l.ToBinId : null });
         await Db.SaveChangesAsync();
         if (post)
         {
@@ -167,6 +169,18 @@ public class InventoryController : ErpControllerBase
         return View(moves.Where(m => m.Date >= f && m.Date <= t).ToList());
     }
 
+    /// <summary>Hủy (đảo) phiếu kho đã ghi sổ</summary>
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Cancel(int id, string? reason)
+    {
+        if (!CanWrite) return Denied();
+        var d = await Db.InventoryDocs.Include(x => x.Lines).FirstOrDefaultAsync(x => x.Id == id);
+        if (d == null) return NotFound();
+        await _inv.ReverseAsync(d, DateTime.Today, reason ?? "");
+        Success($"Đã hủy phiếu {d.Number}: tồn kho và bút toán đã được đảo lại.");
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
     // ------------------------------------------------------------------ Danh mục kho
     public async Task<IActionResult> Warehouses() => View(await Db.Warehouses.OrderBy(w => w.Code).ToListAsync());
 
@@ -191,8 +205,10 @@ public class InventoryController : ErpControllerBase
         ViewBag.Counter = await AccountSelectAsync(f.CounterAccountId, a => !a.Code.StartsWith("15"));
         ViewBag.LineOptions = new LineEditorOptions
         {
+            ShowUnit = true, Uoms = await UomService.LoadAsync(Db),
             Items = await ItemsAsync(i => i.IsStocked), PriceSource = "cost", ShowVat = false, ShowPrice = f.Type == InvDocType.Receipt,
-            ShowCounted = f.Type == InvDocType.Adjustment, PriceLabel = "Đơn giá nhập", Lines = f.Lines
+            ShowCounted = f.Type == InvDocType.Adjustment, PriceLabel = "Đơn giá nhập", Lines = f.Lines,
+            ShowLot = true, ShowToBin = f.Type == InvDocType.Transfer, Bins = await Db.BinLocations.Include(b => b.Warehouse).Where(b => b.IsActive).OrderBy(b => b.WarehouseId).ThenBy(b => b.Code).ToListAsync()
         };
     }
 }

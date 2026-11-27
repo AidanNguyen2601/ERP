@@ -23,7 +23,12 @@ public enum JournalSource
     [Display(Name = "Khấu hao TSCĐ")] Depreciation = 7,
     [Display(Name = "Tài sản cố định")] FixedAsset = 8,
     [Display(Name = "Sản xuất")] Production = 9,
-    [Display(Name = "Kết chuyển cuối kỳ")] Closing = 10
+    [Display(Name = "Kết chuyển cuối kỳ")] Closing = 10,
+    [Display(Name = "Tiền lương")] Payroll = 11,
+    [Display(Name = "Chênh lệch tỷ giá")] Fx = 12,
+    [Display(Name = "Phân bổ / định kỳ")] Allocation = 13,
+    [Display(Name = "Thuế")] Tax = 14,
+    [Display(Name = "Bù trừ công nợ")] Offset = 15
 }
 
 public enum DocStatus
@@ -54,7 +59,9 @@ public enum DocOrigin
     [Display(Name = "Thủ công")] Manual = 1,
     [Display(Name = "Mua hàng")] Purchase = 2,
     [Display(Name = "Bán hàng")] Sales = 3,
-    [Display(Name = "Sản xuất")] Production = 4
+    [Display(Name = "Sản xuất")] Production = 4,
+    [Display(Name = "Quản lý chất lượng")] Quality = 5,
+    [Display(Name = "Hàng bán bị trả lại")] SalesReturn = 6
 }
 
 public enum PoStatus
@@ -133,4 +140,56 @@ public enum CatalogType
 {
     [Display(Name = "Đơn vị tính")] Unit = 1,
     [Display(Name = "Phòng ban / bộ phận")] Department = 2
+}
+
+// ===================================================================== QUẢN LÝ CHẤT LƯỢNG
+public enum QcStage
+{
+    [Display(Name = "Đầu vào (nhận hàng mua)")] Incoming = 1,
+    [Display(Name = "Trong quá trình sản xuất")] InProcess = 2,
+    [Display(Name = "Thành phẩm (hoàn thành SX)")] Final = 3,
+    [Display(Name = "Trước khi giao hàng")] Outgoing = 4
+}
+
+public enum QcCriterionType
+{
+    [Display(Name = "Đạt / Không đạt")] PassFail = 1,
+    [Display(Name = "Đo lường (min – max)")] Measure = 2
+}
+
+public enum QcResult
+{
+    [Display(Name = "Chưa kết luận")] Pending = 0,
+    [Display(Name = "Đạt")] Pass = 1,
+    [Display(Name = "Đạt có điều kiện")] Conditional = 2,
+    [Display(Name = "Không đạt")] Fail = 3
+}
+
+public enum QcStatus
+{
+    [Display(Name = "Nháp")] Draft = 1,
+    [Display(Name = "Đã kết luận")] Completed = 2,
+    [Display(Name = "Đã hủy")] Cancelled = 3
+}
+
+public enum NcrDisposition
+{
+    [Display(Name = "Chưa quyết định")] Pending = 0,
+    [Display(Name = "Trả lại nhà cung cấp")] ReturnToVendor = 1,
+    [Display(Name = "Sửa chữa / làm lại")] Rework = 2,
+    [Display(Name = "Hủy bỏ (xuất hủy)")] Scrap = 3,
+    [Display(Name = "Chấp nhận nhân nhượng")] AcceptAsIs = 4
+}
+
+public enum NcrStatus
+{
+    [Display(Name = "Đang xử lý")] Open = 1,
+    [Display(Name = "Đã đóng")] Closed = 2
+}
+
+/// <summary>Loại hóa đơn điều chỉnh giảm bán hàng</summary>
+public enum CreditNoteKind
+{
+    [Display(Name = "Hàng bán bị trả lại")] Return = 1,
+    [Display(Name = "Giảm giá hàng bán")] PriceReduction = 2
 }

@@ -3,7 +3,10 @@
     int y = ViewBag.Year, m = ViewBag.Month;
     ViewData["Title"] = $"Bảng kê thuế GTGT tháng {m:00}/{y}";
     var outInv = Model.Where(i => i.Direction == InvoiceDirection.Sales).ToList(); var inInv = Model.Where(i => i.Direction == InvoiceDirection.Purchase).ToList();
-    var vatOut = outInv.Sum(i => i.VatAmount); var vatIn = inInv.Sum(i => i.VatAmount);
+    var creditNotes = (List<SalesCreditNote>)ViewBag.CreditNotes; var vatCredit = creditNotes.Sum(n => n.VatAmount);
+    var vatOut = outInv.Sum(i => i.VatAmount) - vatCredit;   // đã trừ thuế điều chỉnh giảm (hàng bán trả lại / giảm giá)
+    var rets = (List<PurchaseReturn>)ViewBag.Returns; var vatRet = rets.Sum(r => r.VatAmount);
+    var vatIn = inInv.Sum(i => i.VatAmount) - vatRet;   // đã trừ thuế hoàn do trả hàng nhà cung cấp
 }
 <div class="subnav"><a asp-action="Index" asp-route-direction="Sales">Hóa đơn bán ra</a><a asp-action="Index" asp-route-direction="Purchase">Hóa đơn mua vào</a><a class="active" asp-action="VatReport">Bảng kê thuế GTGT</a></div>
 <form class="toolbar" method="get">
@@ -12,8 +15,8 @@
     <button class="btn btn-sm btn-outline-primary">Xem</button><button type="button" class="btn btn-sm btn-light border ms-auto" onclick="window.print()">In</button>
 </form>
 <div class="row g-3 mb-3">
-    <div class="col-md-4"><div class="card kpi"><div class="label">Thuế GTGT đầu ra</div><div class="value">@vatOut.ToMoney()</div><div class="sub">@outInv.Count hóa đơn · doanh số @outInv.Sum(i => i.Subtotal).ToMoney()</div></div></div>
-    <div class="col-md-4"><div class="card kpi"><div class="label">Thuế GTGT đầu vào được khấu trừ</div><div class="value">@vatIn.ToMoney()</div><div class="sub">@inInv.Count hóa đơn · giá trị @inInv.Sum(i => i.Subtotal).ToMoney()</div></div></div>
+    <div class="col-md-4"><div class="card kpi"><div class="label">Thuế GTGT đầu ra</div><div class="value">@vatOut.ToMoney()</div><div class="sub">@outInv.Count hóa đơn · doanh số @outInv.Sum(i => i.Subtotal).ToMoney()@(vatCredit > 0 ? $" · đã trừ {vatCredit.ToMoney()} thuế điều chỉnh giảm" : "")</div></div></div>
+    <div class="col-md-4"><div class="card kpi"><div class="label">Thuế GTGT đầu vào được khấu trừ</div><div class="value">@vatIn.ToMoney()</div><div class="sub">@inInv.Count hóa đơn · giá trị @inInv.Sum(i => i.Subtotal).ToMoney()@(vatRet > 0 ? $" · đã trừ {vatRet.ToMoney()} thuế hoàn do trả hàng" : "")</div></div></div>
     <div class="col-md-4"><div class="card kpi"><div class="label">@(vatOut >= vatIn ? "Thuế GTGT phải nộp" : "Thuế GTGT còn được khấu trừ chuyển kỳ sau")</div><div class="value @(vatOut >= vatIn ? "bad" : "good")">@Math.Abs(vatOut - vatIn).ToMoney()</div></div></div>
 </div>
 @foreach (var (title, list) in new[] { ("Bảng kê hóa đơn hàng hóa, dịch vụ bán ra", outInv), ("Bảng kê hóa đơn hàng hóa, dịch vụ mua vào", inInv) })
@@ -33,5 +36,34 @@
         @if (!list.Any()) { <tr><td colspan="9" class="text-center text-muted py-3">Không có hóa đơn.</td></tr> }
         </tbody>
         <tfoot><tr class="total"><td colspan="6">Tổng cộng</td><td class="num">@list.Sum(i => i.Subtotal).ToMoney()</td><td></td><td class="num">@list.Sum(i => i.VatAmount).ToMoney()</td></tr></tfoot>
+    </table></div></div>
+}
+@if (rets.Any())
+{
+    <div class="card mb-3"><div class="card-header">Điều chỉnh giảm thuế đầu vào do trả hàng nhà cung cấp</div><div class="card-body p-0"><table class="table table-sm mb-0 report-table">
+        <thead><tr><th>Ngày</th><th>NCR</th><th>Đơn mua</th><th>Mặt hàng</th><th class="num">SL trả (đã có hóa đơn)</th><th class="num">Giá trị chưa thuế</th><th class="num">Thuế GTGT điều chỉnh giảm</th></tr></thead>
+        <tbody>
+        @foreach (var r in rets.Where(r => r.VatAmount > 0))
+        {
+            <tr><td>@r.Date.ToDate()</td><td><a asp-controller="QcNcrs" asp-action="Details" asp-route-id="@r.NcrId">@r.Ncr?.Number</a></td>
+                <td><a asp-controller="PurchaseOrders" asp-action="Details" asp-route-id="@r.PurchaseOrderLine?.PurchaseOrderId">@r.PurchaseOrderLine?.PurchaseOrder?.Number</a></td><td>@r.PurchaseOrderLine?.Item?.Code</td>
+                <td class="num">@r.QtyBilled.ToQty()</td><td class="num">@r.BilledAmount.ToMoney()</td><td class="num">@r.VatAmount.ToMoney()</td></tr>
+        }
+        </tbody>
+        <tfoot><tr class="total"><td colspan="6">Tổng điều chỉnh giảm</td><td class="num">@vatRet.ToMoney()</td></tr></tfoot>
+    </table></div></div>
+}
+@if (creditNotes.Any())
+{
+    <div class="card mb-3"><div class="card-header">Điều chỉnh giảm thuế đầu ra (hàng bán bị trả lại / giảm giá hàng bán)</div><div class="card-body p-0"><table class="table table-sm mb-0 report-table">
+        <thead><tr><th>Ngày</th><th>Số chứng từ</th><th>Loại</th><th>Hóa đơn gốc</th><th>Khách hàng</th><th class="num">Giá trị chưa thuế</th><th class="num">Thuế GTGT điều chỉnh giảm</th></tr></thead>
+        <tbody>
+        @foreach (var cn in creditNotes)
+        {
+            <tr><td>@cn.Date.ToDate()</td><td><a asp-controller="SalesCreditNotes" asp-action="Details" asp-route-id="@cn.Id">@cn.Number</a></td><td>@cn.Kind.GetDisplayName()</td>
+                <td><a asp-action="Details" asp-route-id="@cn.InvoiceId">@cn.Invoice?.Series @cn.Invoice?.InvoiceNo</a></td><td>@cn.Customer?.Name</td><td class="num">@cn.Subtotal.ToMoney()</td><td class="num">@cn.VatAmount.ToMoney()</td></tr>
+        }
+        </tbody>
+        <tfoot><tr class="total"><td colspan="6">Tổng điều chỉnh giảm</td><td class="num">@vatCredit.ToMoney()</td></tr></tfoot>
     </table></div></div>
 }

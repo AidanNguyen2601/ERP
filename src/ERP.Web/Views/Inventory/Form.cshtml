@@ -25,6 +25,7 @@
     </div>
 </div></div>
 <div class="card mb-3"><div class="card-body">
+    <div class="input-group input-group-sm mb-2" style="max-width:520px"><span class="input-group-text"><i class="bi bi-upc-scan"></i></span><input id="scanBox" class="form-control" placeholder="Quét mã vạch: MÃ_HÀNG hoặc MÃ_HÀNG|SỐ_LÔ rồi nhấn Enter" autocomplete="off" /></div>
     <partial name="_ItemLines" model="opts" />
     @if (Model.Type == InvDocType.Adjustment) { <div class="small text-muted">Nhập số lượng thực tế kiểm đếm. Khi ghi sổ, hệ thống so với tồn sổ sách: thừa → Nợ 15x / Có 3381; thiếu → Nợ 1381 / Có 15x (theo giá vốn bình quân).</div> }
     @if (Model.Type == InvDocType.Issue) { <div class="small text-muted">Giá xuất = giá vốn bình quân gia quyền tại thời điểm ghi sổ.</div> }
@@ -35,3 +36,29 @@
     <a class="btn btn-light" asp-action="Docs">Hủy</a>
 </div>
 </form>
+@section Scripts {
+<script>
+// Quét mã vạch / QR: nhận "MÃ_HÀNG" hoặc "MÃ_HÀNG|SỐ_LÔ" (như tem in từ trang In tem nhãn); mỗi lần quét cộng 1 đơn vị vào dòng của hàng đó
+(function () {
+    const box = document.getElementById('scanBox'); if (!box) return;
+    const table = document.querySelector('table.line-editor');
+    box.addEventListener('keydown', e => {
+        if (e.key !== 'Enter') return; e.preventDefault();
+        const [code, lot] = box.value.trim().split('|'); if (!code) return;
+        const sel0 = table.querySelector('.item-select');
+        const opt = [...sel0.options].find(o => o.value && (o.dataset.code?.toLowerCase() === code.toLowerCase() || (o.dataset.barcode && o.dataset.barcode === code)));
+        if (!opt) { box.classList.add('is-invalid'); setTimeout(() => box.classList.remove('is-invalid'), 800); return; }
+        let row = [...table.querySelectorAll('tr.line')].find(tr => tr.querySelector('.item-select').value === opt.value && (!lot || (tr.querySelector('[data-f=LotNo]')?.value || '') === lot));
+        if (row) { const q = row.querySelector('[data-f=Quantity]') || row.querySelector('[data-f=CountedQty]'); q.value = (+q.value || 0) + 1; q.dispatchEvent(new Event('input', { bubbles: true })); }
+        else {
+            row = [...table.querySelectorAll('tr.line')].find(tr => !tr.querySelector('.item-select').value);
+            if (!row) { table.querySelector('[data-add-line]').click(); const all = table.querySelectorAll('tr.line'); row = all[all.length - 1]; }
+            const s = row.querySelector('.item-select'); s.value = opt.value; s.dispatchEvent(new Event('change', { bubbles: true }));
+            const lotInput = row.querySelector('[data-f=LotNo]'); if (lotInput && lot) lotInput.value = lot;
+            const q = row.querySelector('[data-f=Quantity]') || row.querySelector('[data-f=CountedQty]'); if (q) { q.value = 1; q.dispatchEvent(new Event('input', { bubbles: true })); }
+        }
+        box.value = '';
+    });
+})();
+</script>
+}

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using ERP.Web.Data;
@@ -16,7 +17,8 @@ public class InvoicesController : ErpControllerBase
 {
     private readonly InvoiceService _svc;
     private readonly ErpSettings _cfg;
-    public InvoicesController(ErpDbContext db, InvoiceService svc, IOptions<ErpSettings> cfg) : base(db) { _svc = svc; _cfg = cfg.Value; }
+    private readonly FxService _fx;
+    public InvoicesController(ErpDbContext db, InvoiceService svc, IOptions<ErpSettings> cfg, FxService fx) : base(db) { _svc = svc; _cfg = cfg.Value; _fx = fx; }
 
     public async Task<IActionResult> Index(InvoiceDirection direction = InvoiceDirection.Sales, InvoiceStatus? status = null, string? q = null, DateTime? from = null, DateTime? to = null, bool unpaid = false)
     {
@@ -29,12 +31,21 @@ public class InvoicesController : ErpControllerBase
         return View(await query.OrderByDescending(i => i.Date).ThenByDescending(i => i.Id).ToListAsync());
     }
 
+    /// <summary>Tải XML hóa đơn điện tử đã gửi nhà cung cấp / cơ quan thuế</summary>
+    public async Task<IActionResult> EInvoiceXml(int id)
+    {
+        var i = await Db.Invoices.FirstOrDefaultAsync(x => x.Id == id);
+        if (i?.EInvoiceXml == null) return NotFound();
+        return File(System.Text.Encoding.UTF8.GetBytes(i.EInvoiceXml), "application/xml", $"HDDT_{i.Series}_{i.InvoiceNo}.xml");
+    }
+
     public async Task<IActionResult> Details(int id)
     {
         var i = await Db.Invoices.Include(x => x.Partner).Include(x => x.Lines).ThenInclude(l => l.Item).Include(x => x.Lines).ThenInclude(l => l.Account)
             .Include(x => x.SalesOrder).Include(x => x.PurchaseOrder).Include(x => x.CreatedBy).FirstOrDefaultAsync(x => x.Id == id);
         if (i == null) return NotFound();
         ViewBag.Payments = await Db.PaymentAllocations.Include(a => a.CashVoucher).Where(a => a.InvoiceId == id).ToListAsync();
+        ViewBag.CreditNotes = await Db.SalesCreditNotes.Where(n => n.InvoiceId == id).OrderBy(n => n.Date).ThenBy(n => n.Id).ToListAsync();
         ViewBag.Company = _cfg;
         return View(i);
     }
@@ -56,8 +67,8 @@ public class InvoicesController : ErpControllerBase
         var f = new InvoiceForm
         {
             Id = i.Id, Direction = i.Direction, Date = i.Date, DueDate = i.DueDate, PartnerId = i.PartnerId, Series = i.Series, InvoiceNo = i.InvoiceNo, Note = i.Note,
-            SalesOrderId = i.SalesOrderId, PurchaseOrderId = i.PurchaseOrderId, Number = i.Number,
-            Lines = i.Lines.OrderBy(l => l.Id).Select(l => new LineInput { Id = l.Id, ItemId = l.ItemId, Description = l.Description, Quantity = l.Quantity, UnitPrice = l.UnitPrice, VatRate = l.VatRate, AccountId = l.AccountId }).ToList()
+            SalesOrderId = i.SalesOrderId, PurchaseOrderId = i.PurchaseOrderId, Number = i.Number, CurrencyCode = i.CurrencyCode, ExchangeRate = i.ExchangeRate, ContractId = i.ContractId,
+            Lines = i.Lines.OrderBy(l => l.Id).Select(l => new LineInput { Id = l.Id, ItemId = l.ItemId, Description = l.Description, Quantity = l.Quantity, UnitPrice = i.CurrencyCode == "VND" ? l.UnitPrice : l.FcUnitPrice, VatRate = l.VatRate, AccountId = l.AccountId }).ToList()
         };
         await LoadAsync(f, i.SalesOrderId == null && i.PurchaseOrderId == null);
         return View("Form", f);
@@ -85,6 +96,13 @@ public class InvoicesController : ErpControllerBase
         if (!ModelState.IsValid) { if (form.Id == 0) Db.Invoices.Remove(inv); await LoadAsync(form, !fromOrder); return View("Form", form); }
 
         inv.Date = form.Date.Date; inv.DueDate = form.DueDate.Date; inv.Series = form.Series?.Trim(); inv.InvoiceNo = form.InvoiceNo?.Trim(); inv.Note = form.Note;
+        inv.ContractId = form.ContractId ?? inv.ContractId;
+        if (!fromOrder)
+        {
+            inv.CurrencyCode = string.IsNullOrWhiteSpace(form.CurrencyCode) ? "VND" : form.CurrencyCode;
+            inv.ExchangeRate = inv.CurrencyCode == "VND" ? 1 : form.ExchangeRate > 0 ? form.ExchangeRate : await _fx.RateAsync(inv.CurrencyCode, form.Date);
+            if (inv.ExchangeRate <= 0) throw new BusinessException($"Chưa có tỷ giá {inv.CurrencyCode} – nhập tỷ giá trên hóa đơn.");
+        }
         if (!fromOrder)
         {
             inv.PartnerId = form.PartnerId;
@@ -96,7 +114,7 @@ public class InvoicesController : ErpControllerBase
                 inv.Lines.Add(new InvoiceLine
                 {
                     ItemId = l.ItemId, Description = string.IsNullOrWhiteSpace(l.Description) ? it?.Name ?? "" : l.Description.Trim(), Unit = it?.Unit,
-                    Quantity = l.Quantity, UnitPrice = l.UnitPrice, VatRate = l.VatRate, AccountId = l.AccountId
+                    Quantity = l.Quantity, UnitPrice = l.UnitPrice, FcUnitPrice = inv.CurrencyCode == "VND" ? 0 : l.UnitPrice, VatRate = l.VatRate, AccountId = l.AccountId
                 });
             }
         }
@@ -156,8 +174,11 @@ public class InvoicesController : ErpControllerBase
         var y = year ?? DateTime.Today.Year; var m = month ?? DateTime.Today.Month;
         var f = new DateTime(y, m, 1); var t = f.AddMonths(1).AddDays(-1);
         var list = await Db.Invoices.Include(i => i.Partner).Include(i => i.Lines)
-            .Where(i => i.Status == InvoiceStatus.Issued && i.Date >= f && i.Date <= t && i.Series != "DK").OrderBy(i => i.Date).ThenBy(i => i.InvoiceNo).ToListAsync();
+            .Where(i => i.Status == InvoiceStatus.Issued && i.Date >= f && i.Date <= t && i.Series != "DK" && i.Series != AssetService.AssetInvoiceSeries).OrderBy(i => i.Date).ThenBy(i => i.InvoiceNo).ToListAsync();
         ViewBag.Year = y; ViewBag.Month = m;
+        ViewBag.CreditNotes = await Db.SalesCreditNotes.Include(n => n.Customer).Include(n => n.Invoice).Where(n => n.Status == DocStatus.Posted && n.Date >= f && n.Date <= t && n.VatAmount > 0).OrderBy(n => n.Date).ToListAsync();
+        ViewBag.Returns = await Db.PurchaseReturns.Include(r => r.Ncr).Include(r => r.PurchaseOrderLine).ThenInclude(l => l!.Item).Include(r => r.PurchaseOrderLine).ThenInclude(l => l!.PurchaseOrder)
+            .Where(r => r.Date >= f && r.Date <= t && r.VatAmount > 0).OrderBy(r => r.Date).ToListAsync();
         return View(list);
     }
 
@@ -165,6 +186,10 @@ public class InvoicesController : ErpControllerBase
     {
         ViewBag.Partners = f.Direction == InvoiceDirection.Sales ? await CustomersAsync(f.PartnerId) : await VendorsAsync(f.PartnerId);
         ViewBag.EditableLines = editableLines;
+        ViewBag.Currencies = new SelectList(await Db.Currencies.Where(c => c.IsActive || c.Code == f.CurrencyCode).OrderBy(c => c.Code == "VND" ? 0 : 1).ThenBy(c => c.Code).Select(c => new { c.Code, Name = c.Code + " – " + c.Name }).ToListAsync(), "Code", "Name", f.CurrencyCode);
+        var ctype = f.Direction == InvoiceDirection.Sales ? ContractType.Sale : ContractType.Purchase;
+        ViewBag.Contracts = new SelectList(await Db.Contracts.Include(c => c.Partner).Where(c => c.Type == ctype && (c.Status == ContractStatus.Active || c.Id == f.ContractId)).OrderByDescending(c => c.SignDate)
+            .Select(c => new { c.Id, Name = c.Number + " – " + (c.Partner != null ? c.Partner.Name : "") + " – " + c.Title }).ToListAsync(), "Id", "Name", f.ContractId);
         ViewBag.LineOptions = new LineEditorOptions
         {
             Items = await ItemsAsync(i => f.Direction == InvoiceDirection.Sales ? i.Type == ItemType.Service : true),

@@ -1,0 +1,15 @@
+@model List<Rfq>
+@{ ViewData["Title"] = "Yêu cầu báo giá (RFQ)"; }
+<div class="toolbar">
+    <a class="btn btn-sm btn-light" asp-controller="Requisitions" asp-action="Index"><i class="bi bi-card-checklist"></i> Đề nghị mua hàng</a>
+    <a class="btn btn-sm btn-primary ms-auto" asp-action="Create"><i class="bi bi-plus-lg"></i> Tạo RFQ</a>
+</div>
+<div class="card"><div class="card-body p-0"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Số RFQ</th><th>Ngày</th><th>Hạn báo giá</th><th>Đề nghị mua</th><th class="num">Số mặt hàng</th><th>Nhà cung cấp mời</th><th>Đã báo giá</th><th>Được chọn</th><th>Trạng thái</th></tr></thead><tbody>
+    @foreach (var r in Model)
+    {
+        <tr><td><a asp-action="Details" asp-route-id="@r.Id"><b>@r.Number</b></a></td><td>@r.Date.ToDate()</td><td>@r.DueDate.ToDate()</td><td>@r.PurchaseRequisition?.Number</td><td class="num">@r.Lines.Count</td><td class="num">@r.Vendors.Count</td><td class="num">@r.Vendors.Count(v => v.Responded)</td><td class="small">@r.AwardedPartner?.Name</td>
+            <td><span class="badge @(r.Status == RfqStatus.Awarded ? "bg-success" : r.Status == RfqStatus.Cancelled ? "bg-secondary" : "bg-warning text-dark")">@r.Status.GetDisplayName()</span></td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="9" class="text-center text-muted py-3">Chưa có yêu cầu báo giá.</td></tr> }
+</tbody></table></div></div>

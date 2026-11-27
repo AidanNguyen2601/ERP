@@ -1,0 +1,16 @@
+@model List<SalesQuote>
+@{ ViewData["Title"] = "Báo giá & phương án kinh doanh"; QuoteStatus? st = ViewBag.Status; decimal min = ViewBag.Min; bool can = ViewBag.CanEdit; }
+<div class="toolbar">
+    <form method="get" class="d-inline-flex gap-2"><select name="status" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()"><option value="">Mọi trạng thái</option>@foreach (QuoteStatus s in Enum.GetValues<QuoteStatus>()) { <option value="@s" selected="@(st == s)">@s.GetDisplayName()</option> }</select></form>
+    <span class="small text-muted">Báo giá có lợi nhuận &lt; @min.ToString("0.#")% phải được Ban Giám đốc duyệt (đổi mức tại <a asp-controller="Settings" asp-action="Index">Tham số hệ thống</a>).</span>
+    @if (can) { <a class="btn btn-sm btn-primary ms-auto" asp-action="Create"><i class="bi bi-plus-lg"></i> Lập báo giá</a> }
+</div>
+<div class="card"><div class="card-body p-0"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Số</th><th>Ngày</th><th>Khách hàng</th><th>NV kinh doanh</th><th>Hiệu lực</th><th class="num">Doanh thu</th><th class="num">Lợi nhuận %</th><th>Trạng thái</th></tr></thead><tbody>
+    @foreach (var q in Model)
+    {
+        <tr><td><a asp-action="Details" asp-route-id="@q.Id"><b>@q.Number</b></a></td><td>@q.Date.ToDate()</td><td>@q.Customer?.Name</td><td class="small">@q.Salesperson?.FullName</td><td class="@(q.ValidUntil < DateTime.Today && q.Status is QuoteStatus.Sent or QuoteStatus.Approved ? "text-danger" : "")">@q.ValidUntil.ToDate()</td>
+            <td class="num">@q.Subtotal.ToMoney()</td><td class="num @(q.MarginPct < min ? "text-danger" : "")">@q.MarginPct.ToString("0.#")</td><td><span class="badge @(q.Status is QuoteStatus.Approved or QuoteStatus.Sent ? "bg-success" : q.Status == QuoteStatus.PendingApproval ? "bg-warning text-dark" : q.Status == QuoteStatus.Converted ? "bg-info text-dark" : q.Status is QuoteStatus.Rejected or QuoteStatus.Cancelled ? "bg-secondary" : "bg-light text-dark border")">@q.Status.GetDisplayName()</span></td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="8" class="text-center text-muted py-3">Chưa có báo giá.</td></tr> }
+</tbody></table></div></div>

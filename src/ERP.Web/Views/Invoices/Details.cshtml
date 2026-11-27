@@ -3,7 +3,20 @@
     var sales = Model.Direction == InvoiceDirection.Sales; var cfg = (ErpSettings)ViewBag.Company;
     ViewData["Title"] = $"{(sales ? "Hóa đơn bán" : "Hóa đơn mua")} {Model.Series} {Model.InvoiceNo ?? Model.Number}";
     var pays = (List<PaymentAllocation>)ViewBag.Payments; var canAcc = User.CanAccounting();
+    var creditNotes = (List<SalesCreditNote>)ViewBag.CreditNotes;
 }
+@if (sales && Model.EInvoiceStatus != EInvoiceStatus.None)
+{
+    <div class="alert @(Model.EInvoiceStatus == EInvoiceStatus.Issued ? "alert-success" : Model.EInvoiceStatus == EInvoiceStatus.Error ? "alert-danger" : "alert-secondary") py-2 small d-flex flex-wrap gap-3 align-items-center no-print">
+        <span><i class="bi bi-patch-check"></i> <b>Hóa đơn điện tử:</b> @Model.EInvoiceStatus.GetDisplayName()</span>
+        @if (Model.EInvoiceTaxCode != null) { <span>Mã CQT: <code>@Model.EInvoiceTaxCode</code></span> }
+        @if (Model.EInvoiceLookupCode != null) { <span>Mã tra cứu: <code>@Model.EInvoiceLookupCode</code></span> }
+        @if (Model.EInvoiceSentAt != null) { <span>Gửi lúc @Model.EInvoiceSentAt.Value.ToString("dd/MM/yyyy HH:mm")</span> }
+        <span class="text-muted">@Model.EInvoiceMessage</span>
+        @if (!string.IsNullOrEmpty(Model.EInvoiceXml)) { <a class="ms-auto" asp-action="EInvoiceXml" asp-route-id="@Model.Id"><i class="bi bi-filetype-xml"></i> Tải XML</a> }
+    </div>
+}
+@if (Model.IsForeign) { <div class="alert alert-info py-2 small no-print">Hóa đơn ngoại tệ <b>@Model.CurrencyCode</b> – tỷ giá @Model.ExchangeRate.ToString("N2"): tổng @Model.FcTotal.ToString("N2") @Model.CurrencyCode, đã thanh toán @Model.FcPaid.ToString("N2"), còn @Model.FcOutstanding.ToString("N2") (giá trị ghi sổ VND @Model.Total.ToMoney())</div> }
 <div class="actions mb-3">
     <a class="btn btn-sm btn-light border" asp-action="Index" asp-route-direction="@Model.Direction">← Danh sách</a>
     <button class="btn btn-sm btn-light border" onclick="window.print()">In hóa đơn</button>
@@ -19,6 +32,11 @@
     @if (canAcc && Model.Status == InvoiceStatus.Issued && Model.Outstanding > 0)
     {
         <a class="btn btn-sm btn-primary" asp-controller="Cash" asp-action="Create" asp-route-type="@(sales ? "Receipt" : "Payment")" asp-route-invoiceId="@Model.Id">@(sales ? "Thu tiền" : "Thanh toán")</a>
+    }
+    @if (canAcc && sales && Model.Status == InvoiceStatus.Issued && Model.Series != "DK")
+    {
+        <a class="btn btn-sm btn-outline-secondary" asp-controller="SalesCreditNotes" asp-action="Create" asp-route-invoiceId="@Model.Id" asp-route-kind="Return"><i class="bi bi-arrow-return-left"></i> Hàng trả lại</a>
+        <a class="btn btn-sm btn-outline-secondary" asp-controller="SalesCreditNotes" asp-action="Create" asp-route-invoiceId="@Model.Id" asp-route-kind="PriceReduction"><i class="bi bi-percent"></i> Giảm giá</a>
     }
     @if (canAcc && Model.Status == InvoiceStatus.Issued && Model.PaidAmount == 0)
     {
@@ -65,5 +83,16 @@
     <div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
         @foreach (var p in pays) { <tr><td>@p.CashVoucher?.Date.ToDate()</td><td><a asp-controller="Cash" asp-action="Details" asp-route-id="@p.CashVoucherId">@p.CashVoucher?.Number</a></td><td>@p.CashVoucher?.Description</td><td class="num">@p.Amount.ToMoney()</td></tr> }
         @if (!pays.Any()) { <tr><td class="text-muted text-center py-2">Chưa có thanh toán.</td></tr> }
+    </tbody></table></div></div>
+}
+@if (creditNotes.Any())
+{
+    <div class="card mt-3" style="max-width:900px;margin:0 auto"><div class="card-header">Hóa đơn điều chỉnh giảm (hàng bán trả lại / giảm giá)</div>
+    <div class="card-body p-0"><table class="table table-sm mb-0"><thead><tr><th>Ngày</th><th>Số chứng từ</th><th>Loại</th><th class="num">Tiền hàng</th><th class="num">Thuế</th><th class="num">Tổng</th><th>Trạng thái</th></tr></thead><tbody>
+        @foreach (var cn in creditNotes)
+        {
+            <tr class="@(cn.Status == DocStatus.Cancelled ? "text-muted text-decoration-line-through" : "")"><td>@cn.Date.ToDate()</td><td><a asp-controller="SalesCreditNotes" asp-action="Details" asp-route-id="@cn.Id">@cn.Number</a></td>
+                <td>@cn.Kind.GetDisplayName()</td><td class="num">@cn.Subtotal.ToMoney()</td><td class="num">@cn.VatAmount.ToMoney()</td><td class="num">@cn.Total.ToMoney()</td><td>@cn.Status.GetDisplayName()</td></tr>
+        }
     </tbody></table></div></div>
 }

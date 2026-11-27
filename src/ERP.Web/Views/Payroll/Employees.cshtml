@@ -1,0 +1,23 @@
+@model List<Employee>
+@{ ViewData["Title"] = "Danh mục nhân viên"; }
+<form class="toolbar" method="get">
+    <input name="q" value="@ViewBag.Q" class="form-control form-control-sm" style="max-width:260px" placeholder="Mã, tên, phòng ban" />
+    <div class="form-check"><input class="form-check-input" type="checkbox" name="inactive" value="true" id="ina" @(ViewBag.Inactive ? "checked" : "") onchange="this.form.submit()" /><label class="form-check-label small" for="ina">Cả nhân viên đã nghỉ</label></div>
+    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-search"></i></button>
+    <a class="btn btn-sm btn-light" asp-action="Attendance"><i class="bi bi-calendar-check"></i> Chấm công</a>
+    <a class="btn btn-sm btn-light" asp-action="Index"><i class="bi bi-cash-coin"></i> Bảng lương</a>
+    <a class="btn btn-sm btn-light" asp-controller="Import" asp-action="Index"><i class="bi bi-file-earmark-arrow-up"></i> Nhập Excel</a>
+    <a class="btn btn-sm btn-primary ms-auto" asp-action="EditEmployee"><i class="bi bi-plus-lg"></i> Thêm nhân viên</a>
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Mã</th><th>Họ tên</th><th>Phòng ban</th><th>Chức danh</th><th>Chi nhánh</th><th class="num">Lương cơ bản</th><th class="num">Phụ cấp</th><th class="num">Lương đóng BH</th><th class="num">NPT</th><th>TK chi phí</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var e in Model)
+    {
+        <tr class="@(e.IsActive ? "" : "text-muted")"><td><b>@e.Code</b></td><td>@e.FullName</td><td class="small">@e.Department</td><td class="small">@e.Position</td><td class="small">@e.Branch?.Name</td>
+            <td class="num">@e.BaseSalary.ToMoney()</td><td class="num">@((e.Allowance + e.NonTaxAllowance).ToMoney())</td><td class="num">@e.InsuranceSalary.ToMoney()</td><td class="num">@e.Dependents</td><td>@e.ExpenseAccount</td>
+            <td class="text-end"><a class="btn btn-sm btn-light" asp-action="EditEmployee" asp-route-id="@e.Id"><i class="bi bi-pencil"></i></a></td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="11" class="text-center text-muted py-3">Chưa có nhân viên.</td></tr> }
+    </tbody>
+</table></div></div></div>

@@ -2,15 +2,26 @@
 @{
     ViewData["Title"] = $"Đơn mua {Model.Number}";
     var receipts = (List<InventoryDoc>)ViewBag.Receipts; var invs = (List<Invoice>)ViewBag.Invoices;
+    var rets = (List<PurchaseReturn>)ViewBag.Returns;
     var canEdit = (bool)ViewBag.CanEdit; var canRec = (bool)ViewBag.CanReceive; var canAcc = User.CanAccounting();
     var steps = new[] { PoStatus.Draft, PoStatus.PendingApproval, PoStatus.Approved, PoStatus.PartiallyReceived, PoStatus.Received, PoStatus.Completed };
     var cur = Array.IndexOf(steps, Model.Status);
-    var toBill = Model.Lines.Sum(l => l.ReceivedQty - l.InvoicedQty);
+    var toBill = Model.Lines.Sum(l => l.BillableQty);
 }
 <div class="flow mb-3">
 @for (var i = 0; i < steps.Length; i++) { if (i > 0) { <span class="arrow">›</span> } <span class="step @(Model.Status == PoStatus.Cancelled ? "" : i < cur ? "done" : i == cur ? "current" : "")">@steps[i].GetDisplayName()</span> }
 @if (Model.Status == PoStatus.Cancelled) { <span class="badge bg-dark ms-2">Đã hủy</span> }
 </div>
+@{ var ordQ = Model.Lines.Sum(l => l.Quantity); var recQ = Model.Lines.Sum(l => Math.Min(l.ReceivedQty, l.Quantity)); var recPct = ordQ == 0 ? 0 : Math.Round(recQ * 100 / ordQ, 0); }
+@if (Model.Status is PoStatus.Approved or PoStatus.PartiallyReceived or PoStatus.Received or PoStatus.Completed || Model.RequisitionId != null || Model.RfqId != null)
+{
+    <div class="d-flex flex-wrap gap-3 align-items-center small mb-2">
+        @if (Model.Status is PoStatus.Approved or PoStatus.PartiallyReceived or PoStatus.Received or PoStatus.Completed) { <span>Tiến độ giao hàng:</span><div class="progress" style="width:180px;height:14px"><div class="progress-bar @(recPct >= 100 ? "bg-success" : "bg-info")" style="width:@(recPct)%">@recPct%</div></div>@if (Model.ExpectedDate < DateTime.Today && recPct < 100) { <span class="text-danger">Quá hạn giao @((DateTime.Today - Model.ExpectedDate).Days) ngày</span> } }
+        @if (Model.RequisitionId != null) { <a asp-controller="Requisitions" asp-action="Details" asp-route-id="@Model.RequisitionId">Đề nghị mua gốc</a> }
+        @if (Model.RfqId != null) { <a asp-controller="Rfq" asp-action="Details" asp-route-id="@Model.RfqId">Yêu cầu báo giá gốc</a> }
+        @if (canAcc && Model.Status is PoStatus.PartiallyReceived or PoStatus.Received or PoStatus.Completed) { <a asp-controller="Procurement" asp-action="LandedCosts">Chi phí mua hàng</a> <a asp-controller="Procurement" asp-action="Match" asp-route-vendorId="@Model.VendorId">Đối chiếu 3 bên</a> }
+    </div>
+}
 <div class="card mb-3"><div class="card-body">
     <div class="doc-head">
         <div><div class="fs-5 fw-semibold">@Model.Number <partial name="_Badge" model="Model.Status" /></div>
@@ -18,6 +29,8 @@
             <div class="meta">Lập bởi @Model.CreatedBy?.FullName @(Model.ApprovedBy != null ? $"· Duyệt: {Model.ApprovedBy.FullName} lúc {Model.ApprovedAt:dd/MM/yyyy HH:mm}" : Model.ApprovedAt != null ? "· Duyệt tự động (dưới ngưỡng)" : "")</div>
             @if (!string.IsNullOrWhiteSpace(Model.Note)) { <div>@Model.Note</div> }</div>
         <div class="actions">
+            @if (Model.Status is PoStatus.Approved or PoStatus.PartiallyReceived or PoStatus.Received or PoStatus.Completed)
+            { <partial name="_QcButton" model="@(new QcLink("poId", Model.Id, Model.Number, Model.Lines.Where(l => l.ReceivedQty > 0).Select(l => (l.ItemId, $"{l.Item?.Code} – {l.Item?.Name} (đã nhận {l.ReceivedQty.ToQty()})")).ToList()))" /> }
             @if (canEdit && Model.Status == PoStatus.Draft)
             {
                 <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id">Sửa</a>
@@ -69,3 +82,18 @@
         </form>
     }</div></div>
 </div>
+@if (rets.Any())
+{
+    <div class="card mt-3"><div class="card-header"><i class="bi bi-arrow-return-left me-1"></i> Trả hàng nhà cung cấp (từ xử lý NCR chất lượng)</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0" data-grid="off">
+        <thead><tr><th>Ngày</th><th>NCR</th><th>Phiếu kho</th><th>Mặt hàng</th><th class="num">SL trả</th><th class="num">Chưa lập HĐ</th><th class="num">Đã lập HĐ</th><th class="num">Giá trị (chưa thuế)</th><th class="num">Hoàn thuế GTGT</th><th class="num">Cấn trừ hóa đơn</th><th class="num">Chưa cấn trừ</th></tr></thead>
+        <tbody>
+        @foreach (var r in rets)
+        {
+            <tr><td>@r.Date.ToDate()</td><td><a asp-controller="QcNcrs" asp-action="Details" asp-route-id="@r.NcrId">@r.Ncr?.Number</a></td>
+                <td><a asp-controller="Inventory" asp-action="Details" asp-route-id="@r.InventoryDocId">@r.InventoryDoc?.Number</a></td><td>@r.PurchaseOrderLine?.Item?.Code</td>
+                <td class="num">@r.Quantity.ToQty()</td><td class="num">@r.QtyUnbilled.ToQty()</td><td class="num">@r.QtyBilled.ToQty()</td>
+                <td class="num">@r.Amount.ToMoney()</td><td class="num">@r.VatAmount.ToMoney()</td><td class="num">@r.Offsets.Sum(o => o.Amount).ToMoney()</td><td class="num">@(r.Unapplied > 0 ? r.Unapplied.ToMoney() : "")</td></tr>
+        }
+        </tbody>
+    </table></div></div></div>
+}

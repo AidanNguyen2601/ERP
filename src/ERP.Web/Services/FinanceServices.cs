@@ -14,7 +14,8 @@ public class CashService
     private readonly ErpDbContext _db;
     private readonly AccountingService _acc;
     private readonly CurrentUser _user;
-    public CashService(ErpDbContext db, AccountingService acc, CurrentUser user) { _db = db; _acc = acc; _user = user; }
+    private readonly FxService _fx;
+    public CashService(ErpDbContext db, AccountingService acc, CurrentUser user, FxService fx) { _db = db; _acc = acc; _user = user; _fx = fx; }
 
     public static string Prefix(CashVoucherType t) => t switch { CashVoucherType.Receipt => "PT", CashVoucherType.Payment => "PC", _ => "CT" };
 
@@ -36,6 +37,14 @@ public class CashService
             PayerPayee = f.PayerPayee, CreatedById = _user.Id, Status = DocStatus.Posted,
             Number = await DocNumbers.NextAsync(_db.CashVouchers.Select(x => x.Number), Prefix(f.Type), f.Date)
         };
+        // Quỹ / tài khoản ngoại tệ: số tiền nhập theo nguyên tệ, quy đổi VND theo tỷ giá (nhập hoặc tỷ giá gần nhất)
+        v.CurrencyCode = string.IsNullOrEmpty(ca.CurrencyCode) ? "VND" : ca.CurrencyCode;
+        if (v.IsForeign)
+        {
+            var rate = f.ExchangeRate is > 0 ? f.ExchangeRate.Value : await _fx.RateAsync(v.CurrencyCode, f.Date);
+            if (rate <= 0) throw new BusinessException($"Chưa có tỷ giá {v.CurrencyCode} – nhập tỷ giá hoặc khai báo ở danh mục tỷ giá.");
+            v.ExchangeRate = rate; v.FcAmount = Math.Round(f.Amount, 2); v.Amount = Math.Round(v.FcAmount * rate, 0);
+        }
         var lines = new List<JLine>();
         Partner? partner = f.PartnerId.HasValue ? await _db.Partners.FindAsync(f.PartnerId) : null;
 
@@ -49,6 +58,7 @@ public class CashService
         {
             var to = await _db.CashAccounts.FindAsync(f.ToCashAccountId) ?? throw new BusinessException("Chọn quỹ / tài khoản nhận.");
             if (to.Id == ca.Id) throw new BusinessException("Tài khoản nhận phải khác tài khoản chuyển.");
+            if (to.CurrencyCode != ca.CurrencyCode) throw new BusinessException("Chuyển tiền nội bộ giữa hai tài khoản khác loại tiền: dùng phiếu chi + phiếu thu (mua bán ngoại tệ).");
             v.ToCashAccountId = to.Id; v.Purpose = CashPurpose.Internal;
             lines.Add(new JLine(to.AccountId, v.Amount, 0)); lines.Add(new JLine(ca.AccountId, 0, v.Amount));
         }
@@ -59,16 +69,42 @@ public class CashService
             switch (f.Purpose)
             {
                 case CashPurpose.CustomerReceipt:
-                    if (f.Type != CashVoucherType.Receipt) throw new BusinessException("Thu tiền khách hàng phải dùng phiếu thu.");
-                    if (partner == null || !partner.IsCustomer) throw new BusinessException("Chọn khách hàng.");
-                    lines.Add(new JLine(ca.AccountId, v.Amount, 0));
-                    lines.Add(new JLine(await _acc.IdAsync(AccountingService.Receivable), 0, v.Amount, partner.Id));
-                    break;
                 case CashPurpose.VendorPayment:
-                    if (f.Type != CashVoucherType.Payment) throw new BusinessException("Trả tiền nhà cung cấp phải dùng phiếu chi.");
-                    if (partner == null || !partner.IsVendor) throw new BusinessException("Chọn nhà cung cấp.");
-                    lines.Add(new JLine(await _acc.IdAsync(AccountingService.Payable), v.Amount, 0, partner.Id));
-                    lines.Add(new JLine(ca.AccountId, 0, v.Amount));
+                    var receipt = f.Purpose == CashPurpose.CustomerReceipt;
+                    if (receipt && f.Type != CashVoucherType.Receipt) throw new BusinessException("Thu tiền khách hàng phải dùng phiếu thu.");
+                    if (!receipt && f.Type != CashVoucherType.Payment) throw new BusinessException("Trả tiền nhà cung cấp phải dùng phiếu chi.");
+                    if (partner == null || (receipt ? !partner.IsCustomer : !partner.IsVendor)) throw new BusinessException(receipt ? "Chọn khách hàng." : "Chọn nhà cung cấp.");
+                    // Cấn trừ hóa đơn trước khi hạch toán: hóa đơn chỉ định trước, còn lại theo hạn sớm nhất (FIFO), cùng loại tiền với phiếu.
+                    // Hóa đơn ngoại tệ: giảm công nợ theo giá trị ghi sổ (tỷ giá hóa đơn), chênh lệch với tiền thực thu / chi là lãi / lỗ tỷ giá đã thực hiện.
+                    var dir = receipt ? InvoiceDirection.Sales : InvoiceDirection.Purchase;
+                    var open = (await _db.Invoices.Where(i => i.PartnerId == partner.Id && i.Direction == dir && i.Status == InvoiceStatus.Issued && i.PaidAmount < i.Total && i.CurrencyCode == v.CurrencyCode).ToListAsync())
+                        .OrderByDescending(i => i.Id == f.InvoiceId).ThenBy(i => i.DueDate).ThenBy(i => i.Id).ToList();
+                    decimal book = 0, pay = 0;
+                    var leftFc = v.IsForeign ? v.FcAmount : v.Amount;
+                    foreach (var inv in open)
+                    {
+                        if (leftFc <= 0) break;
+                        decimal bookPart, payPart, fcPart;
+                        if (v.IsForeign)
+                        {
+                            fcPart = Math.Min(leftFc, inv.FcTotal - inv.FcPaid);
+                            if (fcPart <= 0) continue;
+                            bookPart = fcPart == inv.FcTotal - inv.FcPaid ? inv.Total - inv.PaidAmount : Math.Min(inv.Total - inv.PaidAmount, Math.Round(fcPart * inv.ExchangeRate, 0));
+                            payPart = leftFc == fcPart ? v.Amount - pay : Math.Round(fcPart * v.ExchangeRate, 0);
+                            inv.FcPaid += fcPart;
+                        }
+                        else { fcPart = bookPart = payPart = Math.Min(leftFc, inv.Total - inv.PaidAmount); }
+                        inv.PaidAmount += bookPart; leftFc -= fcPart; book += bookPart; pay += payPart;
+                        v.Allocations.Add(new PaymentAllocation { InvoiceId = inv.Id, Amount = bookPart, FcAmount = v.IsForeign ? fcPart : 0 });
+                    }
+                    v.FxDifference = pay - book;
+                    var partnerSide = book + (v.Amount - pay);   // giá trị ghi sổ phần đã cấn trừ + phần chưa cấn trừ theo tiền thực tế
+                    var arap = await _acc.RuleAsync(receipt ? PostingCatalog.CrReceivable : PostingCatalog.CpPayable);
+                    if (receipt) { lines.Add(new JLine(ca.AccountId, v.Amount, 0)); lines.Add(new JLine(arap, 0, partnerSide, partner.Id)); }
+                    else { lines.Add(new JLine(arap, partnerSide, 0, partner.Id)); lines.Add(new JLine(ca.AccountId, 0, v.Amount)); }
+                    var gain = receipt ? v.FxDifference : -v.FxDifference;
+                    if (gain > 0) lines.Add(new JLine(await _acc.IdAsync("515"), 0, gain, null, "Lãi chênh lệch tỷ giá đã thực hiện"));
+                    else if (gain < 0) lines.Add(new JLine(await _acc.IdAsync("635"), -gain, 0, null, "Lỗ chênh lệch tỷ giá đã thực hiện"));
                     break;
                 default:
                     var counter = await _db.Accounts.FindAsync(f.CounterAccountId) ?? throw new BusinessException("Chọn tài khoản đối ứng.");
@@ -86,21 +122,6 @@ public class CashService
         var je = await _acc.PostAsync(v.Date, $"{v.Type.GetDisplayName()} {v.Number}: {v.Description}", JournalSource.Cash, v.Number, v.Id, lines);
         v.JournalEntryId = je.Id;
 
-        // Cấn trừ công nợ theo hóa đơn: hóa đơn chỉ định trước, còn lại theo hạn thanh toán sớm nhất (FIFO)
-        if (v.Purpose is CashPurpose.CustomerReceipt or CashPurpose.VendorPayment)
-        {
-            var dir = v.Purpose == CashPurpose.CustomerReceipt ? InvoiceDirection.Sales : InvoiceDirection.Purchase;
-            var open = (await _db.Invoices.Where(i => i.PartnerId == v.PartnerId && i.Direction == dir && i.Status == InvoiceStatus.Issued && i.PaidAmount < i.Total).ToListAsync())
-                .OrderByDescending(i => i.Id == f.InvoiceId).ThenBy(i => i.DueDate).ThenBy(i => i.Id).ToList();
-            var left = v.Amount;
-            foreach (var inv in open)
-            {
-                if (left <= 0) break;
-                var a = Math.Min(left, inv.Total - inv.PaidAmount);
-                inv.PaidAmount += a; left -= a;
-                v.Allocations.Add(new PaymentAllocation { InvoiceId = inv.Id, Amount = a });
-            }
-        }
         await _db.SaveChangesAsync();
         return v;
     }
@@ -111,7 +132,7 @@ public class CashService
         await _acc.ReverseAsync(v.JournalEntryId, DateTime.Today, reason);
         var ids = v.Allocations.Select(a => a.InvoiceId).ToList();
         var invs = await _db.Invoices.Where(i => ids.Contains(i.Id)).ToListAsync();
-        foreach (var a in v.Allocations) { var inv = invs.First(i => i.Id == a.InvoiceId); inv.PaidAmount -= a.Amount; }
+        foreach (var a in v.Allocations) { var inv = invs.First(i => i.Id == a.InvoiceId); inv.PaidAmount -= a.Amount; inv.FcPaid -= a.FcAmount; }
         v.Status = DocStatus.Cancelled;
         v.Description += $" [Hủy: {reason}]";
         await _db.SaveChangesAsync();
@@ -126,6 +147,8 @@ public class AssetService
     private readonly ErpDbContext _db;
     private readonly AccountingService _acc;
     private readonly CurrentUser _user;
+    /// <summary>Ký hiệu chứng từ công nợ phát sinh khi ghi tăng TSCĐ mua chịu</summary>
+    public const string AssetInvoiceSeries = "TSCD";
     public AssetService(ErpDbContext db, AccountingService acc, CurrentUser user) { _db = db; _acc = acc; _user = user; }
 
     /// <summary>Số khấu hao của tài sản trong tháng (đường thẳng, tính tròn tháng bắt đầu khấu hao)</summary>
@@ -171,11 +194,27 @@ public class AssetService
         await _db.SaveChangesAsync();
         if (counterAccountId == null) return;
         var cat = await _db.AssetCategories.FindAsync(a.CategoryId) ?? throw new BusinessException("Chọn nhóm tài sản.");
-        await _acc.PostAsync(a.AcquisitionDate, $"Ghi tăng TSCĐ {a.Code} – {a.Name}", JournalSource.FixedAsset, a.Code, a.Id, new[]
+        var je = await _acc.PostAsync(a.AcquisitionDate, $"Ghi tăng TSCĐ {a.Code} – {a.Name}", JournalSource.FixedAsset, a.Code, a.Id, new[]
         {
             new JLine(cat.AssetAccountId, a.OriginalCost, 0),
             new JLine(counterAccountId.Value, 0, a.OriginalCost, partnerId)
         });
+
+        // Mua chịu: khoản phải trả nhà cung cấp phải nằm trong sổ chi tiết công nợ (tuổi nợ, cấn trừ khi thanh toán) như mọi hóa đơn mua
+        var counter = await _db.Accounts.FindAsync(counterAccountId.Value);
+        if (counter is { TrackPartner: true } && counter.Code.StartsWith("331") && partnerId.HasValue)
+        {
+            var vendor = await _db.Partners.FindAsync(partnerId.Value);
+            _db.Invoices.Add(new Invoice
+            {
+                Direction = InvoiceDirection.Purchase, Number = await DocNumbers.NextAsync(_db.Invoices.Select(i => i.Number), "HDM", a.AcquisitionDate),
+                Date = a.AcquisitionDate, DueDate = a.AcquisitionDate.AddDays(vendor?.PaymentTermDays ?? 30), PartnerId = partnerId, Series = AssetInvoiceSeries, InvoiceNo = a.Code,
+                Status = InvoiceStatus.Issued, Subtotal = a.OriginalCost, VatAmount = 0, Total = a.OriginalCost, JournalEntryId = je.Id, CreatedById = _user.Id,
+                Note = $"Công nợ mua TSCĐ {a.Code} – {a.Name}",
+                Lines = { new InvoiceLine { Description = $"Mua TSCĐ {a.Code} – {a.Name}", Quantity = 1, UnitPrice = a.OriginalCost, Amount = a.OriginalCost, AccountId = cat.AssetAccountId } }
+            });
+            await _db.SaveChangesAsync();
+        }
     }
 
     /// <summary>Thanh lý: Nợ 2141 hao mòn, Nợ 811 giá trị còn lại / Có 211x nguyên giá; thu thanh lý Nợ tiền / Có 711</summary>
@@ -186,14 +225,14 @@ public class AssetService
         var lines = new List<JLine>
         {
             new(cat!.DepreciationAccountId, a.AccumulatedDepreciation, 0),
-            new(await _acc.IdAsync(AccountingService.OtherExpense), a.NetBookValue, 0),
+            new(await _acc.RuleAsync(PostingCatalog.AdLoss), a.NetBookValue, 0),
             new(cat.AssetAccountId, 0, a.OriginalCost)
         };
         if (proceeds > 0)
         {
             var ca = await _db.CashAccounts.FindAsync(cashAccountId) ?? throw new BusinessException("Chọn quỹ / tài khoản nhận tiền thanh lý.");
             lines.Add(new JLine(ca.AccountId, proceeds, 0));
-            lines.Add(new JLine(await _acc.IdAsync(AccountingService.OtherIncome), 0, proceeds));
+            lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.AdIncome), 0, proceeds));
         }
         await _acc.PostAsync(date, $"Thanh lý TSCĐ {a.Code} – {a.Name}", JournalSource.FixedAsset, a.Code, a.Id, lines);
         a.Status = AssetStatus.Disposed; a.DisposalDate = date; a.DisposalValue = proceeds;
@@ -265,16 +304,19 @@ public class ProductionService
         if (po.Lines.Any(l => l.IssuedQty < l.RequiredQty)) throw new BusinessException("Chưa xuất đủ nguyên vật liệu theo định mức.");
         if (completedQty <= 0) throw new BusinessException("Số lượng hoàn thành phải lớn hơn 0.");
         if (labor < 0 || overhead < 0) throw new BusinessException("Chi phí không âm.");
-        po.LaborCost = Math.Round(labor, 0); po.OverheadCost = Math.Round(overhead, 0);
-        var wip = await _acc.IdAsync(AccountingService.Wip);
+        // Cộng thêm vào chi phí đã tập hợp (lệnh có thể đã nhận phân bổ chi phí sản xuất chung trong kỳ)
+        var lab = Math.Round(labor, 0); var ohd = Math.Round(overhead, 0);
+        po.LaborCost += lab; po.OverheadCost += ohd;
+        var wip = await _acc.RuleAsync(PostingCatalog.PrdWip);
         var lines = new List<JLine>();
-        if (po.LaborCost > 0) { lines.Add(new JLine(wip, po.LaborCost, 0)); lines.Add(new JLine(await _acc.IdAsync(AccountingService.DirectLabor), 0, po.LaborCost)); }
-        if (po.OverheadCost > 0) { lines.Add(new JLine(wip, po.OverheadCost, 0)); lines.Add(new JLine(await _acc.IdAsync(AccountingService.Overhead), 0, po.OverheadCost)); }
+        if (lab > 0) { lines.Add(new JLine(wip, lab, 0)); lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.PrdLabor), 0, lab)); }
+        if (ohd > 0) { lines.Add(new JLine(wip, ohd, 0)); lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.PrdOverhead), 0, ohd)); }
         if (lines.Any()) await _acc.PostAsync(date, $"Kết chuyển chi phí nhân công, SXC vào lệnh {po.Number}", JournalSource.Production, po.Number, po.Id, lines);
         po.CompletedQty = completedQty;
-        po.UnitCost = Math.Round(po.TotalCost / completedQty, 2);
+        po.UnitCost = Math.Round(po.TotalCost / completedQty, 2);   // hiển thị 2 số lẻ
+        // Nhập kho theo giá thành chính xác (không làm tròn đơn giá) để giá trị thành phẩm = tổng chi phí tập hợp, TK 154 về 0
         await _inv.CreateAndPostAsync(InvDocType.Receipt, date, po.FinishedWarehouseId!.Value, DocOrigin.Production, po.Number, po.Id, null,
-            $"Nhập kho thành phẩm lệnh {po.Number}", new[] { (po.ItemId, completedQty, po.UnitCost) }, _user.Id);
+            $"Nhập kho thành phẩm lệnh {po.Number}", new[] { (po.ItemId, completedQty, po.TotalCost / completedQty) }, _user.Id);
         po.Status = ProductionStatus.Completed;
         po.CompletedDate = date;
         await _db.SaveChangesAsync();
@@ -310,7 +352,7 @@ public class PeriodService
         var rows = await _acc.PostedLines()
             .Where(l => l.JournalEntry!.Date >= from && l.JournalEntry.Date <= to && l.JournalEntry.Source != JournalSource.Closing)
             .Select(l => new { l.AccountId, l.Account!.Code, l.Debit, l.Credit }).ToListAsync();
-        var i911 = await _acc.IdAsync(AccountingService.IncomeSummary);
+        var i911 = await _acc.RuleAsync(PostingCatalog.PcSummary);
         var lines = new List<JLine>();
         decimal profit = 0;
         foreach (var g in rows.Where(r => r.Code[0] is '5' or '6' or '7' or '8').GroupBy(r => r.AccountId))
@@ -323,7 +365,7 @@ public class PeriodService
             profit -= net;
         }
         if (!lines.Any()) return null;
-        var r4212 = await _acc.IdAsync(AccountingService.RetainedThisYear);
+        var r4212 = await _acc.RuleAsync(PostingCatalog.PcRetained);
         if (profit > 0) { lines.Add(new JLine(i911, profit, 0)); lines.Add(new JLine(r4212, 0, profit)); }
         else if (profit < 0) { lines.Add(new JLine(r4212, -profit, 0)); lines.Add(new JLine(i911, 0, -profit)); }
         return await _acc.PostAsync(to, $"Kết chuyển xác định kết quả kinh doanh tháng {month:00}/{year} (lãi/lỗ {profit:N0})", JournalSource.Closing, $"KC{month:00}{year % 100:00}", null, lines);

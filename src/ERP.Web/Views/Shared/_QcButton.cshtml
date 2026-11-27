@@ -1,0 +1,22 @@
+@model QcLink
+@{
+    string Link(int itemId) => Url.Action("Create", "QcInspections", new Microsoft.AspNetCore.Routing.RouteValueDictionary { [Model.Param] = Model.Id, ["itemId"] = itemId })!;
+    var listUrl = Url.Action("Index", "QcInspections", new { q = Model.Number, from = DateTime.Today.AddYears(-1).ToString("yyyy-MM-dd") });
+}
+@if (User.InAny(AppRoles.QcInspectors) && Model.Items.Count > 0)
+{
+    if (Model.Items.Count == 1)
+    {
+        <a class="btn btn-sm btn-outline-success" href="@Link(Model.Items[0].ItemId)"><i class="bi bi-clipboard-check"></i> Kiểm tra chất lượng</a>
+    }
+    else
+    {
+        <div class="dropdown d-inline-block">
+            <button type="button" class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-clipboard-check"></i> Kiểm tra chất lượng</button>
+            <ul class="dropdown-menu">
+                @foreach (var (itemId, label) in Model.Items) { <li><a class="dropdown-item" href="@Link(itemId)">@label</a></li> }
+            </ul>
+        </div>
+    }
+}
+<a class="btn btn-sm btn-light" href="@listUrl" title="Phiếu kiểm tra chất lượng của chứng từ này"><i class="bi bi-patch-check"></i> KCS</a>

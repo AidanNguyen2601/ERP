@@ -1,0 +1,39 @@
+@model List<PriceList>
+@{
+    ViewData["Title"] = "Bảng giá & khuyến mại"; var promos = (List<Promotion>)ViewBag.Promos; var items = (List<Item>)ViewBag.Items; var groups = (List<string>)ViewBag.Groups; bool can = ViewBag.CanEdit;
+}
+<div class="toolbar">@if (can) { <a class="btn btn-sm btn-primary ms-auto" asp-action="Edit"><i class="bi bi-plus-lg"></i> Thêm bảng giá</a> }</div>
+<div class="alert alert-info small">Khi chọn giá, hệ thống ưu tiên bảng giá của <b>khách hàng cụ thể</b>, rồi bảng giá theo <b>nhóm khách</b>, rồi bảng giá chung (theo độ ưu tiên, còn hiệu lực, đúng loại tiền); lấy bậc số lượng phù hợp nhất. Không có bảng giá thì dùng giá bán chuẩn của hàng. Khuyến mại (nếu thỏa điều kiện) cộng thêm vào chiết khấu dòng hàng. Trên đơn bán nháp dùng nút <b>Áp dụng bảng giá</b>.</div>
+<div class="card mb-3"><div class="card-body p-0"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Mã</th><th>Tên bảng giá</th><th>Áp dụng cho</th><th>Loại tiền</th><th>Hiệu lực</th><th class="num">Ưu tiên</th><th class="num">Số dòng giá</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+    @foreach (var l in Model)
+    {
+        <tr class="@(l.IsActive ? "" : "text-muted")"><td><b>@l.Code</b></td><td>@l.Name</td><td class="small">@(l.Partner != null ? "KH: " + l.Partner.Name : l.PartnerGroup != null ? "Nhóm: " + l.PartnerGroup : "Mọi khách hàng")</td><td>@l.CurrencyCode</td>
+            <td class="small">@l.ValidFrom.ToDate() – @(l.ValidTo?.ToString("dd/MM/yyyy") ?? "không giới hạn")</td><td class="num">@l.Priority</td><td class="num">@l.Lines.Count</td><td>@(l.IsActive ? "Áp dụng" : "Ngưng")</td>
+            <td>@if (can) { <a class="btn btn-sm btn-light" asp-action="Edit" asp-route-id="@l.Id"><i class="bi bi-pencil"></i></a> }</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="9" class="text-center text-muted py-3">Chưa có bảng giá.</td></tr> }
+</tbody></table></div></div>
+<div class="card"><div class="card-header">Chiết khấu & khuyến mại</div><div class="card-body p-0"><table class="table table-sm align-middle mb-0" data-grid="off">
+    <thead><tr><th>Chương trình</th><th>Hàng hóa</th><th>Nhóm khách</th><th class="num">Từ SL</th><th class="num">CK %</th><th>Hiệu lực</th><th></th></tr></thead><tbody>
+    @foreach (var p in promos)
+    {
+        <tr class="@(p.IsActive ? "" : "text-muted")"><td>@p.Name</td><td class="small">@(p.Item?.Name ?? "Mọi hàng")</td><td class="small">@(p.PartnerGroup ?? "Mọi khách")</td><td class="num">@p.MinQty.ToQty()</td><td class="num">@p.DiscountPct.ToString("0.##")</td><td class="small">@p.ValidFrom.ToDate() – @(p.ValidTo?.ToString("dd/MM/yyyy") ?? "…")</td>
+            <td>@if (can) { <form asp-action="TogglePromotion" asp-route-id="@p.Id" method="post"><button class="btn btn-sm btn-light">@(p.IsActive ? "Ngưng" : "Bật")</button></form> }</td></tr>
+    }
+    </tbody></table></div>
+@if (can)
+{
+    <div class="card-footer"><form asp-action="SavePromotion" method="post" class="row g-1">
+        <input type="hidden" name="IsActive" value="true" />
+        <div class="col-md-3"><input name="Name" class="form-control form-control-sm" placeholder="Tên chương trình (VD: Mua từ 10 bộ giảm 5%)" required /></div>
+        <div class="col-md-3"><select name="ItemId" class="form-select form-select-sm"><option value="">Mọi hàng hóa</option>@foreach (var i in items) { <option value="@i.Id">@i.Code – @i.Name</option> }</select></div>
+        <div class="col-md-2"><input name="PartnerGroup" list="grp" class="form-control form-control-sm" placeholder="Nhóm khách" /><datalist id="grp">@foreach (var g in groups) { <option value="@g"></option> }</datalist></div>
+        <div class="col-md-1"><input name="MinQty" type="number" step="any" min="0" class="form-control form-control-sm" placeholder="Từ SL" /></div>
+        <div class="col-md-1"><input name="DiscountPct" type="number" step="0.1" min="0" max="100" class="form-control form-control-sm" placeholder="CK %" required /></div>
+        <div class="col-md-1"><input name="ValidFrom" type="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+        <div class="col-md-1"><input name="ValidTo" type="date" class="form-control form-control-sm" /></div>
+        <div class="col-12"><button class="btn btn-sm btn-primary">Thêm chương trình</button></div>
+    </form></div>
+}
+</div>

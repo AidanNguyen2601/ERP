@@ -1,0 +1,25 @@
+@model List<StockAgingRow>
+@{ ViewData["Title"] = "Tuổi hàng tồn kho"; DateTime at = ViewBag.At; var names = StockReportService.BucketNames; ItemType? type = ViewBag.Type; }
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Tại ngày</label><input type="date" name="at" value="@at.Iso()" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Kho</label><select name="warehouseId" asp-items="ViewBag.Whs" class="form-select form-select-sm"><option value="">Tất cả</option></select></div>
+    <div><label class="form-label small mb-0">Loại</label><select name="type" class="form-select form-select-sm"><option value="">Tất cả</option>@foreach (ItemType t in Enum.GetValues<ItemType>().Where(x => x != ItemType.Service)) { <option value="@t" selected="@(type == t)">@t.GetDisplayName()</option> }</select></div>
+    <button class="btn btn-sm btn-outline-primary">Xem</button><button class="btn btn-sm btn-light" name="export" value="true"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+    <a class="btn btn-sm btn-light ms-auto" asp-action="Alerts">Cảnh báo tồn kho</a>
+</form>
+<div class="alert alert-info small">Tuổi tính từ ngày nhập kho gần nhất còn tồn (giả định nhập trước xuất trước). Giá trị theo giá vốn bình quân hiện hành.</div>
+<div class="row g-2 mb-3">
+    @for (var b = 0; b < 5; b++) { var bi = b; <div class="col"><div class="card card-body py-2"><div class="small text-muted">@names[bi]</div><div class="fw-bold @(bi >= 3 ? "text-danger" : "")">@Model.Sum(r => r.BucketValue[bi]).ToMoney()</div></div></div> }
+</div>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0" style="font-size:.85rem">
+    <thead><tr><th>Mã</th><th>Tên hàng</th><th>Kho</th><th class="num">Tồn</th>@foreach (var n in names) { <th class="num">@n</th> }<th class="num">Giá trị tồn</th></tr></thead><tbody>
+    @foreach (var r in Model)
+    {
+        <tr><td>@r.Item.Code</td><td>@r.Item.Name</td><td class="small">@r.Warehouse.Name</td><td class="num">@r.Qty.ToQty()</td>
+            @for (var b = 0; b < 5; b++) { var bi = b; <td class="num @(bi >= 3 && r.BucketQty[bi] > 0 ? "text-danger fw-bold" : "")">@(r.BucketQty[bi] == 0 ? "" : r.BucketQty[bi].ToQty())</td> }
+            <td class="num">@r.Value.ToMoney()</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="10" class="text-center text-muted py-3">Không có hàng tồn.</td></tr> }
+    </tbody>
+    @if (Model.Any()) { <tfoot><tr class="fw-bold"><td colspan="3">Cộng</td><td></td>@for (var b = 0; b < 5; b++) { var bi = b; <td class="num">@Model.Sum(r => r.BucketValue[bi]).ToMoney()</td> }<td class="num">@Model.Sum(r => r.Value).ToMoney()</td></tr></tfoot> }
+</table></div></div></div>

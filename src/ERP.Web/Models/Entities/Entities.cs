@@ -6,7 +6,7 @@ namespace ERP.Web.Models.Entities;
 // =====================================================================
 //  NGƯỜI DÙNG & PHÂN QUYỀN
 // =====================================================================
-public class AppUser
+public partial class AppUser
 {
     public int Id { get; set; }
     [Required, StringLength(50)][Display(Name = "Tên đăng nhập")] public string Username { get; set; } = string.Empty;
@@ -29,6 +29,7 @@ public static class AppRoles
     public const string Purchasing = "Purchasing";
     public const string Warehouse = "Warehouse";
     public const string Production = "Production";
+    public const string Quality = "Quality";
 
     // Nhóm quyền dùng cho [Authorize(Roles = ...)]
     public const string Accounting = Admin + "," + Accountant;
@@ -38,8 +39,12 @@ public static class AppRoles
     public const string WarehouseTeam = Admin + "," + Warehouse;
     public const string ProductionTeam = Admin + "," + Production;
     public const string Approvers = Admin + "," + Director;
+    /// <summary>Lập / kết luận phiếu kiểm tra chất lượng</summary>
+    public const string QcInspectors = Admin + "," + Quality + "," + Warehouse + "," + Production;
+    /// <summary>Khai báo tiêu chí kiểm tra, quyết định xử lý hàng không đạt</summary>
+    public const string QcManagers = Admin + "," + Quality;
 
-    public static readonly string[] All = { Admin, Director, Accountant, Sales, Purchasing, Warehouse, Production };
+    public static readonly string[] All = { Admin, Director, Accountant, Sales, Purchasing, Warehouse, Production, Quality };
 
     public static string DisplayName(string role) => role switch
     {
@@ -50,6 +55,7 @@ public static class AppRoles
         Purchasing => "Mua hàng",
         Warehouse => "Thủ kho",
         Production => "Sản xuất",
+        Quality => "Quản lý chất lượng (QC)",
         _ => role
     };
 }
@@ -85,7 +91,7 @@ public class FiscalPeriod
 }
 
 /// <summary>Chứng từ kế toán (bút toán) – mọi nghiệp vụ đều sinh ra bút toán ở đây</summary>
-public class JournalEntry
+public partial class JournalEntry
 {
     public int Id { get; set; }
     [Required, StringLength(30)][Display(Name = "Số chứng từ")] public string Number { get; set; } = string.Empty;
@@ -107,7 +113,7 @@ public class JournalEntry
     [NotMapped] public decimal TotalCredit => Lines.Sum(l => l.Credit);
 }
 
-public class JournalLine
+public partial class JournalLine
 {
     public int Id { get; set; }
     public int JournalEntryId { get; set; }
@@ -124,7 +130,7 @@ public class JournalLine
 // =====================================================================
 //  ĐỐI TÁC (KHÁCH HÀNG / NHÀ CUNG CẤP)
 // =====================================================================
-public class Partner
+public partial class Partner
 {
     public int Id { get; set; }
     [Required(ErrorMessage = "Nhập mã"), StringLength(20)][Display(Name = "Mã đối tượng")] public string Code { get; set; } = string.Empty;
@@ -145,7 +151,7 @@ public class Partner
 // =====================================================================
 //  KHO
 // =====================================================================
-public class Item
+public partial class Item
 {
     public int Id { get; set; }
     [Required(ErrorMessage = "Nhập mã"), StringLength(30)][Display(Name = "Mã hàng")] public string Code { get; set; } = string.Empty;
@@ -162,7 +168,7 @@ public class Item
     [NotMapped] public string Display => $"{Code} – {Name}";
 }
 
-public class Warehouse
+public partial class Warehouse
 {
     public int Id { get; set; }
     [Required(ErrorMessage = "Nhập mã"), StringLength(20)][Display(Name = "Mã kho")] public string Code { get; set; } = string.Empty;
@@ -201,7 +207,7 @@ public class StockMove
 }
 
 /// <summary>Phiếu nhập / xuất / chuyển kho / kiểm kê</summary>
-public class InventoryDoc
+public partial class InventoryDoc
 {
     public int Id { get; set; }
     [Required, StringLength(30)][Display(Name = "Số phiếu")] public string Number { get; set; } = string.Empty;
@@ -228,7 +234,7 @@ public class InventoryDoc
     [NotMapped] public decimal TotalAmount => Lines.Sum(l => l.Amount);
 }
 
-public class InventoryDocLine
+public partial class InventoryDocLine
 {
     public int Id { get; set; }
     public int InventoryDocId { get; set; }
@@ -246,7 +252,7 @@ public class InventoryDocLine
 // =====================================================================
 //  MUA HÀNG
 // =====================================================================
-public class PurchaseOrder
+public partial class PurchaseOrder
 {
     public int Id { get; set; }
     [Required, StringLength(30)][Display(Name = "Số đơn mua")] public string Number { get; set; } = string.Empty;
@@ -282,13 +288,17 @@ public class PurchaseOrderLine
     public int VatRate { get; set; }
     public decimal ReceivedQty { get; set; }
     public decimal InvoicedQty { get; set; }
+    /// <summary>Số lượng đã trả lại nhà cung cấp khi CHƯA lập hóa đơn (giảm số lượng còn phải lập hóa đơn; phần đã có hóa đơn được cấn trừ công nợ)</summary>
+    public decimal ReturnedQty { get; set; }
+    /// <summary>Số lượng còn có thể lập hóa đơn mua = đã nhận − đã trả chưa lập hóa đơn − đã lập hóa đơn</summary>
+    [NotMapped] public decimal BillableQty => ReceivedQty - ReturnedQty - InvoicedQty;
     [NotMapped] public decimal Amount => Math.Round(Quantity * UnitPrice, 0);
 }
 
 // =====================================================================
 //  BÁN HÀNG
 // =====================================================================
-public class SalesOrder
+public partial class SalesOrder
 {
     public int Id { get; set; }
     [Required, StringLength(30)][Display(Name = "Số đơn bán")] public string Number { get; set; } = string.Empty;
@@ -332,7 +342,7 @@ public class SalesOrderLine
 // =====================================================================
 //  HÓA ĐƠN (bán ra / mua vào)
 // =====================================================================
-public class Invoice
+public partial class Invoice
 {
     public int Id { get; set; }
     [Display(Name = "Loại")] public InvoiceDirection Direction { get; set; }
@@ -363,7 +373,7 @@ public class Invoice
     [NotMapped] public bool IsOverdue => Outstanding > 0 && DueDate < DateTime.Today;
 }
 
-public class InvoiceLine
+public partial class InvoiceLine
 {
     public int Id { get; set; }
     public int InvoiceId { get; set; }
@@ -389,7 +399,7 @@ public class InvoiceLine
 // =====================================================================
 //  TIỀN (QUỸ & NGÂN HÀNG)
 // =====================================================================
-public class CashAccount
+public partial class CashAccount
 {
     public int Id { get; set; }
     [Required(ErrorMessage = "Nhập mã"), StringLength(20)][Display(Name = "Mã")] public string Code { get; set; } = string.Empty;
@@ -402,7 +412,7 @@ public class CashAccount
     [Display(Name = "Đang sử dụng")] public bool IsActive { get; set; } = true;
 }
 
-public class CashVoucher
+public partial class CashVoucher
 {
     public int Id { get; set; }
     [Required, StringLength(30)][Display(Name = "Số phiếu")] public string Number { get; set; } = string.Empty;
@@ -429,7 +439,7 @@ public class CashVoucher
 }
 
 /// <summary>Phân bổ tiền thu / chi vào từng hóa đơn (cấn trừ công nợ)</summary>
-public class PaymentAllocation
+public partial class PaymentAllocation
 {
     public int Id { get; set; }
     public int CashVoucherId { get; set; }
@@ -456,7 +466,7 @@ public class AssetCategory
     [Range(1, 600)][Display(Name = "Thời gian KH mặc định (tháng)")] public int DefaultLifeMonths { get; set; } = 60;
 }
 
-public class FixedAsset
+public partial class FixedAsset
 {
     public int Id { get; set; }
     [Required(ErrorMessage = "Nhập mã"), StringLength(30)][Display(Name = "Mã tài sản")] public string Code { get; set; } = string.Empty;
@@ -530,7 +540,7 @@ public class BomLine
     public decimal ScrapPct { get; set; }
 }
 
-public class ProductionOrder
+public partial class ProductionOrder
 {
     public int Id { get; set; }
     [Required, StringLength(30)][Display(Name = "Số lệnh SX")] public string Number { get; set; } = string.Empty;
@@ -596,5 +606,276 @@ public class UserPreference
     public int UserId { get; set; }
     [Required, StringLength(200)] public string Key { get; set; } = string.Empty;
     public string Value { get; set; } = string.Empty;
+    public DateTime UpdatedAt { get; set; } = DateTime.Now;
+}
+
+// =====================================================================
+//  CẤU HÌNH BÚT TOÁN THEO GIAO DỊCH
+// =====================================================================
+/// <summary>Tài khoản được chọn cho một dòng định khoản của giao dịch tự động (Key khai báo trong PostingCatalog)</summary>
+public class PostingRule
+{
+    public int Id { get; set; }
+    [Required, StringLength(60)] public string Key { get; set; } = string.Empty;
+    public int AccountId { get; set; }
+    public Account? Account { get; set; }
+    [StringLength(150)] public string? UpdatedBy { get; set; }
+    public DateTime UpdatedAt { get; set; } = DateTime.Now;
+}
+
+// =====================================================================
+//  QUẢN LÝ CHẤT LƯỢNG
+// =====================================================================
+/// <summary>Kế hoạch kiểm tra: bộ tiêu chí áp dụng cho một công đoạn, một mặt hàng hoặc một loại hàng</summary>
+public class QcPlan
+{
+    public int Id { get; set; }
+    [Required(ErrorMessage = "Nhập mã"), StringLength(20)][Display(Name = "Mã kế hoạch")] public string Code { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Nhập tên"), StringLength(200)][Display(Name = "Tên kế hoạch kiểm tra")] public string Name { get; set; } = string.Empty;
+    [Display(Name = "Công đoạn kiểm tra")] public QcStage Stage { get; set; } = QcStage.Incoming;
+    [Display(Name = "Áp dụng cho mặt hàng")] public int? ItemId { get; set; }
+    public Item? Item { get; set; }
+    [Display(Name = "Hoặc loại hàng")] public ItemType? ItemType { get; set; }
+    [Range(0, 100)][Display(Name = "Tỷ lệ lấy mẫu (%)")] public decimal SamplePct { get; set; } = 10;
+    [StringLength(500)][Display(Name = "Ghi chú")] public string? Note { get; set; }
+    [Display(Name = "Đang áp dụng")] public bool IsActive { get; set; } = true;
+    public ICollection<QcPlanLine> Lines { get; set; } = new List<QcPlanLine>();
+}
+
+public class QcPlanLine
+{
+    public int Id { get; set; }
+    public int QcPlanId { get; set; }
+    public QcPlan? QcPlan { get; set; }
+    public int Seq { get; set; }
+    [Required, StringLength(200)] public string Name { get; set; } = string.Empty;
+    [StringLength(200)] public string? Method { get; set; }
+    [StringLength(200)] public string? Standard { get; set; }
+    public QcCriterionType Type { get; set; } = QcCriterionType.PassFail;
+    public decimal? MinValue { get; set; }
+    public decimal? MaxValue { get; set; }
+    [StringLength(20)] public string? Unit { get; set; }
+    /// <summary>Tiêu chí trọng yếu: không đạt thì cả lô không đạt</summary>
+    public bool IsCritical { get; set; }
+}
+
+/// <summary>Phiếu kiểm tra chất lượng (KCS) cho một lô hàng</summary>
+public class QcInspection
+{
+    public int Id { get; set; }
+    [Required, StringLength(30)][Display(Name = "Số phiếu")] public string Number { get; set; } = string.Empty;
+    [DataType(DataType.Date)][Display(Name = "Ngày kiểm tra")] public DateTime Date { get; set; } = DateTime.Today;
+    [Display(Name = "Công đoạn")] public QcStage Stage { get; set; } = QcStage.Incoming;
+    [Required(ErrorMessage = "Chọn mặt hàng")][Display(Name = "Mặt hàng")] public int? ItemId { get; set; }
+    public Item? Item { get; set; }
+    [Display(Name = "Kho")] public int? WarehouseId { get; set; }
+    public Warehouse? Warehouse { get; set; }
+    [Display(Name = "Nhà cung cấp / khách hàng")] public int? PartnerId { get; set; }
+    public Partner? Partner { get; set; }
+    [Display(Name = "Nguồn")] public DocOrigin Origin { get; set; } = DocOrigin.Manual;
+    [StringLength(30)][Display(Name = "Chứng từ gốc")] public string? OriginRef { get; set; }
+    public int? OriginId { get; set; }
+    [Display(Name = "Kế hoạch kiểm tra")] public int? QcPlanId { get; set; }
+    public QcPlan? QcPlan { get; set; }
+    [Range(0.001, 100_000_000, ErrorMessage = "Số lượng lô phải > 0")][Display(Name = "Số lượng lô")] public decimal LotQty { get; set; }
+    [Range(0, 100_000_000)][Display(Name = "Số lượng mẫu")] public decimal SampleQty { get; set; }
+    [Range(0, 100_000_000)][Display(Name = "SL đạt")] public decimal AcceptedQty { get; set; }
+    [Range(0, 100_000_000)][Display(Name = "SL không đạt")] public decimal RejectedQty { get; set; }
+    [Display(Name = "Kết luận")] public QcResult Result { get; set; } = QcResult.Pending;
+    [Display(Name = "Trạng thái")] public QcStatus Status { get; set; } = QcStatus.Draft;
+    [StringLength(1000)][Display(Name = "Nhận xét")] public string? Note { get; set; }
+    public int? InspectorId { get; set; }
+    public AppUser? Inspector { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime? CompletedAt { get; set; }
+    public ICollection<QcInspectionLine> Lines { get; set; } = new List<QcInspectionLine>();
+
+    [NotMapped] public decimal DefectRate => LotQty > 0 ? Math.Round(RejectedQty * 100 / LotQty, 2) : 0;
+}
+
+public class QcInspectionLine
+{
+    public int Id { get; set; }
+    public int QcInspectionId { get; set; }
+    public QcInspection? QcInspection { get; set; }
+    public int Seq { get; set; }
+    [Required, StringLength(200)] public string Name { get; set; } = string.Empty;
+    [StringLength(200)] public string? Method { get; set; }
+    [StringLength(200)] public string? Standard { get; set; }
+    public QcCriterionType Type { get; set; } = QcCriterionType.PassFail;
+    public decimal? MinValue { get; set; }
+    public decimal? MaxValue { get; set; }
+    [StringLength(20)] public string? Unit { get; set; }
+    public bool IsCritical { get; set; }
+    /// <summary>Giá trị đo (tiêu chí đo lường)</summary>
+    public decimal? MeasuredValue { get; set; }
+    /// <summary>null = chưa đánh giá</summary>
+    public bool? Passed { get; set; }
+    [StringLength(300)] public string? Note { get; set; }
+}
+
+/// <summary>Báo cáo không phù hợp (NCR): xử lý số lượng hàng không đạt</summary>
+public class QcNonconformance
+{
+    public int Id { get; set; }
+    [Required, StringLength(30)][Display(Name = "Số NCR")] public string Number { get; set; } = string.Empty;
+    [DataType(DataType.Date)][Display(Name = "Ngày lập")] public DateTime Date { get; set; } = DateTime.Today;
+    [Display(Name = "Phiếu kiểm tra")] public int? InspectionId { get; set; }
+    public QcInspection? Inspection { get; set; }
+    [Required(ErrorMessage = "Chọn mặt hàng")][Display(Name = "Mặt hàng")] public int? ItemId { get; set; }
+    public Item? Item { get; set; }
+    [Display(Name = "Kho đang giữ hàng")] public int? WarehouseId { get; set; }
+    public Warehouse? Warehouse { get; set; }
+    [Display(Name = "Nhà cung cấp / khách hàng")] public int? PartnerId { get; set; }
+    public Partner? Partner { get; set; }
+    [Range(0.001, 100_000_000, ErrorMessage = "Số lượng phải > 0")][Display(Name = "Số lượng không phù hợp")] public decimal Quantity { get; set; }
+    [Required(ErrorMessage = "Mô tả lỗi"), StringLength(1000)][Display(Name = "Mô tả lỗi")] public string Description { get; set; } = string.Empty;
+    [StringLength(1000)][Display(Name = "Nguyên nhân gốc")] public string? RootCause { get; set; }
+    [Display(Name = "Hướng xử lý")] public NcrDisposition Disposition { get; set; } = NcrDisposition.Pending;
+    [StringLength(1000)][Display(Name = "Hành động khắc phục / phòng ngừa")] public string? CorrectiveAction { get; set; }
+    [StringLength(150)][Display(Name = "Người chịu trách nhiệm")] public string? Responsible { get; set; }
+    [DataType(DataType.Date)][Display(Name = "Hạn xử lý")] public DateTime? DueDate { get; set; }
+    [Display(Name = "Trạng thái")] public NcrStatus Status { get; set; } = NcrStatus.Open;
+    /// <summary>Phiếu xuất kho khi hủy bỏ / trả lại nhà cung cấp</summary>
+    public int? InventoryDocId { get; set; }
+    public InventoryDoc? InventoryDoc { get; set; }
+    public int? CreatedById { get; set; }
+    public AppUser? CreatedBy { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime? ClosedAt { get; set; }
+    [StringLength(150)] public string? ClosedBy { get; set; }
+
+    [NotMapped] public bool IsOverdue => Status == NcrStatus.Open && DueDate.HasValue && DueDate.Value.Date < DateTime.Today;
+}
+
+// =====================================================================
+//  TRẢ HÀNG NHÀ CUNG CẤP (từ xử lý NCR chất lượng)
+// =====================================================================
+/// <summary>
+/// Trả hàng nhà cung cấp theo từng dòng đơn mua: phần chưa lập hóa đơn giảm số lượng phải lập hóa đơn (và giảm hàng nhập chưa có hóa đơn),
+/// phần đã có hóa đơn được cấn trừ vào công nợ hóa đơn kèm hoàn thuế GTGT đầu vào.
+/// </summary>
+public class PurchaseReturn
+{
+    public int Id { get; set; }
+    public int NcrId { get; set; }
+    public QcNonconformance? Ncr { get; set; }
+    public int InventoryDocId { get; set; }
+    public InventoryDoc? InventoryDoc { get; set; }
+    public int PurchaseOrderLineId { get; set; }
+    public PurchaseOrderLine? PurchaseOrderLine { get; set; }
+    public DateTime Date { get; set; } = DateTime.Today;
+    public decimal Quantity { get; set; }
+    /// <summary>Phần chưa lập hóa đơn</summary>
+    public decimal QtyUnbilled { get; set; }
+    /// <summary>Phần đã lập hóa đơn</summary>
+    public decimal QtyBilled { get; set; }
+    public decimal UnitPrice { get; set; }
+    /// <summary>Giá trị trả lại theo giá mua (chưa thuế) = phần chưa lập hóa đơn + phần đã lập hóa đơn</summary>
+    public decimal Amount { get; set; }
+    /// <summary>Phần giá trị của số lượng đã lập hóa đơn (chưa thuế)</summary>
+    public decimal BilledAmount { get; set; }
+    /// <summary>Thuế GTGT đầu vào được hoàn (chỉ phần đã lập hóa đơn)</summary>
+    public decimal VatAmount { get; set; }
+    /// <summary>Phần giảm trừ chưa cấn trừ được vào hóa đơn nào (hóa đơn đã thanh toán hết) – nhà cung cấp còn nợ lại</summary>
+    public decimal Unapplied { get; set; }
+    public int? AdjustJournalEntryId { get; set; }
+    public ICollection<InvoiceOffset> Offsets { get; set; } = new List<InvoiceOffset>();
+}
+
+/// <summary>Cấn trừ công nợ một hóa đơn mua bằng giá trị hàng trả lại (đã cộng vào Invoice.PaidAmount)</summary>
+public class InvoiceOffset
+{
+    public int Id { get; set; }
+    public int PurchaseReturnId { get; set; }
+    public PurchaseReturn? PurchaseReturn { get; set; }
+    public int InvoiceId { get; set; }
+    public Invoice? Invoice { get; set; }
+    public decimal Amount { get; set; }
+}
+
+// =====================================================================
+//  HÓA ĐƠN ĐIỀU CHỈNH GIẢM BÁN HÀNG (hàng bán bị trả lại / giảm giá hàng bán)
+// =====================================================================
+/// <summary>
+/// Điều chỉnh giảm một hóa đơn bán đã phát hành:
+///  – Hàng bán bị trả lại: nhập lại kho theo giá vốn lúc bán (Nợ 15x / Có 632), giảm trừ doanh thu (Nợ 5212 + Nợ 33311 / Có 131)
+///  – Giảm giá hàng bán: Nợ 5213 + Nợ 33311 / Có 131, không nhập kho
+/// Giá trị điều chỉnh được cấn trừ vào công nợ hóa đơn; phần hóa đơn đã thanh toán hết ghi nhận là khách còn được ghi có (Unapplied).
+/// </summary>
+public partial class SalesCreditNote
+{
+    public int Id { get; set; }
+    [Required, StringLength(30)][Display(Name = "Số chứng từ")] public string Number { get; set; } = string.Empty;
+    [DataType(DataType.Date)][Display(Name = "Ngày")] public DateTime Date { get; set; } = DateTime.Today;
+    [Display(Name = "Loại điều chỉnh")] public CreditNoteKind Kind { get; set; } = CreditNoteKind.Return;
+    public int CustomerId { get; set; }
+    public Partner? Customer { get; set; }
+    [Display(Name = "Hóa đơn gốc")] public int InvoiceId { get; set; }
+    public Invoice? Invoice { get; set; }
+    [Display(Name = "Kho nhận hàng trả lại")] public int? WarehouseId { get; set; }
+    public Warehouse? Warehouse { get; set; }
+    [Required(ErrorMessage = "Nhập lý do"), StringLength(500)][Display(Name = "Lý do")] public string Reason { get; set; } = string.Empty;
+    public decimal Subtotal { get; set; }
+    public decimal VatAmount { get; set; }
+    public decimal Total { get; set; }
+    public DocStatus Status { get; set; } = DocStatus.Posted;
+    public int? JournalEntryId { get; set; }
+    public int? InventoryDocId { get; set; }
+    public InventoryDoc? InventoryDoc { get; set; }
+    /// <summary>Phần chưa cấn trừ được vào hóa đơn (hóa đơn đã thanh toán hết): khách còn được ghi có</summary>
+    public decimal Unapplied { get; set; }
+    public int? CreatedById { get; set; }
+    public AppUser? CreatedBy { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public ICollection<SalesCreditLine> Lines { get; set; } = new List<SalesCreditLine>();
+    public ICollection<SalesCreditOffset> Offsets { get; set; } = new List<SalesCreditOffset>();
+}
+
+public class SalesCreditLine
+{
+    public int Id { get; set; }
+    public int SalesCreditNoteId { get; set; }
+    public SalesCreditNote? SalesCreditNote { get; set; }
+    public int InvoiceLineId { get; set; }
+    public InvoiceLine? InvoiceLine { get; set; }
+    public int? ItemId { get; set; }
+    public Item? Item { get; set; }
+    [StringLength(300)] public string Description { get; set; } = string.Empty;
+    /// <summary>Số lượng trả lại (0 với giảm giá)</summary>
+    public decimal Quantity { get; set; }
+    public decimal UnitPrice { get; set; }
+    public decimal Amount { get; set; }
+    public int VatRate { get; set; }
+    public decimal VatAmount { get; set; }
+    /// <summary>Giá vốn đơn vị khi nhập lại kho (giá vốn lúc bán)</summary>
+    public decimal UnitCost { get; set; }
+}
+
+public class SalesCreditOffset
+{
+    public int Id { get; set; }
+    public int SalesCreditNoteId { get; set; }
+    public SalesCreditNote? SalesCreditNote { get; set; }
+    public int InvoiceId { get; set; }
+    public Invoice? Invoice { get; set; }
+    public decimal Amount { get; set; }
+}
+
+// =====================================================================
+//  BÁO CÁO ĐỘNG ĐÃ LƯU
+// =====================================================================
+/// <summary>Định nghĩa báo cáo động do người dùng lưu (JSON ReportDef); có thể chia sẻ cho người cùng quyền xem nguồn dữ liệu</summary>
+public class SavedReport
+{
+    public int Id { get; set; }
+    [Required(ErrorMessage = "Nhập tên báo cáo"), StringLength(150)][Display(Name = "Tên báo cáo")] public string Name { get; set; } = string.Empty;
+    [StringLength(500)][Display(Name = "Mô tả")] public string? Description { get; set; }
+    [Required, StringLength(40)] public string DatasetKey { get; set; } = string.Empty;
+    [Required] public string DefinitionJson { get; set; } = "{}";
+    public int OwnerId { get; set; }
+    public AppUser? Owner { get; set; }
+    [Display(Name = "Chia sẻ cho mọi người")] public bool IsShared { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
 }

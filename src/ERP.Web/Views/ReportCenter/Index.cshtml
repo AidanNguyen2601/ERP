@@ -1,0 +1,44 @@
+@using ERP.Web.Controllers
+@model List<CatalogReport>
+@{
+    ViewData["Title"] = "Trung tâm báo cáo";
+    var order = (string[])ViewBag.Order;
+}
+<div class="row g-3 mb-3 align-items-center">
+    <div class="col-lg-5"><div class="input-group"><span class="input-group-text"><i class="bi bi-search"></i></span><input id="rcSearch" class="form-control" placeholder="Tìm báo cáo (ví dụ: doanh thu, tồn kho, công nợ, thuế)..." autofocus /></div></div>
+    <div class="col-lg-7 text-lg-end">
+        <span class="small text-muted me-2"><span class="badge bg-primary">Chuẩn</span> báo cáo cố định theo mẫu · <span class="badge bg-secondary">Quản trị</span> mẫu dựng sẵn, chỉnh được ·</span>
+        <a class="btn btn-primary" asp-controller="DynamicReports" asp-action="Index"><i class="bi bi-magic"></i> Báo cáo động – tự tạo báo cáo</a>
+    </div>
+</div>
+@foreach (var g in order)
+{
+    var list = Model.Where(i => i.Group == g).ToList();
+    if (!list.Any()) { continue; }
+    <div class="rc-group mb-4">
+        <div class="section-title">@g</div>
+        <div class="row g-2">
+            @foreach (var r in list)
+            {
+                <div class="col-md-6 col-xl-4 rc-item" data-text="@(r.Title + " " + r.Description + " " + g)">
+                    <a class="rpt-card" href="@r.Url"><span class="rc-ico"><i class="bi @r.Icon"></i></span>
+                        <span class="rc-body"><b>@r.Title <span class="badge @(r.Kind == "Chuẩn" ? "bg-primary" : "bg-secondary") align-middle" style="font-size:.6rem">@r.Kind</span></b><small>@r.Description</small></span>
+                        <span class="fav-toggle" role="button" tabindex="0" data-fav-url="@r.Url" data-fav-title="@r.Title" data-fav-icon="@r.Icon" title="Thêm / bỏ yêu thích"><i class="bi bi-star"></i></span></a>
+                </div>
+            }
+        </div>
+    </div>
+}
+@section Scripts {
+<script>
+(function () {
+    const q = document.getElementById('rcSearch');
+    const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').toLowerCase();
+    q.addEventListener('input', () => {
+        const v = norm(q.value.trim());
+        document.querySelectorAll('.rc-item').forEach(el => el.style.display = !v || norm(el.dataset.text).includes(v) ? '' : 'none');
+        document.querySelectorAll('.rc-group').forEach(g => g.style.display = [...g.querySelectorAll('.rc-item')].some(i => i.style.display !== 'none') ? '' : 'none');
+    });
+})();
+</script>
+}

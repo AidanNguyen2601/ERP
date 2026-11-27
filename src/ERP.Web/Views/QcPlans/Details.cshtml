@@ -1,0 +1,27 @@
+@model QcPlan
+@{ ViewData["Title"] = $"Kế hoạch kiểm tra {Model.Code}"; }
+<div class="doc-head">
+    <div>
+        <h5 class="mb-1">@Model.Name</h5>
+        <div class="meta"><i class="bi @QcUi.Icon(Model.Stage)"></i> @Model.Stage.GetDisplayName() ·
+            @(Model.Item != null ? $"Mặt hàng {Model.Item.Code} – {Model.Item.Name}" : Model.ItemType.HasValue ? "Loại hàng: " + Model.ItemType.Value.GetDisplayName() : "Áp dụng mọi mặt hàng") ·
+            Lấy mẫu @Model.SamplePct.ToPct() lô
+            @if (!Model.IsActive) { <span class="badge bg-secondary ms-1">Ngưng áp dụng</span> }</div>
+        @if (!string.IsNullOrWhiteSpace(Model.Note)) { <div class="small mt-1">@Model.Note</div> }
+    </div>
+    <div class="actions">
+        <a class="btn btn-sm btn-light" asp-action="Index"><i class="bi bi-arrow-left"></i> Danh sách</a>
+        @if ((bool)ViewBag.CanEdit) { <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id"><i class="bi bi-pencil"></i> Sửa</a> }
+    </div>
+</div>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0">
+    <thead><tr><th>#</th><th>Tiêu chí</th><th>Phương pháp</th><th>Tiêu chuẩn chấp nhận</th><th>Kiểu</th><th>Trọng yếu</th></tr></thead>
+    <tbody>
+    @foreach (var l in Model.Lines.OrderBy(x => x.Seq))
+    {
+        <tr><td>@l.Seq</td><td>@l.Name</td><td class="small">@l.Method</td><td>@l.Standard</td><td class="small">@l.Type.GetDisplayName()</td>
+            <td>@if (l.IsCritical) { <span class="badge bg-danger">Trọng yếu</span> }</td></tr>
+    }
+    </tbody>
+</table></div></div></div>
+<p class="small text-muted mt-2">Tiêu chí <b>trọng yếu</b> không đạt → gợi ý kết luận <i>Không đạt</i>; tiêu chí thường không đạt → <i>Đạt có điều kiện</i>.</p>

@@ -1,0 +1,29 @@
+@model List<PayrollRun>
+@{ ViewData["Title"] = "Bảng lương"; var t = DateTime.Today; }
+<div class="toolbar">
+    <a class="btn btn-sm btn-light" asp-action="Employees"><i class="bi bi-people"></i> Nhân viên</a>
+    <a class="btn btn-sm btn-light" asp-action="Attendance"><i class="bi bi-calendar-check"></i> Chấm công</a>
+    <a class="btn btn-sm btn-light" asp-controller="Settings" asp-action="Index" asp-fragment="payroll"><i class="bi bi-gear"></i> Tham số lương, bảo hiểm, thuế TNCN</a>
+</div>
+<div class="card mb-3"><div class="card-body">
+    <form asp-action="Create" method="post" class="row g-2 align-items-end">
+        <div class="col-auto"><label class="form-label small">Tháng</label><select name="month" class="form-select form-select-sm">@for (var i = 1; i <= 12; i++) { <option value="@i" selected="@(i == t.Month)">@i</option> }</select></div>
+        <div class="col-auto"><label class="form-label small">Năm</label><input name="year" type="number" value="@t.Year" class="form-control form-control-sm" style="width:100px" /></div>
+        <div class="col-auto"><label class="form-label small">Chi nhánh</label><select name="branchId" asp-items="ViewBag.Branches" class="form-select form-select-sm"><option value="">Toàn công ty</option></select></div>
+        <div class="col-auto"><button class="btn btn-sm btn-primary"><i class="bi bi-calculator"></i> Lập bảng lương</button></div>
+        <div class="col small text-muted">Tính lương theo ngày công, làm thêm giờ; khấu trừ BHXH 8%, BHYT 1,5%, BHTN 1%; giảm trừ gia cảnh và thuế TNCN biểu lũy tiến. Hạch toán: Nợ 622/627/641/642 – Có 334, 338x, 3335.</div>
+    </form>
+</div></div>
+<div class="card"><div class="card-body p-0"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Kỳ lương</th><th>Chi nhánh</th><th class="num">Số NV</th><th class="num">Tổng thu nhập</th><th class="num">Thực lĩnh</th><th class="num">Tổng chi phí DN</th><th>Trạng thái</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var r in Model)
+    {
+        <tr><td><b>@r.Month.ToString("00")/@r.Year</b></td><td class="small">@(r.Branch?.Name ?? "Toàn công ty")</td><td class="num">@r.Lines.Count</td>
+            <td class="num">@r.TotalGross.ToMoney()</td><td class="num">@r.TotalNet.ToMoney()</td><td class="num">@r.TotalCost.ToMoney()</td>
+            <td><span class="badge @(r.Status == DocStatus.Posted ? "bg-success" : r.Status == DocStatus.Cancelled ? "bg-secondary" : "bg-warning text-dark")">@r.Status.GetDisplayName()</span></td>
+            <td class="text-end"><a class="btn btn-sm btn-light" asp-action="Details" asp-route-id="@r.Id">Chi tiết</a></td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="8" class="text-center text-muted py-3">Chưa có bảng lương.</td></tr> }
+    </tbody>
+</table></div></div>

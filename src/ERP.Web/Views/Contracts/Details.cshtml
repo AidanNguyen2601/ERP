@@ -1,0 +1,73 @@
+@model Contract
+@{
+    ViewData["Title"] = $"Hợp đồng {Model.Number}";
+    var invs = (List<Invoice>)ViewBag.Invoices; var sos = (List<SalesOrder>)ViewBag.SalesOrders; var pos = (List<PurchaseOrder>)ViewBag.PurchaseOrders;
+    var pays = (List<PaymentAllocation>)ViewBag.Payments;
+    var issued = invs.Where(i => i.Status == InvoiceStatus.Issued).ToList();
+    decimal invoiced = issued.Sum(i => i.Total), paid = issued.Sum(i => i.PaidAmount), outst = issued.Sum(i => i.Outstanding);
+    decimal Bucket(int from, int to) => issued.Where(i => i.Outstanding > 0 && (DateTime.Today - i.DueDate).Days is var d && d >= from && d <= to).Sum(i => i.Outstanding);
+}
+<div class="toolbar">
+    <span class="badge bg-light text-dark border">@Model.Type.GetDisplayName()</span> <b>@Model.Partner?.Name</b> <span class="text-muted small">@Model.Title</span>
+    <a class="btn btn-sm btn-light ms-auto" asp-action="Edit" asp-route-id="@Model.Id"><i class="bi bi-pencil"></i> Sửa</a>
+    @if (Model.Type == ContractType.Sale) { <a class="btn btn-sm btn-primary" asp-controller="SalesOrders" asp-action="Create"><i class="bi bi-bag-plus"></i> Đơn bán</a> }
+    else { <a class="btn btn-sm btn-primary" asp-controller="PurchaseOrders" asp-action="Create"><i class="bi bi-cart-plus"></i> Đơn mua</a> }
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-md-2"><div class="card card-body"><div class="small text-muted">Giá trị HĐ</div><div class="fs-5 fw-bold">@Model.Value.ToMoney()</div></div></div>
+    <div class="col-md-2"><div class="card card-body"><div class="small text-muted">Đã xuất hóa đơn</div><div class="fs-5 fw-bold">@invoiced.ToMoney()</div><div class="small">@(Model.Value == 0 ? "" : (invoiced * 100 / Model.Value).ToString("N0") + "% giá trị HĐ")</div></div></div>
+    <div class="col-md-2"><div class="card card-body"><div class="small text-muted">Đã thanh toán</div><div class="fs-5 fw-bold text-success">@paid.ToMoney()</div></div></div>
+    <div class="col-md-2"><div class="card card-body"><div class="small text-muted">Còn phải @(Model.Type == ContractType.Sale ? "thu" : "trả")</div><div class="fs-5 fw-bold text-danger">@outst.ToMoney()</div></div></div>
+    <div class="col-md-4"><div class="card card-body"><div class="small text-muted mb-1">Tuổi nợ</div>
+        <div class="d-flex justify-content-between small"><span>Trong hạn<br /><b>@Bucket(int.MinValue, 0).ToMoney()</b></span><span>1–30 ngày<br /><b>@Bucket(1, 30).ToMoney()</b></span><span>31–90<br /><b>@Bucket(31, 90).ToMoney()</b></span><span>&gt; 90<br /><b class="text-danger">@Bucket(91, int.MaxValue).ToMoney()</b></span></div></div></div>
+</div>
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card mb-3"><div class="card-header">Hóa đơn theo hợp đồng</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off">
+            <thead><tr><th>Số HĐ</th><th>Ngày</th><th>Hạn TT</th><th class="num">Tổng tiền</th><th class="num">Đã TT</th><th class="num">Còn lại</th></tr></thead><tbody>
+            @foreach (var i in invs) { <tr class="@(i.IsOverdue ? "table-danger" : "")"><td><a asp-controller="Invoices" asp-action="Details" asp-route-id="@i.Id">@i.Series @i.InvoiceNo</a> @if (i.Status == InvoiceStatus.Cancelled) { <span class="badge bg-secondary">Hủy</span> }</td><td>@i.Date.ToDate()</td><td>@i.DueDate.ToDate()</td><td class="num">@i.Total.ToMoney()</td><td class="num">@i.PaidAmount.ToMoney()</td><td class="num">@i.Outstanding.ToMoney()</td></tr> }
+            @if (!invs.Any()) { <tr><td colspan="6" class="text-muted text-center">Chưa có hóa đơn.</td></tr> }
+        </tbody></table></div></div>
+        <div class="card"><div class="card-header">Thanh toán</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+            @foreach (var p in pays) { <tr><td>@p.CashVoucher?.Date.ToDate()</td><td><a asp-controller="Cash" asp-action="Details" asp-route-id="@p.CashVoucherId">@p.CashVoucher?.Number</a></td><td class="small">HĐ @p.Invoice?.InvoiceNo</td><td class="num">@p.Amount.ToMoney()</td></tr> }
+            @if (!pays.Any()) { <tr><td class="text-muted text-center">Chưa có thanh toán.</td></tr> }
+        </tbody></table></div></div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card mb-3"><div class="card-header">Đơn hàng</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+            @foreach (var o in sos) { <tr><td><a asp-controller="SalesOrders" asp-action="Details" asp-route-id="@o.Id">@o.Number</a></td><td>@o.Date.ToDate()</td><td>@o.Status.GetDisplayName()</td><td class="num">@o.Total.ToMoney()</td></tr> }
+            @foreach (var o in pos) { <tr><td><a asp-controller="PurchaseOrders" asp-action="Details" asp-route-id="@o.Id">@o.Number</a></td><td>@o.Date.ToDate()</td><td>@o.Status.GetDisplayName()</td><td class="num">@o.Total.ToMoney()</td></tr> }
+            @if (!sos.Any() && !pos.Any()) { <tr><td class="text-muted text-center">Chưa có đơn hàng gắn hợp đồng.</td></tr> }
+        </tbody></table></div></div>
+        <div class="card card-body small">
+            <div><span class="text-muted">Ngày ký:</span> @Model.SignDate.ToDate() · <span class="text-muted">Hết hạn:</span> @Model.EndDate.ToDate() · <span class="text-muted">Hạn thanh toán:</span> @Model.PaymentTermDays ngày</div>
+            @if (!string.IsNullOrEmpty(Model.PaymentTerms)) { <div class="mt-1"><span class="text-muted">Điều khoản:</span> @Model.PaymentTerms</div> }
+            @if (!string.IsNullOrEmpty(Model.Note)) { <div class="mt-1">@Model.Note</div> }
+        </div>
+    </div>
+</div>
+@{ var ms = (List<ContractMilestone>)ViewBag.Milestones; var canMs = User.InAny(AppRoles.FinanceView + "," + AppRoles.Sales + "," + AppRoles.Purchasing); }
+<div class="card mt-3"><div class="card-header">Đợt giao hàng & đợt thanh toán theo hợp đồng</div><div class="card-body p-0"><table class="table table-sm align-middle mb-0" data-grid="off">
+    <thead><tr><th>Loại</th><th>Đợt</th><th>Đến hạn</th><th class="num">Giá trị</th><th>Trạng thái</th><th>Ghi chú</th><th></th></tr></thead><tbody>
+    @foreach (var m in ms)
+    {
+        <tr class="@(!m.Done && m.DueDate < DateTime.Today ? "table-danger" : m.Done ? "text-muted" : "")"><td>@m.Kind.GetDisplayName()</td><td>@m.Name</td><td>@m.DueDate.ToDate()</td><td class="num">@(m.Amount == 0 ? "" : m.Amount.ToMoney())</td>
+            <td>@(m.Done ? "Hoàn thành " + m.DoneDate.ToDate() : m.DueDate < DateTime.Today ? "Quá hạn " + (DateTime.Today - m.DueDate).Days + " ngày" : "Chưa đến hạn")</td><td class="small">@m.Note</td>
+            <td class="text-nowrap">@if (canMs) { <form asp-action="ToggleMilestone" asp-route-id="@m.Id" asp-route-contractId="@Model.Id" method="post" class="d-inline"><button class="btn btn-sm btn-light">@(m.Done ? "Bỏ hoàn thành" : "Hoàn thành")</button></form> <form asp-action="DeleteMilestone" asp-route-id="@m.Id" asp-route-contractId="@Model.Id" method="post" class="d-inline"><button class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-x"></i></button></form> }</td></tr>
+    }
+    @if (!ms.Any()) { <tr><td colspan="7" class="text-center text-muted">Chưa khai báo đợt giao hàng / thanh toán.</td></tr> }
+    </tbody>
+    @if (ms.Any(x => x.Kind == MilestoneKind.Payment)) { <tfoot><tr class="fw-bold"><td colspan="3">Cộng các đợt thanh toán</td><td class="num">@ms.Where(x => x.Kind == MilestoneKind.Payment).Sum(x => x.Amount).ToMoney()</td><td colspan="3" class="small fw-normal">Giá trị hợp đồng @Model.Value.ToMoney()</td></tr></tfoot> }
+</table></div>
+@if (canMs)
+{
+    <div class="card-footer"><form asp-action="AddMilestone" asp-route-id="@Model.Id" method="post" class="row g-1">
+        <div class="col-md-2"><select name="kind" asp-items="Html.GetEnumSelectList<MilestoneKind>()" class="form-select form-select-sm"></select></div>
+        <div class="col-md-3"><input name="name" class="form-control form-control-sm" placeholder="Tên đợt (VD: Giao đợt 1, Tạm ứng 30%)" required /></div>
+        <div class="col-md-2"><input type="date" name="dueDate" value="@DateTime.Today.AddDays(30).Iso()" class="form-control form-control-sm" /></div>
+        <div class="col-md-2"><input type="number" name="amount" step="1000" min="0" class="form-control form-control-sm" placeholder="Giá trị" /></div>
+        <div class="col-md-2"><input name="note" class="form-control form-control-sm" placeholder="Ghi chú" /></div>
+        <div class="col-md-1"><button class="btn btn-sm btn-primary w-100">Thêm</button></div>
+    </form></div>
+}
+</div>

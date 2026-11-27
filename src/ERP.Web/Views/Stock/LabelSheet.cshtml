@@ -1,0 +1,9 @@
+@model List<(string Title, string Sub, string Code)>
+@{ Layout = null; int copies = ViewBag.Copies; }
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8" /><title>In tem</title>
+<style>body{font-family:Arial,sans-serif;margin:8px}.grid{display:flex;flex-wrap:wrap;gap:6px}.l{width:240px;border:1px dashed #999;padding:6px 8px;text-align:center;page-break-inside:avoid}.t{font-weight:bold;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.s{font-size:10px;color:#333}.c{font-size:10px;letter-spacing:1px}svg{max-width:150px}@@media print{button{display:none}.l{border:none}}</style></head>
+<body><button onclick="window.print()">In tem</button>
+<div class="grid">
+@foreach (var l in Model) { for (var k = 0; k < copies; k++) { <div class="l"><div class="t">@l.Title</div><div class="s">@l.Sub</div><div style="display:flex;align-items:center;justify-content:center;gap:6px">@Html.Raw(QrCode.Svg(l.Code, 64))<div>@Html.Raw(Barcode.Svg(l.Code))</div></div><div class="c">@l.Code</div></div> } }
+</div></body></html>

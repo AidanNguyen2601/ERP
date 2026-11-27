@@ -1,0 +1,46 @@
+@model List<AuditLog>
+@{
+    ViewData["Title"] = "Nhật ký thao tác";
+    int page = ViewBag.Page, pages = ViewBag.Pages, total = ViewBag.Total;
+    string Changes(string? json)
+    {
+        if (string.IsNullOrEmpty(json)) return "";
+        try
+        {
+            var d = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement[]>>(json)!;
+            return string.Join("; ", d.Take(12).Select(kv => kv.Value.Length > 1 && kv.Value[1].ValueKind != System.Text.Json.JsonValueKind.Null
+                ? $"{kv.Key}: {kv.Value[0]} → {kv.Value[1]}" : $"{kv.Key}: {kv.Value.FirstOrDefault()}")) + (d.Count > 12 ? "; …" : "");
+        }
+        catch { return json.Length > 300 ? json[..300] + "…" : json; }
+    }
+    string Badge(string a) => a switch { "Tạo" => "bg-success", "Xóa" => "bg-danger", "Duyệt" => "bg-primary", "Từ chối" => "bg-warning text-dark", "Đăng nhập thất bại" => "bg-danger", "Đổi trạng thái" => "bg-info text-dark", _ => "bg-secondary" };
+}
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@(((DateTime)ViewBag.To).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Người thao tác</label><input name="user" value="@ViewBag.User" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đối tượng</label><select name="type" class="form-select form-select-sm"><option value="">-- Tất cả --</option>
+        @foreach (var t in ViewBag.Types) { <option value="@t.EntityType" selected="@(ViewBag.Type == t.EntityType)">@t.EntityName</option> }</select></div>
+    <div><label class="form-label small mb-0">Thao tác</label><select name="action" class="form-select form-select-sm"><option value="">-- Tất cả --</option>
+        @foreach (string a in ViewBag.Actions) { <option selected="@(ViewBag.Action == a)">@a</option> }</select></div>
+    <div><label class="form-label small mb-0">Số chứng từ / nội dung</label><input name="q" value="@ViewBag.Q" class="form-control form-control-sm" /></div>
+    <input type="hidden" name="entityId" value="@ViewBag.EntityId" />
+    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-funnel"></i> Lọc</button>
+    <span class="ms-auto small text-muted">@total.ToString("N0") dòng</span>
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Thời điểm</th><th>Người thao tác</th><th>Thao tác</th><th>Đối tượng</th><th>Số / mã</th><th>Thay đổi</th><th>IP</th></tr></thead>
+    <tbody>
+    @foreach (var a in Model)
+    {
+        <tr><td class="text-nowrap small">@a.At.ToString("dd/MM/yyyy HH:mm:ss")</td><td class="small">@a.UserName</td><td><span class="badge @Badge(a.Action)">@a.Action</span></td>
+            <td class="small">@a.EntityName <a class="text-muted" asp-route-type="@a.EntityType" asp-route-entityId="@a.EntityId" asp-route-from="2000-01-01" title="Lịch sử của đối tượng này">#@a.EntityId</a></td>
+            <td class="small"><b>@a.DocNumber</b></td><td class="small" style="max-width:520px">@Changes(a.Changes)</td><td class="small text-muted">@a.Ip</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="7" class="text-center text-muted py-3">Không có thao tác nào trong khoảng thời gian này.</td></tr> }
+    </tbody>
+</table></div></div></div>
+@if (pages > 1)
+{
+    <nav class="mt-2"><ul class="pagination pagination-sm">@for (var p = 1; p <= Math.Min(pages, 30); p++) { <li class="page-item @(p == page ? "active" : "")"><a class="page-link" href="@Url.Action("Index", new { page = p, from = ((DateTime)ViewBag.From).Iso(), to = ((DateTime)ViewBag.To).Iso(), user = ViewBag.User, type = ViewBag.Type, action = ViewBag.Action, q = ViewBag.Q, entityId = ViewBag.EntityId })">@p</a></li> }</ul></nav>
+}

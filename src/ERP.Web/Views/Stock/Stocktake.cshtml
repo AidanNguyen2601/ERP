@@ -1,0 +1,34 @@
+@model Stocktake
+@{
+    ViewData["Title"] = $"Kiểm kê {Model.Number}"; bool can = ViewBag.CanWrite; var cur = (Dictionary<int, decimal>)ViewBag.Current; var doc = ViewBag.Doc as InventoryDoc; bool counting = Model.Status == StocktakeStatus.Counting; bool print = ViewBag.Print;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    decimal diffVal = Model.Lines.Where(l => l.CountedQty != null).Sum(l => ((l.CountedQty ?? 0) - cur.GetValueOrDefault(l.ItemId, l.BookQty)) * (l.Item?.AvgCost ?? 0));
+}
+<div class="toolbar">
+    <span class="badge @(Model.Status == StocktakeStatus.Posted ? "bg-success" : counting ? "bg-warning text-dark" : "bg-secondary")">@Model.Status.GetDisplayName()</span>
+    <span class="small text-muted">Kho @Model.Warehouse?.Name · ngày @Model.Date.ToDate() · @Model.Note</span>
+    @if (doc != null) { <a class="btn btn-sm btn-light" asp-controller="Inventory" asp-action="Details" asp-route-id="@doc.Id">Phiếu điều chỉnh @doc.Number</a> }
+    <span class="ms-auto"></span>
+    <button type="button" class="btn btn-sm btn-light" onclick="window.print()"><i class="bi bi-printer"></i> In phiếu kiểm đếm</button>
+    @if (can && counting) { <form asp-action="CancelStocktake" asp-route-id="@Model.Id" method="post" class="d-inline" data-confirm="Hủy đợt kiểm kê?"><button class="btn btn-sm btn-outline-danger">Hủy</button></form> }
+</div>
+<form asp-action="SaveCounts" asp-route-id="@Model.Id" method="post">
+<div class="card"><div class="card-body p-0"><table class="table table-sm align-middle mb-0">
+    <thead><tr><th>Mã</th><th>Hàng hóa</th><th>ĐVT</th><th class="num">Tồn sổ sách</th><th class="num" style="width:150px">Số thực tế đếm được</th><th class="num">Chênh lệch</th><th class="num">Giá trị chênh</th><th>Ghi chú</th></tr></thead><tbody>
+    @foreach (var l in Model.Lines)
+    {
+        var book = counting ? cur.GetValueOrDefault(l.ItemId) : l.BookQty; var diff = l.CountedQty == null ? (decimal?)null : l.CountedQty.Value - book;
+        <tr class="@(diff != null && diff != 0 ? (diff > 0 ? "table-info" : "table-danger") : "")"><td>@l.Item?.Code<input type="hidden" name="lineId" value="@l.Id" /></td><td>@l.Item?.Name</td><td class="small">@l.Item?.Unit</td><td class="num">@book.ToQty()@(counting && book != l.BookQty ? $" (chụp {l.BookQty.ToQty()})" : "")</td>
+            <td>@if (counting && can) { <input name="counted" type="number" step="any" min="0" value="@(l.CountedQty?.ToString("0.###", inv))" class="form-control form-control-sm text-end" /> } else { <span class="d-block text-end">@l.CountedQty?.ToQty()</span><input type="hidden" name="counted" value="@(l.CountedQty?.ToString("0.###", inv))" /> }</td>
+            <td class="num fw-bold">@(diff?.ToQty())</td><td class="num">@(diff == null ? "" : (diff.Value * (l.Item?.AvgCost ?? 0)).ToMoney())</td>
+            <td>@if (counting && can) { <input name="note" value="@l.Note" class="form-control form-control-sm" /> } else { <span class="small">@l.Note</span><input type="hidden" name="note" value="@l.Note" /> }</td></tr>
+    }
+    </tbody>
+    <tfoot><tr class="fw-bold"><td colspan="6">Chênh lệch (thừa + / thiếu −) theo giá vốn bình quân</td><td class="num @(diffVal < 0 ? "text-danger" : "")">@diffVal.ToMoney()</td><td></td></tr></tfoot>
+</table></div></div>
+@if (can && counting)
+{
+    <div class="d-flex gap-2 mt-2 no-print"><button class="btn btn-light border" name="post" value="false">Lưu số liệu kiểm đếm</button><button class="btn btn-primary" name="post" value="true" onclick="return confirm('Xử lý chênh lệch bằng phiếu kiểm kê điều chỉnh và ghi sổ?')">Lưu & xử lý chênh lệch</button></div>
+    <div class="small text-muted mt-1">Chỉ các dòng đã nhập số đếm được xử lý. Số liệu chênh lệch tính theo tồn hiện tại tại thời điểm xử lý.</div>
+}
+</form>

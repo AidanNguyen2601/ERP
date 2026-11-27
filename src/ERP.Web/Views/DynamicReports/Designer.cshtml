@@ -1,0 +1,139 @@
+@using ERP.Web.Services.Reporting
+@model ERP.Web.Controllers.DesignerVm
+@{
+    ViewData["Title"] = Model.Title;
+    var r = Model.Result;
+    var def = Model.Def;
+    const int ShowRows = 2000;
+    var saved = Model.Saved;
+}
+@Html.AntiForgeryToken()
+<form id="rptForm" method="post" asp-action="Run" class="rpt-form">
+    <input type="hidden" name="defJson" id="defJson" />
+    <input type="hidden" name="id" value="@saved?.Id" />
+    <input type="hidden" name="slug" value="@Model.Template?.Slug" />
+    <input type="hidden" name="title" value="@Model.Title" />
+
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3 no-print">
+        <a class="btn btn-sm btn-light" asp-action="Index"><i class="bi bi-arrow-left"></i> Danh sách báo cáo</a>
+        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#designer"><i class="bi bi-sliders"></i> Thiết kế báo cáo</button>
+        <button class="btn btn-sm btn-primary"><i class="bi bi-play-fill"></i> Chạy báo cáo</button>
+        <div class="ms-auto d-flex flex-wrap gap-2">
+            @if (r != null)
+            {
+                <button class="btn btn-sm btn-success" formaction="@Url.Action("Export")" name="format" value="xlsx" formnovalidate><i class="bi bi-file-earmark-excel"></i> Excel</button>
+                <button class="btn btn-sm btn-outline-success" formaction="@Url.Action("Export")" name="format" value="csv" formnovalidate><i class="bi bi-filetype-csv"></i> CSV</button>
+                <button type="button" class="btn btn-sm btn-light border" onclick="window.print()"><i class="bi bi-printer"></i> In</button>
+            }
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#saveModal"><i class="bi bi-bookmark-plus"></i> Lưu báo cáo</button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Error)) { <div class="alert alert-danger">@Model.Error</div> }
+
+    <div class="collapse @(Model.OpenDesigner ? "show" : "") no-print" id="designer">
+        <div class="card mb-3"><div class="card-body">
+            <div class="row g-3">
+                <div class="col-lg-5">
+                    <label class="form-label fw-semibold">Nguồn dữ liệu</label>
+                    <select id="dsSelect" class="form-select form-select-sm"></select>
+                    <div id="dsDesc" class="form-text"></div>
+                </div>
+                <div class="col-lg-7" id="dateBox">
+                    <label class="form-label fw-semibold" id="dateLabel">Thời gian</label>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <select id="datePreset" class="form-select form-select-sm" style="width:190px"></select>
+                        <span id="customDates" class="d-flex gap-2 align-items-center"><input type="date" id="dFrom" class="form-control form-control-sm" /><span>→</span><input type="date" id="dTo" class="form-control form-control-sm" /></span>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Chế độ">
+                        <input type="radio" class="btn-check" name="mode" id="modeGrouped" value="grouped"><label class="btn btn-outline-primary" for="modeGrouped"><i class="bi bi-collection"></i> Tổng hợp theo nhóm</label>
+                        <input type="radio" class="btn-check" name="mode" id="modeDetail" value="detail"><label class="btn btn-outline-primary" for="modeDetail"><i class="bi bi-list-ul"></i> Liệt kê chi tiết</label>
+                    </div>
+                </div>
+                <div class="col-lg-6" data-mode="grouped">
+                    <label class="form-label fw-semibold">Nhóm theo <span class="fw-normal text-muted small">(tối đa 4 cấp)</span></label>
+                    <div id="rowsBox" class="d-grid gap-1"></div>
+                    <button type="button" class="btn btn-sm btn-link px-0" id="addRow"><i class="bi bi-plus-lg"></i> Thêm cấp nhóm</button>
+                    <div class="mt-2"><label class="form-label small mb-1">Cột chéo (bảng chéo – dùng 1 chỉ số)</label><select id="pivotSel" class="form-select form-select-sm"></select></div>
+                </div>
+                <div class="col-lg-6" data-mode="grouped">
+                    <label class="form-label fw-semibold">Chỉ số</label>
+                    <div id="measBox" class="d-grid gap-1"></div>
+                    <button type="button" class="btn btn-sm btn-link px-0" id="addMeas"><i class="bi bi-plus-lg"></i> Thêm chỉ số</button>
+                </div>
+                <div class="col-12" data-mode="detail">
+                    <label class="form-label fw-semibold">Cột hiển thị</label>
+                    <div id="colsBox" class="rpt-cols"></div>
+                </div>
+                <div class="col-lg-8">
+                    <label class="form-label fw-semibold">Bộ lọc</label>
+                    <div id="fltBox" class="d-grid gap-1"></div>
+                    <button type="button" class="btn btn-sm btn-link px-0" id="addFlt"><i class="bi bi-plus-lg"></i> Thêm bộ lọc</button>
+                </div>
+                <div class="col-lg-4">
+                    <label class="form-label fw-semibold">Sắp xếp</label>
+                    <div class="d-flex gap-1 mb-1"><select id="sortSel" class="form-select form-select-sm"></select><div class="form-check ms-1 align-self-center"><input class="form-check-input" type="checkbox" id="sortDesc"><label class="form-check-label small" for="sortDesc">Giảm</label></div></div>
+                    <div class="row g-2">
+                        <div class="col-6"><label class="form-label small mb-0">Chỉ lấy N dòng đầu</label><input type="number" min="1" max="5000" id="topN" class="form-control form-control-sm" placeholder="Tất cả" /></div>
+                        <div class="col-6" data-mode="grouped"><label class="form-label small mb-0">Biểu đồ</label>
+                            <select id="chartSel" class="form-select form-select-sm"><option value="none">Không</option><option value="bar">Cột ngang</option><option value="line">Đường</option><option value="pie">Tròn</option></select></div>
+                    </div>
+                    <div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="showTotals"><label class="form-check-label small" for="showTotals">Hiện dòng tổng cộng</label></div>
+                </div>
+            </div>
+        </div></div>
+    </div>
+
+    <div class="modal fade" id="saveModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Lưu báo cáo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-2"><label class="form-label">Tên báo cáo</label><input name="name" class="form-control" value="@(saved?.Name ?? (Model.Template != null ? Model.Template.Title + " (của tôi)" : ""))" maxlength="150" /></div>
+            <div class="mb-2"><label class="form-label">Mô tả</label><input name="description" class="form-control" value="@(saved?.Description ?? Model.Template?.Description)" maxlength="500" /></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" name="isShared" value="true" id="isShared" checked="@(saved?.IsShared == true)" /><label class="form-check-label" for="isShared">Chia sẻ cho mọi người có quyền xem nguồn dữ liệu này</label></div>
+        </div>
+        <div class="modal-footer">
+            @if (saved != null && Model.CanEdit) { <button class="btn btn-primary" formaction="@Url.Action("Save")">Cập nhật báo cáo này</button> }
+            <button class="btn @(saved != null && Model.CanEdit ? "btn-outline-primary" : "btn-primary")" formaction="@Url.Action("Save")" name="asCopy" value="true">Lưu thành báo cáo mới</button>
+        </div>
+    </div></div></div>
+</form>
+
+@if (r != null)
+{
+    <div class="rpt-head print-only">
+        <h4 class="mb-1">@Model.Title</h4>
+        <div class="small">@string.Join(" · ", ERP.Web.Controllers.DynamicReportsController.Subtitle(r, User.GetFullName()))</div>
+    </div>
+    <div class="card"><div class="card-header d-flex flex-wrap justify-content-between gap-2 no-print">
+        <span><b>@Model.Title</b> @if (Model.Template != null) { <span class="badge bg-light text-dark border ms-1">Mẫu hệ thống</span> } @if (saved?.IsShared == true) { <span class="badge bg-info text-dark ms-1">Chia sẻ</span> }</span>
+        <span class="small text-muted fw-normal">@r.DatasetTitle · @(r.From.HasValue || r.To.HasValue ? $"{(r.From.HasValue ? r.From.Value.ToDate() : "…")} – {(r.To.HasValue ? r.To.Value.ToDate() : "…")}" : "toàn bộ thời gian") · @r.SourceRows.ToString("N0") dòng nguồn · @r.Rows.Count.ToString("N0") dòng kết quả</span></div>
+    <div class="card-body">
+        @foreach (var n in r.Notes) { <div class="alert alert-warning py-1 small">@n</div> }
+        @if (ReportChart.CanRender(def, r)) { <div class="rpt-chart-box mb-3">@ReportChart.Render(def, r)</div> }
+        @if (r.Rows.Count == 0) { <div class="text-center text-muted py-4"><i class="bi bi-inbox fs-3"></i><div>Không có dữ liệu thỏa điều kiện lọc.</div></div> }
+        else
+        {
+            <div class="table-responsive"><table class="table table-sm table-hover mb-0 rpt-table" data-grid="off">
+                <thead><tr>@foreach (var c in r.Columns) { <th class="@(ReportFormat.IsRight(c.Kind) ? "num" : "")">@c.Title</th> }</tr></thead>
+                <tbody>
+                @foreach (var row in r.Rows.Take(ShowRows))
+                {
+                    <tr>@for (var i = 0; i < r.Columns.Count; i++) { var c = r.Columns[i]; <td class="@(ReportFormat.IsRight(c.Kind) ? "num" : "")">@ReportFormat.Cell(row[i], c.Kind)</td> }</tr>
+                }
+                </tbody>
+                @if (r.Totals != null)
+                {
+                    <tfoot><tr class="total">@for (var i = 0; i < r.Columns.Count; i++) { var c = r.Columns[i]; <td class="@(ReportFormat.IsRight(c.Kind) ? "num" : "")">@ReportFormat.Cell(i < r.Totals.Length ? r.Totals[i] : null, c.Kind)</td> }</tr></tfoot>
+                }
+            </table></div>
+            @if (r.Rows.Count > ShowRows) { <div class="small text-muted mt-2">Hiển thị @ShowRows.ToString("N0") / @r.Rows.Count.ToString("N0") dòng đầu – dùng nút Excel / CSV để lấy đầy đủ.</div> }
+        }
+    </div></div>
+}
+
+@section Scripts {
+<script>window.RPT_META = @Html.Raw(Model.DatasetsJson); window.RPT_DEF = @Html.Raw(Model.Def.ToJson());</script>
+<script src="~/js/report-designer.js" asp-append-version="true"></script>
+}

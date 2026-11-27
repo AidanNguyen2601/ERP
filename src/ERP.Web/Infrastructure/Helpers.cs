@@ -67,7 +67,7 @@ public class BusinessExceptionFilter : Microsoft.AspNetCore.Mvc.Filters.IExcepti
     {
         if (context.Exception is not ERP.Web.Services.BusinessException ex) return;
         var http = context.HttpContext;
-        _tempData.GetTempData(http)["Error"] = ex.Message;
+        _tempData.GetTempData(http)[ex is ERP.Web.Services.PendingApprovalException ? "Warning" : "Error"] = ex.Message;
         var referer = http.Request.Headers.Referer.ToString();
         var back = Uri.TryCreate(referer, UriKind.Absolute, out var u) && u.Host == http.Request.Host.Host ? u.PathAndQuery : "/";
         context.Result = new Microsoft.AspNetCore.Mvc.LocalRedirectResult(back);

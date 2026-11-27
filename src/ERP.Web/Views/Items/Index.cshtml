@@ -1,5 +1,10 @@
 @model List<Item>
-@{ ViewData["Title"] = "Hàng hóa, vật tư"; var stock = (Dictionary<int, decimal>)ViewBag.Stock; }
+@inject AccountingService Acc
+@{
+    ViewData["Title"] = "Hàng hóa, vật tư"; var stock = (Dictionary<int, decimal>)ViewBag.Stock;
+    var invAcc = new Dictionary<ItemType, string>();
+    foreach (var t in new[] { ItemType.Material, ItemType.FinishedGood, ItemType.Merchandise }) invAcc[t] = (await Acc.RuleAccountAsync(PostingCatalog.InventoryKey(t))).Code;
+}
 <form class="toolbar" method="get">
     <div><label class="form-label small mb-0">Loại</label><select name="type" class="form-select form-select-sm"><option value="">-- Tất cả --</option>
         @foreach (ItemType t in Enum.GetValues<ItemType>()) { <option value="@t" selected="@(ViewBag.Type is ItemType x && x == t)">@t.GetDisplayName()</option> }</select></div>
@@ -14,7 +19,7 @@
     {
         var s = stock.GetValueOrDefault(i.Id);
         <tr class="@(i.IsActive ? "" : "text-muted")"><td><b>@i.Code</b></td><td>@i.Name</td><td>@i.Unit</td><td class="small">@i.Type.GetDisplayName()</td>
-            <td class="small">@(i.IsStocked ? AccountingService.InventoryAccount(i.Type) : "—")</td>
+            <td class="small">@(i.IsStocked ? invAcc[i.Type] : "—")</td>
             <td class="num">@(i.SalePrice > 0 ? i.SalePrice.ToMoney() : "")</td><td class="num">@(i.IsStocked ? i.AvgCost.ToMoney() : "")</td><td class="num">@i.VatRate%</td>
             <td class="num @(i.MinStock > 0 && s < i.MinStock ? "bad fw-semibold" : "")">@(i.IsStocked ? s.ToQty() : "")</td><td class="num">@(i.MinStock > 0 ? i.MinStock.ToQty() : "")</td>
             <td class="text-end text-nowrap">@if (i.IsStocked) { <a class="btn btn-sm btn-light" asp-controller="Inventory" asp-action="StockCard" asp-route-itemId="@i.Id">Thẻ kho</a> }

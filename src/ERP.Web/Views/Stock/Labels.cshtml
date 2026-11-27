@@ -1,0 +1,21 @@
+@{
+    ViewData["Title"] = "In tem mã vạch"; string kind = ViewBag.Kind; var items = (List<Item>)ViewBag.Items; var lots = (List<StockLot>)ViewBag.Lots; var bins = (List<BinLocation>)ViewBag.Bins;
+}
+<div class="toolbar">
+    <a class="btn btn-sm @(kind == "item" ? "btn-primary" : "btn-light")" asp-route-kind="item">Tem hàng hóa</a>
+    <a class="btn btn-sm @(kind == "lot" ? "btn-primary" : "btn-light")" asp-route-kind="lot">Tem lô / serial / hạn dùng</a>
+    <a class="btn btn-sm @(kind == "bin" ? "btn-primary" : "btn-light")" asp-route-kind="bin">Tem vị trí kệ</a>
+    <a class="btn btn-sm @(kind == "pallet" ? "btn-primary" : "btn-light")" asp-route-kind="pallet">Tem pallet</a>
+</div>
+<div class="alert alert-info small">Tem gồm mã QR và mã vạch Code 128, quét được bằng súng quét hoặc điện thoại. Quét tại màn hình lập phiếu nhập / xuất / kiểm kê kho: mã hàng thêm dòng hàng, tem lô (<code>MÃ_HÀNG|SỐ_LÔ</code>) thêm dòng kèm số lô.</div>
+<form asp-action="PrintLabels" method="post" target="_blank">
+    <input type="hidden" name="kind" value="@kind" />
+    <div class="card"><div class="card-body p-0" style="max-height:520px;overflow:auto"><table class="table table-sm mb-0" data-grid="off">
+        <thead><tr><th style="width:36px"><input type="checkbox" onclick="document.querySelectorAll('.pick').forEach(c => c.checked = this.checked)" /></th><th>Mục</th><th>Chi tiết</th></tr></thead><tbody>
+        @if (kind == "item") { foreach (var i in items) { <tr><td><input class="pick" type="checkbox" name="ids" value="@i.Id" /></td><td>@i.Code – @i.Name</td><td class="small text-muted">@(i.Barcode ?? i.Code)</td></tr> } }
+        else if (kind == "lot") { foreach (var l in lots) { <tr><td><input class="pick" type="checkbox" name="ids" value="@l.Id" /></td><td>@l.Item?.Code – @l.Item?.Name</td><td class="small text-muted">Lô @l.LotNo · còn @l.Quantity.ToQty() @(l.ExpiryDate != null ? "· HSD " + l.ExpiryDate.Value.ToString("dd/MM/yyyy") : "")</td></tr> } }
+        else if (kind == "pallet") { foreach (var p in (List<Pallet>)ViewBag.Pallets) { <tr><td><input class="pick" type="checkbox" name="ids" value="@p.Id" /></td><td>@p.Code</td><td class="small text-muted">@p.Warehouse?.Name · @p.Items.Count mặt hàng</td></tr> } }
+        else { foreach (var b in bins) { <tr><td><input class="pick" type="checkbox" name="ids" value="@b.Id" /></td><td>@b.Code</td><td class="small text-muted">@b.Kind · @b.Warehouse?.Name @b.Name</td></tr> } }
+        </tbody></table></div></div>
+    <div class="d-flex gap-2 mt-2 align-items-center"><label class="small">Số tem mỗi mục</label><input name="copies" type="number" min="1" max="50" value="1" class="form-control form-control-sm" style="width:80px" /><button class="btn btn-sm btn-primary"><i class="bi bi-printer"></i> In tem</button></div>
+</form>

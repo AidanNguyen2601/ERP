@@ -1,6 +1,8 @@
 @inject Microsoft.Extensions.Options.IOptions<ErpSettings> Cfg
 @inject PreferenceService Prefs
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@inject ERP.Web.Data.ErpDbContext LayoutDb
+@inject WorkflowService LayoutWf
 @{
     var ctx = Menu.Context(ViewContext);
     var role = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
@@ -9,7 +11,17 @@
     var grids = await Prefs.GetGridsAsync();
     var activeItem = Menu.FindActive(ctx);
     var currentUrl = Context.Request.Path + Context.Request.QueryString;
-    var title = ViewData["Title"]?.ToString() ?? "";
+    var title = Lang.T(Context, ViewData["Title"]?.ToString() ?? "");
+    var allowedBranches = BranchScope.Allowed(User);
+    var branchList = new List<Branch>(); var pendingCount = 0;
+    try
+    {
+        branchList = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(LayoutDb.Branches.Where(b => b.IsActive && (allowedBranches == null || allowedBranches.Contains(b.Id))).OrderBy(b => b.Code));
+        pendingCount = (await LayoutWf.InboxAsync(User)).Count;
+    }
+    catch { }
+    var selBranch = BranchScope.Selected(Context);
+    var isEn = Lang.IsEn(Context);
     var bodyClass = $"menu-{ui.MenuPosition} sidebar-{ui.SidebarStyle}" + (ui.MenuCollapsed && ui.IsVertical ? " menu-collapsed" : "") + (ui.CompactTables ? " grid-compact" : "");
     var token = Antiforgery.GetAndStoreTokens(Context).RequestToken;
     var clientState = new
@@ -27,7 +39,7 @@
     };
 }
 <!DOCTYPE html>
-<html lang="vi" style="--accent:@ui.PrimaryColor;--accent-dark:@ui.PrimaryDark;--accent-soft:@ui.PrimarySoft;--app-font:@ui.FontCss;font-size:@(ui.FontSize)px">
+<html lang="@(isEn ? "en" : "vi")" style="--accent:@ui.PrimaryColor;--accent-dark:@ui.PrimaryDark;--accent-soft:@ui.PrimarySoft;--app-font:@ui.FontCss;font-size:@(ui.FontSize)px">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -71,6 +83,20 @@
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2">
+                @if (branchList.Count > 1)
+                {
+                    <form asp-controller="Org" asp-action="Switch" method="post" class="d-none d-md-block" title="@Lang.T(Context, "Chi nhánh")">
+                        <input type="hidden" name="returnUrl" value="@currentUrl" />
+                        <select name="branchId" class="form-select form-select-sm" style="max-width:190px" onchange="this.form.submit()">
+                            @if (allowedBranches == null || allowedBranches.Length > 1) { <option value="0">@Lang.T(Context, "Tất cả chi nhánh")</option> }
+                            @foreach (var b in branchList) { <option value="@b.Id" selected="@(selBranch == b.Id)">@b.Code – @b.Name</option> }
+                        </select>
+                    </form>
+                }
+                <a class="icon-btn position-relative" asp-controller="Approvals" asp-action="Index" title="@Lang.T(Context, "Chờ duyệt")"><i class="bi bi-check2-circle"></i>
+                    @if (pendingCount > 0) { <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:.6rem">@pendingCount</span> }</a>
+                <form asp-controller="Org" asp-action="Language" method="post" class="d-inline"><input type="hidden" name="returnUrl" value="@currentUrl" /><input type="hidden" name="lang" value="@(isEn ? "vi" : "en")" />
+                    <button class="icon-btn" title="@(isEn ? "Tiếng Việt" : "English")" style="font-size:.75rem;font-weight:600">@(isEn ? "VI" : "EN")</button></form>
                 <a class="icon-btn" asp-controller="Preferences" asp-action="Index" title="Cấu hình giao diện"><i class="bi bi-palette"></i></a>
                 <div class="dropdown">
                     <button class="btn btn-light dropdown-toggle" data-bs-toggle="dropdown">
@@ -78,10 +104,10 @@
                         <span class="d-none d-md-inline">@User.GetFullName() <small class="text-muted">(@AppRoles.DisplayName(role))</small></span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" asp-controller="Preferences" asp-action="Index"><i class="bi bi-palette me-2"></i>Cấu hình giao diện</a></li>
-                        <li><a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword"><i class="bi bi-key me-2"></i>Đổi mật khẩu</a></li>
+                        <li><a class="dropdown-item" asp-controller="Preferences" asp-action="Index"><i class="bi bi-palette me-2"></i>@Lang.T(Context, "Cấu hình giao diện")</a></li>
+                        <li><a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword"><i class="bi bi-key me-2"></i>@Lang.T(Context, "Đổi mật khẩu")</a></li>
                         <li><hr class="dropdown-divider" /></li>
-                        <li><form asp-controller="Account" asp-action="Logout" method="post"><button class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</button></form></li>
+                        <li><form asp-controller="Account" asp-action="Logout" method="post"><button class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i>@Lang.T(Context, "Đăng xuất")</button></form></li>
                     </ul>
                 </div>
             </div>

@@ -1,0 +1,39 @@
+@model SalesQuote
+@{
+    ViewData["Title"] = $"Báo giá {Model.Number}"; decimal min = ViewBag.Min; bool can = ViewBag.CanEdit; var so = ViewBag.Order as SalesOrder; bool appr = User.InAny(AppRoles.Approvers);
+}
+<div class="toolbar">
+    <span class="badge @(Model.Status is QuoteStatus.Approved or QuoteStatus.Sent ? "bg-success" : Model.Status == QuoteStatus.PendingApproval ? "bg-warning text-dark" : "bg-secondary")">@Model.Status.GetDisplayName()</span>
+    <span class="small text-muted">@Model.Customer?.Name · NVKD @Model.Salesperson?.FullName · hiệu lực đến @Model.ValidUntil.ToDate()</span>
+    <span class="ms-auto"></span>
+    <a class="btn btn-sm btn-light" asp-action="Print" asp-route-id="@Model.Id" target="_blank"><i class="bi bi-printer"></i> In báo giá</a>
+    @if (so != null) { <a class="btn btn-sm btn-light" asp-controller="SalesOrders" asp-action="Details" asp-route-id="@so.Id">Đơn bán @so.Number</a> }
+    @if (can && Model.Status == QuoteStatus.Draft) { <a class="btn btn-sm btn-light" asp-action="Edit" asp-route-id="@Model.Id">Sửa</a> <form asp-action="Submit" asp-route-id="@Model.Id" method="post" class="d-inline"><button class="btn btn-sm btn-primary">Gửi duyệt</button></form> }
+    @if (Model.Status == QuoteStatus.PendingApproval && appr)
+    {
+        <form asp-action="Approve" asp-route-id="@Model.Id" method="post" class="d-inline"><input type="hidden" name="approve" value="true" /><button class="btn btn-sm btn-success">Duyệt</button></form>
+        <form asp-action="Approve" asp-route-id="@Model.Id" method="post" class="d-inline"><input type="hidden" name="approve" value="false" /><button class="btn btn-sm btn-outline-danger">Từ chối</button></form>
+    }
+    @if (can && Model.Status == QuoteStatus.Approved) { <form asp-action="Send" asp-route-id="@Model.Id" method="post" class="d-inline"><button class="btn btn-sm btn-primary">Đã gửi khách</button></form> }
+    @if (can && Model.Status is QuoteStatus.Sent or QuoteStatus.Approved) { <form asp-action="Reject" asp-route-id="@Model.Id" method="post" class="d-inline" data-confirm="Khách hàng từ chối báo giá?"><button class="btn btn-sm btn-outline-secondary">Khách từ chối</button></form> }
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="card card-body"><div class="small text-muted">Doanh thu (chưa thuế)</div><div class="fs-5 fw-bold">@Model.Subtotal.ToMoney()</div></div></div>
+    <div class="col-md-3"><div class="card card-body"><div class="small text-muted">Giá vốn dự toán + chi phí khác</div><div class="fs-5 fw-bold">@((Model.CostTotal + Model.OtherCost).ToMoney())</div></div></div>
+    <div class="col-md-3"><div class="card card-body"><div class="small text-muted">Lợi nhuận dự kiến</div><div class="fs-5 fw-bold @(Model.Profit < 0 ? "text-danger" : "text-success")">@Model.Profit.ToMoney()</div></div></div>
+    <div class="col-md-3"><div class="card card-body"><div class="small text-muted">Tỷ suất lợi nhuận (tối thiểu @min.ToString("0.#")%)</div><div class="fs-5 fw-bold @(Model.MarginPct < min ? "text-danger" : "text-success")">@Model.MarginPct.ToString("0.#")%</div></div></div>
+</div>
+<div class="card mb-3"><div class="card-body p-0"><table class="table table-sm mb-0">
+    <thead><tr><th>Hàng hóa</th><th class="num">SL</th><th class="num">Đơn giá</th><th class="num">CK %</th><th class="num">Thành tiền</th><th class="num">Giá vốn / ĐV</th><th class="num">Lợi nhuận</th><th class="num">LN %</th></tr></thead><tbody>
+    @foreach (var l in Model.Lines)
+    {
+        var prof = l.Amount - l.Quantity * l.UnitCost;
+        <tr><td>@l.Item?.Code – @l.Item?.Name</td><td class="num">@l.Quantity.ToQty()</td><td class="num">@l.UnitPrice.ToMoney()</td><td class="num">@l.DiscountPct.ToString("0.#")</td><td class="num">@l.Amount.ToMoney()</td><td class="num">@l.UnitCost.ToMoney()</td><td class="num">@prof.ToMoney()</td><td class="num @(l.Amount > 0 && prof * 100 / l.Amount < min ? "text-danger" : "")">@(l.Amount == 0 ? "" : (prof * 100 / l.Amount).ToString("0.#"))</td></tr>
+    }
+</tbody><tfoot><tr><td colspan="4" class="text-end">Thuế GTGT @Model.VatAmount.ToMoney() · Tổng cộng</td><td class="num fw-bold">@Model.Total.ToMoney()</td><td colspan="3"></td></tr></tfoot></table></div></div>
+@if (can && Model.Status is QuoteStatus.Approved or QuoteStatus.Sent)
+{
+    <div class="card"><div class="card-body"><form asp-action="ToOrder" asp-route-id="@Model.Id" method="post" class="row g-2 align-items-end" data-confirm="Khách hàng đồng ý – lập đơn bán từ báo giá?">
+        <div class="col-md-4"><label class="form-label small">Kho xuất</label><select name="warehouseId" asp-items="ViewBag.Whs" class="form-select form-select-sm"></select></div>
+        <div class="col-md-4"><button class="btn btn-sm btn-success">Khách đồng ý → Lập đơn bán</button></div></form></div></div>
+}

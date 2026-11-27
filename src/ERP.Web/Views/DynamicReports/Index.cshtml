@@ -1,0 +1,92 @@
+@using ERP.Web.Services.Reporting
+@{
+    ViewData["Title"] = "Báo cáo động";
+    var templates = (List<ReportTemplate>)ViewBag.Templates;
+    var mine = (List<SavedReport>)ViewBag.Mine;
+    var shared = (List<SavedReport>)ViewBag.Shared;
+    var datasets = (List<Dataset>)ViewBag.Datasets;
+    int me = ViewBag.Me; bool isAdmin = ViewBag.IsAdmin;
+}
+<div class="row g-3 mb-3">
+    <div class="col-lg-8">
+        <div class="card h-100"><div class="card-body">
+            <div class="section-title"><i class="bi bi-magic me-1"></i> Tự tạo báo cáo</div>
+            <p class="small text-muted mb-2">Chọn một nguồn dữ liệu, kéo thả các trường thành nhóm, chỉ số, bộ lọc, bảng chéo, biểu đồ; lưu lại, chia sẻ và xuất Excel. Chỉ cần vài thao tác – không cần viết truy vấn.</p>
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var g in datasets.GroupBy(d => d.Group))
+                {
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-primary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-plus-lg"></i> @g.Key</button>
+                        <ul class="dropdown-menu">@foreach (var d in g) { <li><a class="dropdown-item" asp-action="Designer" asp-route-dataset="@d.Key">@d.Title</a></li> }</ul>
+                    </div>
+                }
+            </div>
+        </div></div>
+    </div>
+    <div class="col-lg-4"><div class="card h-100"><div class="card-body">
+        <div class="section-title"><i class="bi bi-lightbulb me-1"></i> Gợi ý</div>
+        <ul class="small mb-0 ps-3"><li>Mở một <b>mẫu hệ thống</b> rồi bấm <i>Thiết kế báo cáo</i> để chỉnh theo ý.</li><li>Bấm <i class="bi bi-star"></i> cạnh tiêu đề trang để ghim báo cáo vào Yêu thích.</li><li><b>Bảng chéo</b>: chọn "Cột chéo" (ví dụ Tháng) và 1 chỉ số.</li></ul>
+    </div></div></div>
+</div>
+
+<div class="card mb-3"><div class="card-header d-flex justify-content-between"><span><i class="bi bi-bookmark-star me-1"></i> Báo cáo của tôi</span><span class="badge bg-light text-dark border">@mine.Count</span></div>
+    <div class="card-body p-0">
+    @if (!mine.Any()) { <div class="p-3 small text-muted">Chưa có báo cáo nào. Mở một mẫu bên dưới hoặc tự tạo rồi bấm <b>Lưu báo cáo</b>.</div> }
+    else
+    {
+        <div class="table-responsive"><table class="table table-sm align-middle mb-0" data-grid="off"><thead><tr><th>Tên</th><th>Nguồn dữ liệu</th><th>Mô tả</th><th>Cập nhật</th><th></th></tr></thead><tbody>
+        @foreach (var r in mine)
+        {
+            <tr><td><a asp-action="Designer" asp-route-id="@r.Id"><b>@r.Name</b></a> @if (r.IsShared) { <span class="badge bg-info text-dark ms-1">Chia sẻ</span> }</td>
+                <td class="small">@DatasetRegistry.Find(r.DatasetKey)?.Title</td><td class="small text-muted">@r.Description</td><td class="small">@r.UpdatedAt.ToDateTime()</td>
+                <td class="text-end text-nowrap">
+                    <a class="btn btn-sm btn-light" asp-action="Designer" asp-route-id="@r.Id"><i class="bi bi-play-fill"></i> Chạy</a>
+                    <form asp-action="ToggleShare" asp-route-id="@r.Id" method="post" class="d-inline"><button class="btn btn-sm btn-light" title="Chia sẻ / ngừng chia sẻ"><i class="bi @(r.IsShared ? "bi-people-fill" : "bi-people")"></i></button></form>
+                    <form asp-action="Delete" asp-route-id="@r.Id" method="post" class="d-inline" data-confirm="Xóa báo cáo &quot;@r.Name&quot;?"><button class="btn btn-sm btn-light text-danger"><i class="bi bi-trash"></i></button></form></td></tr>
+        }
+        </tbody></table></div>
+    }
+    </div></div>
+
+@if (shared.Any())
+{
+    <div class="card mb-3"><div class="card-header"><i class="bi bi-people me-1"></i> Báo cáo được chia sẻ</div><div class="card-body p-0"><table class="table table-sm align-middle mb-0" data-grid="off"><tbody>
+        @foreach (var r in shared)
+        {
+            <tr><td><a asp-action="Designer" asp-route-id="@r.Id"><b>@r.Name</b></a></td><td class="small">@DatasetRegistry.Find(r.DatasetKey)?.Title</td><td class="small text-muted">@r.Description</td><td class="small">@r.Owner?.FullName</td>
+                <td class="text-end">@if (isAdmin) { <form asp-action="Delete" asp-route-id="@r.Id" method="post" class="d-inline" data-confirm="Xóa báo cáo chia sẻ &quot;@r.Name&quot;?"><button class="btn btn-sm btn-light text-danger"><i class="bi bi-trash"></i></button></form> }</td></tr>
+        }
+    </tbody></table></div></div>
+}
+
+<div class="section-title mt-4"><i class="bi bi-collection me-1"></i> Mẫu báo cáo hệ thống</div>
+<div class="input-group input-group-sm mb-3" style="max-width:360px"><span class="input-group-text"><i class="bi bi-search"></i></span><input id="tplSearch" class="form-control" placeholder="Tìm mẫu báo cáo..." /></div>
+@foreach (var g in templates.GroupBy(t => t.Group))
+{
+    <div class="tpl-group mb-3">
+        <div class="fw-semibold small text-uppercase text-muted mb-2">@g.Key</div>
+        <div class="row g-2">
+            @foreach (var t in g)
+            {
+                var url = Url.Action("Designer", "DynamicReports", new { slug = t.Slug });
+                <div class="col-md-6 col-xl-4 tpl-item" data-text="@(t.Title + " " + t.Description + " " + g.Key)">
+                    <a class="rpt-card" href="@url"><span class="rc-ico"><i class="bi @t.Icon"></i></span>
+                        <span class="rc-body"><b>@t.Title</b><small>@t.Description</small></span></a>
+                </div>
+            }
+        </div>
+    </div>
+}
+@section Scripts {
+<script>
+(function () {
+    const q = document.getElementById('tplSearch'); if (!q) return;
+    const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').toLowerCase();
+    q.addEventListener('input', () => {
+        const v = norm(q.value.trim());
+        document.querySelectorAll('.tpl-item').forEach(el => el.style.display = !v || norm(el.dataset.text).includes(v) ? '' : 'none');
+        document.querySelectorAll('.tpl-group').forEach(g => g.style.display = [...g.querySelectorAll('.tpl-item')].some(i => i.style.display !== 'none') ? '' : 'none');
+    });
+})();
+</script>
+}

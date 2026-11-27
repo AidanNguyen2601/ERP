@@ -4,6 +4,7 @@
     var leaf = Model.Where(r => !r.IsGroup).ToList();
     string M(decimal v) => v == 0 ? "" : v.ToMoney();
 }
+<div class="d-flex justify-content-end mb-2 no-print"><a class="btn btn-sm btn-outline-success" href="@(Context.Request.Path + Context.Request.QueryString + (Context.Request.QueryString.HasValue ? "&" : "?") + "export=true")"><i class="bi bi-file-earmark-excel"></i> Xuất Excel</a></div>
 <partial name="_GlNav" />
 <form class="toolbar" method="get">
     <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>

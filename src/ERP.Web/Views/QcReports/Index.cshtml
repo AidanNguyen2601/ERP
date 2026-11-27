@@ -1,0 +1,79 @@
+@model ERP.Web.Controllers.QcReportsController.ReportVm
+@{
+    ViewData["Title"] = "Báo cáo chất lượng";
+    var t = Model.Total;
+    var maxLots = Math.Max(1, Model.Monthly.Select(m => m.Lots).DefaultIfEmpty(0).Max());
+    string RateClass(decimal passRate) => passRate >= 95 ? "good" : passRate >= 80 ? "warn" : "bad";
+}
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@Model.From.Iso()" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@Model.To.Iso()" class="form-control form-control-sm" /></div>
+    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-funnel"></i> Xem</button>
+</form>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-xl-2"><div class="card kpi"><div class="label">Lô đã kiểm tra</div><div class="value">@t.Lots</div><div class="sub">SL @t.LotQty.ToQty()</div></div></div>
+    <div class="col-6 col-xl-2"><div class="card kpi"><div class="label">Tỷ lệ lô đạt</div><div class="value @RateClass(t.PassRate)">@t.PassRate.ToPct()</div><div class="sub">@t.Conditional có điều kiện · @t.Fail không đạt</div></div></div>
+    <div class="col-6 col-xl-2"><div class="card kpi"><div class="label">Tỷ lệ lỗi (SL)</div><div class="value @(t.DefectRate > 2 ? "bad" : "good")">@t.DefectRate.ToPct()</div><div class="sub">@t.Rejected.ToQty() không đạt</div></div></div>
+    <div class="col-6 col-xl-2"><div class="card kpi"><div class="label">NCR đang xử lý</div><div class="value @(Model.OpenNcr > 0 ? "warn" : "")">@Model.OpenNcr</div>
+        <div class="sub">@if (Model.OverdueNcr > 0) { <a class="bad" asp-controller="QcNcrs" asp-action="Index" asp-route-overdue="true">@Model.OverdueNcr quá hạn</a> } else { <span>Không quá hạn</span> }</div></div></div>
+    @if (User.SeesFinance())
+    {
+        <div class="col-6 col-xl-2"><div class="card kpi"><div class="label">Giá trị xuất hủy</div><div class="value">@Model.ScrapValue.ToShortMoney()</div><div class="sub">theo giá vốn</div></div></div>
+        <div class="col-6 col-xl-2"><div class="card kpi"><div class="label">Giá trị trả NCC</div><div class="value">@Model.ReturnValue.ToShortMoney()</div><div class="sub">giảm công nợ phải trả</div></div></div>
+    }
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-7"><div class="card h-100"><div class="card-header d-flex justify-content-between"><span>Số lô kiểm tra & tỷ lệ đạt theo tháng</span>
+        <span class="legend"><span><i style="background:var(--accent)"></i>Số lô</span></span></div><div class="card-body">
+        <div class="cols">
+            @foreach (var m in Model.Monthly)
+            {
+                <div class="col-item" title="@m.Lots lô · đạt @m.PassRate.ToPct() · lỗi @m.DefectRate.ToPct()">
+                    <div class="v">@(m.Lots > 0 ? m.PassRate.ToPct() : "")</div>
+                    <div class="colbar" style="height:@((int)(m.Lots * 100.0 / maxLots))%"></div>
+                    <div class="mt-1 text-muted">@m.Name</div><div class="small">@m.Lots lô</div>
+                </div>
+            }
+        </div>
+        <div class="small text-muted mt-2">Số trên cột: tỷ lệ lô đạt của tháng.</div>
+    </div></div></div>
+    <div class="col-lg-5"><div class="card h-100"><div class="card-header">Theo công đoạn</div><div class="card-body p-0"><table class="table table-sm mb-0">
+        <thead><tr><th>Công đoạn</th><th class="num">Lô</th><th class="num">Đạt</th><th class="num">Tỷ lệ lỗi</th></tr></thead><tbody>
+        @foreach (var g in Model.ByStage) { <tr><td>@g.Name</td><td class="num">@g.Lots</td><td class="num @RateClass(g.PassRate)">@g.PassRate.ToPct()</td><td class="num">@g.DefectRate.ToPct()</td></tr> }
+        @if (!Model.ByStage.Any()) { <tr><td colspan="4" class="text-center text-muted py-3">Chưa có phiếu kiểm tra đã kết luận.</td></tr> }
+        </tbody></table></div></div></div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6"><div class="card h-100"><div class="card-header">Đánh giá nhà cung cấp (kiểm tra đầu vào)</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0">
+        <thead><tr><th>Nhà cung cấp</th><th class="num">Lô</th><th class="num">Lô đạt</th><th class="num">SL lỗi</th><th class="num">Tỷ lệ lỗi</th><th>Xếp loại</th></tr></thead><tbody>
+        @foreach (var g in Model.ByVendor)
+        {
+            var grade = g.PassRate >= 95 && g.DefectRate <= 1 ? ("A", "bg-success") : g.PassRate >= 80 ? ("B", "bg-warning text-dark") : ("C", "bg-danger");
+            <tr><td>@g.Name</td><td class="num">@g.Lots</td><td class="num @RateClass(g.PassRate)">@g.PassRate.ToPct()</td><td class="num">@g.Rejected.ToQty()</td><td class="num">@g.DefectRate.ToPct()</td>
+                <td><span class="badge @grade.Item2">@grade.Item1</span></td></tr>
+        }
+        @if (!Model.ByVendor.Any()) { <tr><td colspan="6" class="text-center text-muted py-3">Chưa có dữ liệu.</td></tr> }
+        </tbody></table></div></div>
+        <div class="card-footer small text-muted bg-white">A: ≥ 95% lô đạt và lỗi ≤ 1% · B: ≥ 80% lô đạt · C: dưới 80%.</div></div></div>
+    <div class="col-lg-6"><div class="card h-100"><div class="card-header">Tiêu chí hay lỗi nhất</div><div class="card-body">
+        @{ var maxFail = Math.Max(1, Model.TopCriteria.Select(c => c.Fails).DefaultIfEmpty(0).Max()); }
+        @foreach (var c in Model.TopCriteria)
+        {
+            <div class="bar-row"><div class="lbl" title="@c.Name">@c.Name</div><div class="bar"><div style="width:@(c.Fails * 100 / maxFail)%;background:#dc2626"></div></div>
+                <div class="val">@c.Fails / @c.Checks lần</div></div>
+        }
+        @if (!Model.TopCriteria.Any()) { <div class="text-muted small">Không có tiêu chí không đạt trong kỳ.</div> }
+    </div></div></div>
+    <div class="col-12"><div class="card"><div class="card-header">Mặt hàng có nhiều lỗi nhất</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0">
+        <thead><tr><th>Mã hàng</th><th>Tên hàng</th><th class="num">Lô</th><th class="num">Lô đạt</th><th class="num">Đạt có ĐK</th><th class="num">Không đạt</th><th class="num">SL kiểm tra</th><th class="num">SL lỗi</th><th class="num">Tỷ lệ lỗi</th></tr></thead><tbody>
+        @foreach (var g in Model.ByItem)
+        {
+            <tr><td><b>@g.Key</b></td><td>@g.Name</td><td class="num">@g.Lots</td><td class="num @RateClass(g.PassRate)">@g.PassRate.ToPct()</td><td class="num">@g.Conditional</td><td class="num">@g.Fail</td>
+                <td class="num">@g.LotQty.ToQty()</td><td class="num @(g.Rejected > 0 ? "bad" : "")">@g.Rejected.ToQty()</td><td class="num">@g.DefectRate.ToPct()</td></tr>
+        }
+        @if (!Model.ByItem.Any()) { <tr><td colspan="9" class="text-center text-muted py-3">Chưa có dữ liệu.</td></tr> }
+        </tbody></table></div></div></div></div>
+</div>

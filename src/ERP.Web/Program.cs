@@ -11,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // ---------- Database (SQL Server) ----------
 builder.Services.AddDbContext<ErpDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("ErpConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("ErpConnection"), o => o.UseCompatibilityLevel(120)));
 
 // ---------- Authentication: cookie + role ----------
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -31,6 +31,7 @@ builder.Services.AddControllersWithViews(o =>
     o.Filters.Add(new AuthorizeFilter(policy));
     o.Filters.Add<ERP.Web.Infrastructure.BusinessExceptionFilter>();
     o.Filters.Add<ERP.Web.Infrastructure.TransactionFilter>();
+    o.Filters.Add<ERP.Web.Services.NoticeFilter>();
 });
 
 // Lưu khóa mã hóa cookie ra thư mục (volume Docker) để restart container không bị đăng xuất
@@ -58,6 +59,37 @@ builder.Services.AddScoped<ERP.Web.Services.PeriodService>();
 builder.Services.AddScoped<ERP.Web.Services.ReportService>();
 builder.Services.AddScoped<ERP.Web.Services.PreferenceService>();
 builder.Services.AddScoped<ERP.Web.Services.CatalogService>();
+builder.Services.AddScoped<ERP.Web.Services.PurchaseReturnService>();
+builder.Services.AddScoped<ERP.Web.Services.StandardReportService>();
+builder.Services.AddScoped<ERP.Web.Services.SettingsService>();
+builder.Services.AddScoped<ERP.Web.Services.WorkflowService>();
+builder.Services.AddScoped<ERP.Web.Services.PayrollService>();
+builder.Services.AddScoped<ERP.Web.Services.FxService>();
+builder.Services.AddScoped<ERP.Web.Services.EInvoiceService>();
+builder.Services.AddScoped<ERP.Web.Services.BudgetService>();
+builder.Services.AddScoped<ERP.Web.Services.RecurringService>();
+builder.Services.AddScoped<ERP.Web.Services.ToolService>();
+builder.Services.AddScoped<ERP.Web.Services.OffsetService>();
+builder.Services.AddScoped<ERP.Web.Services.BankService>();
+builder.Services.AddScoped<ERP.Web.Services.CostingService>();
+builder.Services.AddScoped<ERP.Web.Services.TaxService>();
+builder.Services.AddScoped<ERP.Web.Services.ConsolidationService>();
+builder.Services.AddScoped<ERP.Web.Services.RequisitionService>();
+builder.Services.AddScoped<ERP.Web.Services.SupplierService>();
+builder.Services.AddScoped<ERP.Web.Services.ThreeWayMatchService>();
+builder.Services.AddScoped<ERP.Web.Services.LandedCostService>();
+builder.Services.AddScoped<ERP.Web.Services.PricingService>();
+builder.Services.AddScoped<ERP.Web.Services.QuoteService>();
+builder.Services.AddScoped<ERP.Web.Services.CommissionService>();
+builder.Services.AddScoped<ERP.Web.Services.StockReportService>();
+builder.Services.AddScoped<ERP.Web.Services.StocktakeService>();
+builder.Services.AddScoped<ERP.Web.Services.StandardMappingService>();
+builder.Services.AddScoped<ERP.Web.Services.UserNotices>();
+builder.Services.AddScoped<ERP.Web.Services.CodeService>();
+builder.Services.AddScoped<ERP.Web.Services.DuplicateService>();
+builder.Services.AddScoped<ERP.Web.Services.SalesCreditService>();
+builder.Services.AddScoped<ERP.Web.Services.QualityService>();
+builder.Services.AddScoped<ERP.Web.Services.ReconciliationService>();
 // Lời gọi fetch() từ JavaScript gửi token chống giả mạo qua header
 builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
@@ -75,6 +107,12 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+// Phạm vi chi nhánh + người thao tác cho nhật ký: gán vào DbContext của request
+app.Use(async (ctx, next) =>
+{
+    if (ctx.User.Identity?.IsAuthenticated == true) ERP.Web.Services.BranchScope.Apply(ctx, ctx.RequestServices.GetRequiredService<ERP.Web.Data.ErpDbContext>());
+    await next();
+});
 
 app.MapControllerRoute(
     name: "default",

@@ -1,0 +1,47 @@
+@model SalesCreditNote
+@{
+    ViewData["Title"] = $"{Model.Kind.GetDisplayName()} {Model.Number}";
+    var canEdit = (bool)ViewBag.CanEdit;
+}
+<div class="doc-head">
+    <div>
+        <div class="d-flex gap-2 align-items-center flex-wrap"><span class="fs-5 fw-semibold">@Model.Number</span>
+            @if (Model.Status == DocStatus.Posted) { <span class="badge bg-success">Đã ghi sổ</span> } else { <span class="badge bg-secondary">Đã hủy</span> }
+            <span class="badge bg-light text-dark border">@Model.Kind.GetDisplayName()</span></div>
+        <div class="meta mt-1">Ngày @Model.Date.ToDate() · khách hàng <b>@Model.Customer?.Name</b> · hóa đơn gốc <a asp-controller="Invoices" asp-action="Details" asp-route-id="@Model.InvoiceId">@Model.Invoice?.Series @Model.Invoice?.InvoiceNo</a>
+            @if (Model.CreatedBy != null) { <span>· lập bởi @Model.CreatedBy.FullName</span> }</div>
+        <div class="small mt-1">@Model.Reason</div>
+    </div>
+    <div class="actions">
+        <a class="btn btn-sm btn-light" asp-action="Index"><i class="bi bi-arrow-left"></i> Danh sách</a>
+        @if (Model.JournalEntryId.HasValue) { <a class="btn btn-sm btn-light border" asp-controller="Journals" asp-action="Details" asp-route-id="@Model.JournalEntryId">Bút toán</a> }
+        @if (Model.InventoryDocId.HasValue) { <a class="btn btn-sm btn-light border" asp-controller="Inventory" asp-action="Details" asp-route-id="@Model.InventoryDocId">Phiếu nhập kho @Model.InventoryDoc?.Number</a> }
+        @if (canEdit && Model.Status == DocStatus.Posted)
+        {
+            <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="d-inline-flex gap-1" data-confirm="Hủy @Model.Number? Bút toán, tồn kho và công nợ hóa đơn gốc sẽ được đảo lại.">
+                <input name="reason" class="form-control form-control-sm" style="width:200px" placeholder="Lý do hủy (bắt buộc)" required />
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x-octagon"></i> Hủy</button></form>
+        }
+    </div>
+</div>
+<div class="card mb-3"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0">
+    <thead><tr><th>#</th><th>Hàng hóa / dịch vụ</th><th class="num">SL trả</th><th class="num">Đơn giá</th><th class="num">Giảm trừ doanh thu</th><th class="num">VAT</th><th class="num">Thuế điều chỉnh</th>@if (Model.Kind == CreditNoteKind.Return) { <th class="num">Giá vốn nhập lại</th> }</tr></thead>
+    <tbody>
+    @{ var i = 1; }
+    @foreach (var l in Model.Lines)
+    {
+        <tr><td>@(i++)</td><td>@l.Description</td><td class="num">@(l.Quantity > 0 ? l.Quantity.ToQty() : "")</td><td class="num">@l.UnitPrice.ToMoney()</td><td class="num">@l.Amount.ToMoney()</td><td class="num">@l.VatRate%</td><td class="num">@l.VatAmount.ToMoney()</td>
+            @if (Model.Kind == CreditNoteKind.Return) { <td class="num">@l.UnitCost.ToMoney()</td> }</tr>
+    }
+    </tbody>
+    <tfoot>
+        <tr><td colspan="4" class="text-end">Tiền hàng</td><td class="num">@Model.Subtotal.ToMoney()</td><td colspan="3"></td></tr>
+        <tr><td colspan="4" class="text-end">Thuế GTGT điều chỉnh giảm</td><td class="num">@Model.VatAmount.ToMoney()</td><td colspan="3"></td></tr>
+        <tr class="fw-bold"><td colspan="4" class="text-end">Tổng giảm phải thu</td><td class="num">@Model.Total.ToMoney()</td><td colspan="3"></td></tr>
+    </tfoot>
+</table></div></div></div>
+<div class="card"><div class="card-header">Cấn trừ công nợ hóa đơn gốc</div><div class="card-body">
+    @foreach (var o in Model.Offsets) { <div>Hóa đơn <a asp-controller="Invoices" asp-action="Details" asp-route-id="@o.InvoiceId">@o.Invoice?.Series @o.Invoice?.InvoiceNo</a>: <b>@o.Amount.ToMoney()</b> đ</div> }
+    @if (Model.Unapplied > 0) { <div class="warn mt-1"><i class="bi bi-exclamation-triangle"></i> Chưa cấn trừ <b>@Model.Unapplied.ToMoney()</b> đ: hóa đơn gốc đã thanh toán hết nên khách còn được ghi có (dư có TK 131).</div> }
+    @if (!Model.Offsets.Any() && Model.Unapplied == 0) { <span class="text-muted">—</span> }
+</div></div>

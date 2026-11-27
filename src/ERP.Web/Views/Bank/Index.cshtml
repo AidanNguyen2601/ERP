@@ -1,0 +1,26 @@
+@model List<BankStatement>
+@{ ViewData["Title"] = "Đối chiếu sao kê ngân hàng"; }
+@if (User.CanAccounting())
+{
+    <div class="card mb-3"><div class="card-header">Nhập sao kê</div><div class="card-body">
+        <form asp-action="Import" method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+            <div class="col-md-3"><label class="form-label small">Tài khoản ngân hàng</label><select name="cashAccountId" asp-items="ViewBag.Banks" class="form-select form-select-sm" required></select></div>
+            <div class="col-md-3"><label class="form-label small">File sao kê (.xlsx / .csv)</label><input type="file" name="file" accept=".xlsx,.csv,.txt" class="form-control form-control-sm" required /></div>
+            <div class="col-md-2"><label class="form-label small">Số dư đầu</label><input type="number" step="any" name="opening" class="form-control form-control-sm" /></div>
+            <div class="col-md-2"><label class="form-label small">Số dư cuối (theo NH)</label><input type="number" step="any" name="closing" class="form-control form-control-sm" /></div>
+            <div class="col-md-2"><button class="btn btn-sm btn-primary w-100"><i class="bi bi-upload"></i> Nhập & tự khớp</button></div>
+        </form>
+        <div class="small text-muted mt-2">File cần cột <b>Ngày</b>, <b>Nội dung</b>, <b>Ghi có</b> (tiền vào) / <b>Ghi nợ</b> (tiền ra) hoặc một cột <b>Số tiền</b> có dấu; tùy chọn <b>Số tham chiếu</b>. Dùng được file xuất từ internet banking của hầu hết ngân hàng.
+            Ngân hàng có API (open banking) đẩy trực tiếp qua <code>POST /api/v1/bank-statements</code>.</div>
+    </div></div>
+}
+<div class="card"><div class="card-body p-0"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Sao kê</th><th>Tài khoản</th><th>Từ ngày</th><th>Đến ngày</th><th class="num">Số dư cuối</th><th class="num">Số dòng</th><th class="num">Đã khớp</th><th>Nguồn</th></tr></thead><tbody>
+    @foreach (var s in Model)
+    {
+        var m = s.Lines.Count(l => l.CashVoucherId != null);
+        <tr><td><a asp-action="Details" asp-route-id="@s.Id">@s.Name</a></td><td class="small">@s.CashAccount?.Code</td><td>@s.FromDate.ToDate()</td><td>@s.ToDate.ToDate()</td><td class="num">@s.ClosingBalance.ToString("N2")</td>
+            <td class="num">@s.Lines.Count</td><td class="num"><span class="badge @(m == s.Lines.Count ? "bg-success" : "bg-warning text-dark")">@m/@s.Lines.Count</span></td><td class="small text-muted">@s.Source</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="8" class="text-center text-muted py-3">Chưa có sao kê.</td></tr> }
+</tbody></table></div></div>

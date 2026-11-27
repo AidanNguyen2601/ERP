@@ -1,0 +1,38 @@
+@model List<GjLine>
+@inject Microsoft.Extensions.Options.IOptions<ErpSettings> Cfg
+@{
+    ViewData["Title"] = "Sổ nhật ký chung";
+    DateTime f = ViewBag.From, t = ViewBag.To; bool closing = ViewBag.Closing;
+    const int Max = 3000;
+    var shown = Model.Take(Max).ToList();
+}
+<form class="toolbar no-print" method="get">
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@f.Iso()" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@t.Iso()" class="form-control form-control-sm" /></div>
+    <div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="closing" value="true" id="cl" checked="@closing" /><label class="form-check-label small" for="cl">Gồm bút toán kết chuyển</label></div>
+    <button class="btn btn-sm btn-outline-primary"><i class="bi bi-funnel"></i> Xem</button>
+    <button class="btn btn-sm btn-success ms-auto" name="export" value="true"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+    <button type="button" class="btn btn-sm btn-light border" onclick="window.print()"><i class="bi bi-printer"></i> In</button>
+</form>
+<div class="print-paper" style="max-width:none">
+    <div class="small fw-semibold">@Cfg.Value.CompanyName</div>
+    <h4 class="text-center mb-0">SỔ NHẬT KÝ CHUNG</h4>
+    <div class="text-center small mb-3">Từ ngày @f.ToDate() đến ngày @t.ToDate() · Mẫu số S03a-DN</div>
+    <table class="table table-sm report-table" data-grid="off">
+        <thead><tr><th>Ngày ghi sổ</th><th>Số CT</th><th>Diễn giải</th><th>TK</th><th>Tên tài khoản</th><th>Đối tượng</th><th class="num">Số phát sinh Nợ</th><th class="num">Số phát sinh Có</th></tr></thead>
+        <tbody>
+        @{ int? lastId = null; }
+        @foreach (var l in shown)
+        {
+            var first = lastId != l.EntryId; lastId = l.EntryId;
+            <tr class="@(first ? "group" : "")">
+                <td>@(first ? l.Date.ToDate() : "")</td><td>@if (first) { <a asp-controller="Journals" asp-action="Details" asp-route-id="@l.EntryId">@l.EntryNo</a> }</td><td>@(first ? l.Description : "")</td>
+                <td class="@(l.Credit > 0 ? "ind-1" : "")">@l.AccountCode</td><td>@l.AccountName</td><td class="small">@l.Partner</td>
+                <td class="num">@(l.Debit != 0 ? l.Debit.ToMoney() : "")</td><td class="num">@(l.Credit != 0 ? l.Credit.ToMoney() : "")</td></tr>
+        }
+        @if (!Model.Any()) { <tr><td colspan="8" class="text-center text-muted py-3">Không có bút toán trong kỳ.</td></tr> }
+        </tbody>
+        <tfoot><tr class="total"><td colspan="6">Tổng cộng (@Model.Select(x => x.EntryId).Distinct().Count() bút toán)</td><td class="num">@Model.Sum(x => x.Debit).ToMoney()</td><td class="num">@Model.Sum(x => x.Credit).ToMoney()</td></tr></tfoot>
+    </table>
+    @if (Model.Count > Max) { <div class="small text-muted no-print">Hiển thị @Max.ToString("N0") / @Model.Count.ToString("N0") dòng đầu – dùng nút Excel để lấy đầy đủ.</div> }
+</div>

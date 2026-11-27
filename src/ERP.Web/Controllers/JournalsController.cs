@@ -14,7 +14,18 @@ namespace ERP.Web.Controllers;
 public class JournalsController : ErpControllerBase
 {
     private readonly AccountingService _acc;
-    public JournalsController(ErpDbContext db, AccountingService acc) : base(db) => _acc = acc;
+    private readonly WorkflowService _wf;
+    public JournalsController(ErpDbContext db, AccountingService acc, WorkflowService wf) : base(db) { _acc = acc; _wf = wf; }
+
+    /// <summary>Chứng từ thủ công giá trị lớn phải qua luồng duyệt trước khi ghi sổ</summary>
+    private async Task GateAsync(JournalEntry j)
+    {
+        if (await _wf.IsApprovedAsync(ApprovalDocType.JournalEntry, j.Id)) return;
+        if (await _wf.IsPendingAsync(ApprovalDocType.JournalEntry, j.Id)) throw new PendingApprovalException($"Chứng từ {j.Number} đang chờ duyệt, sẽ tự ghi sổ khi được duyệt hoàn tất.");
+        var amount = j.Lines.Sum(l => l.Debit);
+        var req = await _wf.StartAsync(ApprovalDocType.JournalEntry, j.Id, j.Number, amount, j.Description, j.BranchId);
+        if (req != null) throw new PendingApprovalException($"Chứng từ {j.Number} ({amount.ToMoney()}) cần duyệt trước khi ghi sổ – {WorkflowService.Describe(req)}. Đã lưu nháp.");
+    }
 
     public async Task<IActionResult> Index(DateTime? from, DateTime? to, JournalSource? source, DocStatus? status, string? q, int page = 1)
     {
@@ -87,7 +98,8 @@ public class JournalsController : ErpControllerBase
         await Db.SaveChangesAsync();
         if (post)
         {
-            try { await _acc.PostEntryAsync(j); }
+            try { await GateAsync(j); await _acc.PostEntryAsync(j); }
+            catch (PendingApprovalException ex) { TempData["Warning"] = ex.Message; return RedirectToAction(nameof(Details), new { id = j.Id }); }
             catch (BusinessException ex)
             {
                 // Giữ nguyên dữ liệu đã nhập (đã lưu nháp) để người dùng sửa tiếp
@@ -108,6 +120,7 @@ public class JournalsController : ErpControllerBase
         var j = await Db.JournalEntries.Include(x => x.Lines).FirstOrDefaultAsync(x => x.Id == id);
         if (j == null) return NotFound();
         if (j.Status != DocStatus.Draft) throw new BusinessException("Chứng từ không ở trạng thái nháp.");
+        await GateAsync(j);
         await _acc.PostEntryAsync(j);
         Success($"Đã ghi sổ chứng từ {j.Number}.");
         return RedirectToAction(nameof(Details), new { id });

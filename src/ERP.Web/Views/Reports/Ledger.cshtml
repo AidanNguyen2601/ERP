@@ -5,6 +5,7 @@
     var closing = Model.Any() ? Model.Last().Balance : opening;
     string Side(decimal v) => v == 0 ? "0" : v > 0 ? $"Nợ {v.ToMoney()}" : $"Có {(-v).ToMoney()}";
 }
+<div class="d-flex justify-content-end mb-2 no-print"><a class="btn btn-sm btn-outline-success" href="@(Context.Request.Path + Context.Request.QueryString + (Context.Request.QueryString.HasValue ? "&" : "?") + "export=true")"><i class="bi bi-file-earmark-excel"></i> Xuất Excel</a></div>
 <partial name="_GlNav" />
 <form class="toolbar" method="get">
     <div><label class="form-label small mb-0">Tài khoản</label><select name="account" class="form-select form-select-sm" style="min-width:280px">

@@ -1,0 +1,32 @@
+@model List<LandedCost>
+@{ ViewData["Title"] = "Chi phí mua hàng"; var canPost = User.InAny(AppRoles.Accounting + "," + AppRoles.Purchasing); }
+<div class="toolbar"><a class="btn btn-sm btn-light" asp-action="Match"><i class="bi bi-check2-square"></i> Đối chiếu 3 bên</a></div>
+@if (canPost)
+{
+    <div class="card mb-3"><div class="card-header">Ghi nhận chi phí vận chuyển, thuế nhập khẩu, bảo hiểm... phân bổ vào giá nhập</div><div class="card-body">
+        <form asp-action="CreateLandedCost" method="post" class="row g-2">
+            <div class="col-md-4"><label class="form-label small">Đơn mua (đã nhận hàng)</label><select name="poId" asp-items="ViewBag.Orders" class="form-select form-select-sm" required></select></div>
+            <div class="col-md-2"><label class="form-label small">Ngày</label><input type="date" name="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+            <div class="col-md-3"><label class="form-label small">Loại chi phí</label><select name="kind" asp-items="Html.GetEnumSelectList<LandedCostKind>()" class="form-select form-select-sm"></select></div>
+            <div class="col-md-3"><label class="form-label small">Tiêu thức phân bổ</label><select name="basis" class="form-select form-select-sm"><option value="value">Theo giá trị hàng nhập</option><option value="qty">Theo số lượng</option></select></div>
+            <div class="col-md-4"><label class="form-label small">Diễn giải</label><input name="description" class="form-control form-control-sm" placeholder="VD: Cước vận chuyển container" /></div>
+            <div class="col-md-2"><label class="form-label small">Số tiền (chưa thuế)</label><input type="number" name="amount" step="1000" min="0" class="form-control form-control-sm" required /></div>
+            <div class="col-md-2"><label class="form-label small">Thuế suất GTGT</label><select name="vatRate" class="form-select form-select-sm"><option value="0">0%</option><option value="8">8%</option><option value="10" selected>10%</option><option value="5">5%</option></select></div>
+            <div class="col-md-4"><label class="form-label small">Ghi Có tài khoản</label><select name="counterAccountId" asp-items="ViewBag.Counter" class="form-select form-select-sm"></select></div>
+            <div class="col-md-4"><label class="form-label small">Nhà cung cấp dịch vụ (nếu công nợ 331)</label><select name="partnerId" asp-items="ViewBag.Partners" class="form-select form-select-sm"><option value="">--</option></select></div>
+            <div class="col-md-2"><label class="form-label small">Số hóa đơn NCC (nếu Có 331)</label><input name="vendorInvoiceNo" class="form-control form-control-sm" /></div>
+            <div class="col-md-2"><label class="form-label small">Ký hiệu hóa đơn</label><input name="vendorSeries" class="form-control form-control-sm" /></div>
+            <div class="col-12 small text-muted">Phần hàng còn tồn cộng vào giá trị tồn kho (Nợ 15x) và giá vốn bình quân; phần đã xuất bán tính vào giá vốn hàng bán (Nợ 632). Thuế nhập khẩu: Có 3333.</div>
+            <div class="col-12"><button class="btn btn-sm btn-primary">Ghi nhận & phân bổ</button></div>
+        </form></div></div>
+}
+<div class="card"><div class="card-body p-0"><table class="table table-sm mb-0">
+    <thead><tr><th>Số</th><th>Ngày</th><th>Đơn mua</th><th>Loại</th><th>Diễn giải</th><th class="num">Chi phí</th><th class="num">Vào tồn kho</th><th class="num">Vào giá vốn</th><th></th></tr></thead><tbody>
+    @foreach (var l in Model)
+    {
+        <tr class="@(l.Status == DocStatus.Cancelled ? "text-muted text-decoration-line-through" : "")"><td>@if (l.JournalEntryId != null) { <a asp-controller="Journals" asp-action="Details" asp-route-id="@l.JournalEntryId">@l.Number</a> }</td><td>@l.Date.ToDate()</td><td><a asp-controller="PurchaseOrders" asp-action="Details" asp-route-id="@l.PurchaseOrderId">@l.PurchaseOrder?.Number</a></td>
+            <td class="small">@l.Kind.GetDisplayName()</td><td class="small">@l.Description @l.Partner?.Name</td><td class="num">@l.Amount.ToMoney()</td><td class="num">@l.Lines.Sum(x => x.ToInventory).ToMoney()</td><td class="num">@l.Lines.Sum(x => x.ToCogs).ToMoney()</td>
+            <td>@if (l.Status == DocStatus.Posted && User.CanAccounting()) { <form asp-action="CancelLandedCost" asp-route-id="@l.Id" method="post" class="d-flex gap-1"><input name="reason" class="form-control form-control-sm" placeholder="Lý do hủy" required /><button class="btn btn-sm btn-outline-danger">Hủy</button></form> }</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="9" class="text-center text-muted py-3">Chưa có chi phí mua hàng.</td></tr> }
+</tbody></table></div></div>

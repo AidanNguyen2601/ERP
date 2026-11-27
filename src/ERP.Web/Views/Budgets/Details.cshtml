@@ -1,0 +1,35 @@
+@model Budget
+@{
+    ViewData["Title"] = Model.Name;
+    int m = ViewBag.Month; var usage = (List<BudgetUsage>)ViewBag.Usage; var monthly = (Dictionary<int, decimal[]>)ViewBag.Monthly;
+    string Cls(decimal pct) => pct > 100 ? "bg-danger" : pct > 85 ? "bg-warning" : "bg-success";
+}
+<form class="toolbar" method="get">
+    <input type="hidden" name="id" value="@Model.Id" />
+    <span class="small">@(Model.Branch?.Name ?? "Toàn công ty") · năm @Model.Year · @Model.Control.GetDisplayName()</span>
+    <select name="month" class="form-select form-select-sm ms-3" style="width:auto" onchange="this.form.submit()">@for (var i = 1; i <= 12; i++) { <option value="@i" selected="@(i == m)">Tháng @i</option> }</select>
+    @if (User.InAny(AppRoles.Accounting + "," + AppRoles.Director)) { <a class="btn btn-sm btn-light ms-auto" asp-action="Edit" asp-route-id="@Model.Id"><i class="bi bi-pencil"></i> Sửa</a> }
+</form>
+<div class="card mb-3"><div class="card-header">Thực hiện so với kế hoạch – tháng @m và lũy kế</div><div class="card-body p-0"><table class="table table-sm align-middle mb-0" data-grid="off">
+    <thead><tr><th>Khoản mục</th><th>Bộ phận</th><th class="num">KH tháng</th><th class="num">TH tháng</th><th style="width:160px">% tháng</th><th class="num">KH lũy kế</th><th class="num">TH lũy kế</th><th style="width:160px">% lũy kế</th><th class="num">Còn lại năm</th></tr></thead><tbody>
+    @foreach (var u in usage)
+    {
+        <tr class="@(u.Actual > u.Plan ? "table-danger" : "")"><td><b>@u.Line.AccountPrefix</b> <span class="small text-muted">@u.Line.Note</span></td><td class="small">@(u.Line.Department ?? "Mọi bộ phận")</td>
+            <td class="num">@u.Plan.ToMoney()</td><td class="num">@u.Actual.ToMoney()</td>
+            <td><div class="progress" style="height:14px"><div class="progress-bar @Cls(u.Pct)" style="width:@Math.Min(100, u.Pct).ToString(System.Globalization.CultureInfo.InvariantCulture)%">@u.Pct%</div></div></td>
+            <td class="num">@u.YtdPlan.ToMoney()</td><td class="num">@u.YtdActual.ToMoney()</td>
+            <td><div class="progress" style="height:14px"><div class="progress-bar @Cls(u.YtdPct)" style="width:@Math.Min(100, u.YtdPct).ToString(System.Globalization.CultureInfo.InvariantCulture)%">@u.YtdPct%</div></div></td>
+            <td class="num">@((u.Line.Year - monthly[u.Line.Id].Sum()).ToMoney())</td></tr>
+    }
+    </tbody>
+    <tfoot><tr class="fw-bold"><td colspan="2">Cộng</td><td class="num">@usage.Sum(u => u.Plan).ToMoney()</td><td class="num">@usage.Sum(u => u.Actual).ToMoney()</td><td></td><td class="num">@usage.Sum(u => u.YtdPlan).ToMoney()</td><td class="num">@usage.Sum(u => u.YtdActual).ToMoney()</td><td></td><td></td></tr></tfoot>
+</table></div></div>
+<div class="card"><div class="card-header">Kế hoạch / thực hiện theo tháng</div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0" data-grid="off" style="font-size:.8rem">
+    <thead><tr><th>Khoản mục</th>@for (var i = 1; i <= 12; i++) { <th class="num">T@i</th> }<th class="num">Năm</th></tr></thead><tbody>
+    @foreach (var l in Model.Lines.OrderBy(x => x.AccountPrefix))
+    {
+        var act = monthly[l.Id];
+        <tr><td rowspan="2"><b>@l.AccountPrefix</b><div class="small">@l.Department</div></td>@for (var i = 1; i <= 12; i++) { <td class="num text-muted">@l.Month(i).ToMoney()</td> }<td class="num text-muted">@l.Year.ToMoney()</td></tr>
+        <tr>@for (var i = 1; i <= 12; i++) { <td class="num @(act[i - 1] > l.Month(i) ? "text-danger fw-bold" : "")">@act[i - 1].ToMoney()</td> }<td class="num fw-bold">@act.Sum().ToMoney()</td></tr>
+    }
+</tbody></table></div><div class="small text-muted p-2">Dòng trên: kế hoạch; dòng dưới: thực hiện (đỏ = vượt).</div></div></div>

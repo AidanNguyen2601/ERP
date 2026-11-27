@@ -1,0 +1,45 @@
+@using ERP.Web.Controllers
+@model List<ApiClient>
+@{ ViewData["Title"] = "Kết nối API & thiết bị"; var newKey = TempData["NewApiKey"] as string; }
+@if (newKey != null)
+{
+    <div class="alert alert-success"><b>Khóa API mới:</b> <code class="user-select-all">@newKey</code><div class="small">Gửi trong header <code>X-Api-Key</code>. Khóa chỉ hiển thị một lần.</div></div>
+}
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card mb-3"><div class="card-header">Ứng dụng được cấp khóa</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off">
+            <thead><tr><th>Ứng dụng</th><th>Khóa</th><th>Quyền</th><th class="num">Số lần gọi</th><th>Lần gọi cuối</th><th></th></tr></thead><tbody>
+            @foreach (var c in Model)
+            {
+                <tr class="@(c.IsActive ? "" : "text-muted")"><td>@c.Name</td><td><code>@c.KeyPrefix…</code></td><td class="small">@c.Scopes.Replace(",", ", ")</td><td class="num">@c.CallCount</td><td class="small">@c.LastUsedAt?.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td><form asp-action="ToggleApiClient" asp-route-id="@c.Id" method="post"><button class="btn btn-sm btn-light">@(c.IsActive ? "Thu hồi" : "Kích hoạt")</button></form></td></tr>
+            }
+            @if (!Model.Any()) { <tr><td colspan="6" class="text-muted text-center py-3">Chưa cấp khóa API nào.</td></tr> }
+            </tbody></table></div></div>
+        <div class="card"><div class="card-header">Cấp khóa mới</div><div class="card-body">
+            <form asp-action="CreateApiClient" method="post">
+                <input name="name" class="form-control form-control-sm mb-2" placeholder="Tên ứng dụng / thiết bị (VD: Máy chấm công xưởng, Website bán hàng, Cân điện tử kho NVL)" required />
+                @foreach (var (s, n) in SettingsController.Scopes) { <div class="form-check"><input class="form-check-input" type="checkbox" name="scopes" value="@s" id="s_@s" /><label class="form-check-label small" for="s_@s"><code>@s</code> – @n</label></div> }
+                <button class="btn btn-sm btn-primary mt-2">Tạo khóa</button>
+            </form>
+        </div></div>
+    </div>
+    <div class="col-lg-5"><div class="card"><div class="card-header">Danh sách điểm kết nối (REST, JSON)</div><div class="card-body small">
+        <table class="table table-sm" data-grid="off"><tbody>
+            <tr><td><code>GET /api/v1/partners?q=</code></td><td>catalog.read</td></tr>
+            <tr><td><code>GET /api/v1/items?q=</code></td><td>catalog.read</td></tr>
+            <tr><td><code>GET /api/v1/stock?itemCode=</code></td><td>catalog.read</td></tr>
+            <tr><td><code>GET /api/v1/invoices/{lookupCode}</code></td><td>invoice.read</td></tr>
+            <tr><td><code>POST /api/v1/sales-orders</code></td><td>order.write</td></tr>
+            <tr><td><code>POST /api/v1/bank-statements</code></td><td>bank.write</td></tr>
+            <tr><td><code>POST /api/v1/attendance</code></td><td>attendance.write</td></tr>
+            <tr><td><code>POST /api/v1/scale-readings</code></td><td>scale.write</td></tr>
+        </tbody></table>
+        <div class="mb-1">Ví dụ đẩy chấm công:</div>
+        <pre class="bg-light p-2 rounded">curl -X POST /api/v1/attendance \
+ -H "X-Api-Key: erp_..." -H "Content-Type: application/json" \
+ -d '[{"employeeCode":"NV0008","year":2026,"month":11,
+       "workDays":25,"overtimeHours":8}]'</pre>
+        <div class="text-muted">Hóa đơn điện tử kết nối nhà cung cấp tại <a asp-action="Index">Tham số hệ thống</a>; đối chiếu dữ liệu cơ quan thuế tại <a asp-controller="Tax" asp-action="Match">Đối chiếu HĐ với cổng thuế</a>; sao kê ngân hàng tại <a asp-controller="Bank" asp-action="Index">Đối chiếu ngân hàng</a>.</div>
+    </div></div></div>
+</div>

@@ -1,0 +1,36 @@
+@model CitDeclaration
+@{ ViewData["Title"] = "Thuế thu nhập doanh nghiệp"; int y = ViewBag.Year, q = ViewBag.Quarter; var saved = (List<CitDeclaration>)ViewBag.Saved; var d = Model; }
+<form class="toolbar" method="get">
+    <select name="quarter" class="form-select form-select-sm" style="width:auto">@for (var i = 1; i <= 4; i++) { <option value="@i" selected="@(i == q)">Tạm tính quý @i</option> }<option value="0" selected="@(q == 0)">Quyết toán năm (03/TNDN)</option></select>
+    <input name="year" type="number" value="@y" class="form-control form-control-sm" style="width:90px" />
+    <input name="nonDeductible" type="number" step="1" value="@d.NonDeductible.Raw()" class="form-control form-control-sm" style="width:170px" title="Chi phí không được trừ" placeholder="CP không được trừ" />
+    <input name="exempt" type="number" step="1" value="@d.ExemptIncome.Raw()" class="form-control form-control-sm" style="width:150px" title="Thu nhập miễn thuế" placeholder="TN miễn thuế" />
+    <input name="loss" type="number" step="1" value="@d.LossCarried.Raw()" class="form-control form-control-sm" style="width:150px" title="Lỗ được chuyển" placeholder="Lỗ chuyển sang" />
+    <button class="btn btn-sm btn-outline-primary">Tính</button>
+</form>
+<div class="row g-3">
+<div class="col-lg-7"><div class="card"><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+    <tr><td>Lợi nhuận kế toán trước thuế (5xx, 7xx − 6xx, 8xx; không gồm 821)</td><td class="num">@d.AccountingProfit.ToMoney()</td></tr>
+    <tr><td>(+) Chi phí không được trừ khi tính thuế</td><td class="num">@d.NonDeductible.ToMoney()</td></tr>
+    <tr><td>(−) Thu nhập miễn thuế</td><td class="num">@d.ExemptIncome.ToMoney()</td></tr>
+    <tr><td>(−) Lỗ các năm trước được chuyển</td><td class="num">@d.LossCarried.ToMoney()</td></tr>
+    <tr class="fw-bold"><td>Thu nhập tính thuế</td><td class="num">@d.TaxableIncome.ToMoney()</td></tr>
+    <tr><td>Thuế suất</td><td class="num">@d.Rate.ToString("0.##")%</td></tr>
+    <tr class="fw-bold"><td>Thuế TNDN @(q == 0 ? "phải nộp cả năm" : "tạm tính quý")</td><td class="num">@d.Tax.ToMoney()</td></tr>
+    @if (q == 0) { <tr><td>(−) Đã tạm tính các quý</td><td class="num">@d.PaidEarlier.ToMoney()</td></tr> }
+    <tr class="fw-bold table-warning"><td>Số phải ghi nhận @(d.Payable < 0 ? "(giảm)" : "")</td><td class="num">@d.Payable.ToMoney()</td></tr>
+</tbody></table></div></div>
+@if (User.CanAccounting())
+{
+    <form asp-action="SaveCit" method="post" class="mt-2 d-flex gap-3 align-items-center" data-confirm="Lưu số liệu thuế TNDN?">
+        <input type="hidden" name="year" value="@y" /><input type="hidden" name="quarter" value="@q" /><input type="hidden" name="nonDeductible" value="@d.NonDeductible.Raw()" /><input type="hidden" name="exempt" value="@d.ExemptIncome.Raw()" /><input type="hidden" name="loss" value="@d.LossCarried.Raw()" />
+        <div class="form-check"><input class="form-check-input" type="checkbox" name="post" value="true" id="pc" checked /><label class="form-check-label small" for="pc">Hạch toán Nợ 821 / Có 3334</label></div>
+        <button class="btn btn-sm btn-primary">Lưu</button>
+    </form>
+}
+</div>
+<div class="col-lg-5"><div class="card"><div class="card-header">Đã lưu</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+    @foreach (var s in saved) { <tr><td>@(s.Quarter == 0 ? "Năm" : "Quý " + s.Quarter) @s.Year</td><td class="num">LN @s.AccountingProfit.ToMoney()</td><td class="num">Thuế @s.Tax.ToMoney()</td><td>@if (s.JournalEntryId != null) { <a asp-controller="Journals" asp-action="Details" asp-route-id="@s.JournalEntryId">Bút toán</a> }</td></tr> }
+    @if (!saved.Any()) { <tr><td class="text-muted text-center">Chưa có.</td></tr> }
+</tbody></table></div></div></div>
+</div>

@@ -15,18 +15,34 @@ public class InvoiceService
     private readonly AccountingService _acc;
     private readonly ErpSettings _cfg;
     private readonly CurrentUser _user;
-    public InvoiceService(ErpDbContext db, AccountingService acc, IOptions<ErpSettings> cfg, CurrentUser user) { _db = db; _acc = acc; _cfg = cfg.Value; _user = user; }
+    private readonly EInvoiceService _einv;
+    public InvoiceService(ErpDbContext db, AccountingService acc, IOptions<ErpSettings> cfg, CurrentUser user, EInvoiceService einv) { _db = db; _acc = acc; _cfg = cfg.Value; _user = user; _einv = einv; }
 
     public static void Recalc(Invoice inv)
     {
+        var fx = inv.IsForeign;
         foreach (var l in inv.Lines)
         {
-            l.Amount = Math.Round(l.Quantity * l.UnitPrice, 0);
+            if (fx)
+            {
+                // Hóa đơn ngoại tệ: đơn giá nhập theo nguyên tệ, quy đổi VND theo tỷ giá hóa đơn
+                l.FcAmount = Math.Round(l.Quantity * l.FcUnitPrice, 2);
+                l.UnitPrice = Math.Round(l.FcUnitPrice * inv.ExchangeRate, 2);
+                l.Amount = Math.Round(l.FcAmount * inv.ExchangeRate, 0);
+            }
+            else { l.Amount = Math.Round(l.Quantity * l.UnitPrice, 0); l.FcUnitPrice = 0; l.FcAmount = 0; }
             l.VatAmount = Math.Round(l.Amount * l.VatRate / 100m, 0);
         }
         inv.Subtotal = inv.Lines.Sum(l => l.Amount);
         inv.VatAmount = inv.Lines.Sum(l => l.VatAmount);
         inv.Total = inv.Subtotal + inv.VatAmount;
+        if (fx)
+        {
+            inv.FcSubtotal = inv.Lines.Sum(l => l.FcAmount);
+            inv.FcVatAmount = inv.Lines.Sum(l => Math.Round(l.FcAmount * l.VatRate / 100m, 2));
+            inv.FcTotal = inv.FcSubtotal + inv.FcVatAmount;
+        }
+        else { inv.FcSubtotal = inv.FcVatAmount = inv.FcTotal = 0; inv.CurrencyCode = "VND"; inv.ExchangeRate = 1; }
     }
 
     public Task<string> NextNumberAsync(InvoiceDirection d, DateTime date) =>
@@ -57,13 +73,13 @@ public class InvoiceService
                 var used = await _db.Invoices.Where(i => i.Direction == InvoiceDirection.Sales && i.Series == series && i.InvoiceNo != null).Select(i => i.InvoiceNo!).ToListAsync();
                 inv.InvoiceNo = (used.Select(n => int.TryParse(n, out var k) ? k : 0).DefaultIfEmpty(0).Max() + 1).ToString("0000000");
             }
-            lines.Add(new JLine(await _acc.IdAsync(AccountingService.Receivable), inv.Total, 0, partner.Id, $"Phải thu HĐ {inv.InvoiceNo}"));
+            lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.SiReceivable), inv.Total, 0, partner.Id, $"Phải thu HĐ {inv.InvoiceNo}"));
             foreach (var l in inv.Lines)
             {
-                var acc = l.AccountId ?? await _acc.IdAsync(AccountingService.RevenueAccount(l.ItemId.HasValue ? items[l.ItemId.Value].Type : null));
+                var acc = l.AccountId ?? await _acc.RevenueRuleAsync(l.ItemId.HasValue ? items[l.ItemId.Value].Type : null);
                 lines.Add(new JLine(acc, 0, l.Amount));
             }
-            if (inv.VatAmount > 0) lines.Add(new JLine(await _acc.IdAsync(AccountingService.VatOut), 0, inv.VatAmount));
+            if (inv.VatAmount > 0) lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.SiVatOut), 0, inv.VatAmount));
         }
         else
         {
@@ -77,12 +93,12 @@ public class InvoiceService
             {
                 if (l.AccountId == null && l.ItemId.HasValue && items[l.ItemId.Value].IsStocked)
                     throw new BusinessException($"Hàng {items[l.ItemId.Value].Code} cần nhập kho qua đơn mua hàng; hóa đơn mua trực tiếp chỉ dùng cho dịch vụ / chi phí (chọn TK chi phí).");
-                var acc = l.AccountId ?? await _acc.IdAsync(AccountingService.AdminServices);
+                var acc = l.AccountId ?? await _acc.RuleAsync(PostingCatalog.PiExpense);
                 lines.Add(new JLine(acc, l.Amount, 0, null, l.Description));
                 credit += l.Amount;
             }
-            if (inv.VatAmount > 0) { lines.Add(new JLine(await _acc.IdAsync(AccountingService.VatIn), inv.VatAmount, 0)); credit += inv.VatAmount; }
-            if (credit > 0) lines.Add(new JLine(await _acc.IdAsync(AccountingService.Payable), 0, credit, partner.Id, $"Phải trả HĐ {inv.InvoiceNo}"));
+            if (inv.VatAmount > 0) { lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.PiVatIn), inv.VatAmount, 0)); credit += inv.VatAmount; }
+            if (credit > 0) lines.Add(new JLine(await _acc.RuleAsync(PostingCatalog.PiPayable), 0, credit, partner.Id, $"Phải trả HĐ {inv.InvoiceNo}"));
         }
 
         if (inv.Id == 0) { _db.Invoices.Add(inv); await _db.SaveChangesAsync(); }
@@ -92,6 +108,7 @@ public class InvoiceService
                 inv.Direction == InvoiceDirection.Sales ? JournalSource.SalesInvoice : JournalSource.PurchaseInvoice, inv.Number, inv.Id, lines);
             inv.JournalEntryId = je.Id;
         }
+        await _einv.IssueAsync(inv);   // hóa đơn điện tử: lỗi thì hủy toàn bộ việc phát hành
         inv.Status = InvoiceStatus.Issued;
         await _db.SaveChangesAsync();
         await RefreshOrderStatusAsync(inv);
@@ -101,9 +118,12 @@ public class InvoiceService
     public async Task CancelAsync(Invoice inv, string reason)
     {
         if (inv.Status == InvoiceStatus.Cancelled) throw new BusinessException("Hóa đơn đã hủy.");
+        if (await _db.SalesCreditNotes.AnyAsync(n => n.InvoiceId == inv.Id && n.Status == DocStatus.Posted)) throw new BusinessException("Hóa đơn đã có hóa đơn điều chỉnh giảm (hàng trả lại / giảm giá): hủy các chứng từ điều chỉnh trước.");
+        if (inv.Series == AssetService.AssetInvoiceSeries) throw new BusinessException("Công nợ này phát sinh từ ghi tăng TSCĐ: điều chỉnh hoặc thanh lý tài sản thay vì hủy chứng từ.");
         if (inv.PaidAmount > 0) throw new BusinessException("Hóa đơn đã thanh toán một phần, hãy hủy phiếu thu / chi trước.");
         if (inv.Status == InvoiceStatus.Issued) await _acc.ReverseAsync(inv.JournalEntryId, DateTime.Today, reason);
         await ReleaseOrderQtyAsync(inv);
+        await _einv.CancelAsync(inv, reason);
         inv.Status = InvoiceStatus.Cancelled;
         inv.Note = string.IsNullOrWhiteSpace(reason) ? inv.Note : $"{inv.Note} [Hủy: {reason}]".Trim();
         await _db.SaveChangesAsync();
@@ -161,8 +181,9 @@ public class PurchaseService
     private readonly InvoiceService _invoices;
     private readonly ErpSettings _cfg;
     private readonly CurrentUser _user;
-    public PurchaseService(ErpDbContext db, InventoryService inv, InvoiceService invoices, IOptions<ErpSettings> cfg, CurrentUser user)
-    { _db = db; _inv = inv; _invoices = invoices; _cfg = cfg.Value; _user = user; }
+    private readonly WorkflowService _wf;
+    public PurchaseService(ErpDbContext db, InventoryService inv, InvoiceService invoices, IOptions<ErpSettings> cfg, CurrentUser user, WorkflowService wf)
+    { _db = db; _inv = inv; _invoices = invoices; _cfg = cfg.Value; _user = user; _wf = wf; }
 
     public decimal ApprovalThreshold => _cfg.PoApprovalThreshold;
 
@@ -178,32 +199,54 @@ public class PurchaseService
         if (po.Status is PoStatus.Draft or PoStatus.PendingApproval or PoStatus.Cancelled) return;
         var received = po.Lines.All(l => l.ReceivedQty >= l.Quantity);
         var any = po.Lines.Any(l => l.ReceivedQty > 0);
-        var invoiced = po.Lines.All(l => l.InvoicedQty >= l.Quantity);
+        var invoiced = po.Lines.All(l => l.InvoicedQty + l.ReturnedQty >= l.Quantity);
         po.Status = received && invoiced ? PoStatus.Completed : received ? PoStatus.Received : any ? PoStatus.PartiallyReceived : PoStatus.Approved;
     }
 
-    /// <summary>Gửi duyệt: dưới ngưỡng tự duyệt, từ ngưỡng trở lên chờ Ban Giám đốc</summary>
+    /// <summary>Gửi duyệt theo quy tắc phê duyệt (nhiều cấp, theo giá trị / chi nhánh); không có quy tắc nào áp dụng thì tự duyệt.
+    /// Chưa khai báo quy tắc cho đơn mua thì dùng ngưỡng cấu hình cũ (từ ngưỡng → Ban Giám đốc duyệt).</summary>
     public async Task<string> SubmitAsync(PurchaseOrder po)
     {
         if (po.Status != PoStatus.Draft) throw new BusinessException("Chỉ gửi duyệt đơn nháp.");
         if (!po.Lines.Any()) throw new BusinessException("Đơn mua chưa có dòng hàng.");
         Recalc(po);
-        if (po.Total >= _cfg.PoApprovalThreshold) { po.Status = PoStatus.PendingApproval; await _db.SaveChangesAsync(); return $"Đơn {po.Number} ({po.Total.ToMoney()}) vượt ngưỡng {_cfg.PoApprovalThreshold.ToMoney()}, đã chuyển Ban Giám đốc duyệt."; }
+        if (await _db.Partners.AnyAsync(v => v.Id == po.VendorId && v.IsBlocked)) throw new BusinessException("Nhà cung cấp đang tạm ngừng giao dịch – không gửi duyệt đơn mua.");
+        if (await _wf.HasRulesAsync(ApprovalDocType.PurchaseOrder))
+        {
+            var vendor = await _db.Partners.FindAsync(po.VendorId);
+            var req = await _wf.StartAsync(ApprovalDocType.PurchaseOrder, po.Id, po.Number, po.Total, $"Đơn mua {po.Number} – {vendor?.Name}", po.BranchId);
+            if (req != null) { po.Status = PoStatus.PendingApproval; await _db.SaveChangesAsync(); return $"Đơn {po.Number} ({po.Total.ToMoney()}) đã gửi duyệt – {WorkflowService.Describe(req)}."; }
+        }
+        else if (po.Total >= _cfg.PoApprovalThreshold) { po.Status = PoStatus.PendingApproval; await _db.SaveChangesAsync(); return $"Đơn {po.Number} ({po.Total.ToMoney()}) vượt ngưỡng {_cfg.PoApprovalThreshold.ToMoney()}, đã chuyển Ban Giám đốc duyệt."; }
         po.Status = PoStatus.Approved; po.ApprovedById = _user.Id; po.ApprovedAt = DateTime.Now;
         await _db.SaveChangesAsync();
-        return $"Đơn {po.Number} dưới ngưỡng duyệt, đã được duyệt tự động.";
+        return $"Đơn {po.Number} không cần duyệt theo quy tắc, đã được duyệt tự động.";
     }
 
-    public async Task ApproveAsync(PurchaseOrder po, bool approve)
+    /// <summary>Duyệt / từ chối: theo luồng duyệt nếu đơn có yêu cầu duyệt, ngược lại duyệt một bước (đơn gửi duyệt trước khi có luồng)</summary>
+    public async Task<string> ApproveAsync(PurchaseOrder po, bool approve, string? comment = null)
     {
         if (po.Status != PoStatus.PendingApproval) throw new BusinessException("Đơn không ở trạng thái chờ duyệt.");
+        var req = await _wf.LatestAsync(ApprovalDocType.PurchaseOrder, po.Id);
+        if (req is { Status: ApprovalStatus.Pending })
+        {
+            var st = await _wf.ActAsync(req, approve, comment);
+            if (st == ApprovalStatus.Pending) return $"Đã duyệt cấp của bạn – {WorkflowService.Describe(req)}.";
+            approve = st == ApprovalStatus.Approved;
+        }
+        else
+        {
+            var u = _user.Principal;
+            if (u != null && !u.InAny(AppRoles.Approvers)) throw new BusinessException("Chỉ Ban Giám đốc duyệt đơn này.");
+        }
         po.Status = approve ? PoStatus.Approved : PoStatus.Draft;
         if (approve) { po.ApprovedById = _user.Id; po.ApprovedAt = DateTime.Now; }
         await _db.SaveChangesAsync();
+        return approve ? $"Đơn mua {po.Number} đã được duyệt hoàn tất." : $"Đã từ chối, đơn {po.Number} trở về nháp.";
     }
 
     /// <summary>Nhận hàng: lập phiếu nhập kho (Nợ 15x / Có 331)</summary>
-    public async Task<InventoryDoc> ReceiveAsync(PurchaseOrder po, DateTime date, IDictionary<int, decimal> qtyByLine)
+    public async Task<InventoryDoc> ReceiveAsync(PurchaseOrder po, DateTime date, IDictionary<int, decimal> qtyByLine, IDictionary<int, (string? Lot, DateTime? Expiry)>? lotInfo = null)
     {
         if (po.Status is not (PoStatus.Approved or PoStatus.PartiallyReceived)) throw new BusinessException("Đơn mua chưa được duyệt hoặc đã nhận đủ.");
         var take = new List<(int, decimal, decimal)>();
@@ -215,7 +258,7 @@ public class PurchaseService
         }
         if (!take.Any()) throw new BusinessException("Nhập số lượng thực nhận.");
         var doc = await _inv.CreateAndPostAsync(InvDocType.Receipt, date, po.WarehouseId!.Value, DocOrigin.Purchase, po.Number, po.Id, po.VendorId,
-            $"Nhận hàng theo đơn mua {po.Number}", take, _user.Id);
+            $"Nhận hàng theo đơn mua {po.Number}", take, _user.Id, lotInfo);
         foreach (var l in po.Lines) if (qtyByLine.TryGetValue(l.Id, out var q)) l.ReceivedQty += q;
         RefreshStatus(po);
         await _db.SaveChangesAsync();
@@ -225,18 +268,18 @@ public class PurchaseService
     /// <summary>Lập hóa đơn mua (nháp) cho phần đã nhận chưa có hóa đơn</summary>
     public async Task<Invoice> CreateInvoiceAsync(PurchaseOrder po, DateTime date, string? series, string? invoiceNo)
     {
-        var lines = po.Lines.Where(l => l.ReceivedQty - l.InvoicedQty > 0).ToList();
+        var lines = po.Lines.Where(l => l.BillableQty > 0).ToList();
         if (!lines.Any()) throw new BusinessException("Không còn hàng đã nhận chưa có hóa đơn.");
         var vendor = await _db.Partners.FindAsync(po.VendorId);
         var inv = new Invoice
         {
             Direction = InvoiceDirection.Purchase, Number = await _invoices.NextNumberAsync(InvoiceDirection.Purchase, date), Date = date,
-            DueDate = date.AddDays(vendor?.PaymentTermDays ?? 30), PartnerId = po.VendorId, PurchaseOrderId = po.Id, Series = series, InvoiceNo = invoiceNo,
+            DueDate = date.AddDays(vendor?.PaymentTermDays ?? 30), PartnerId = po.VendorId, PurchaseOrderId = po.Id, ContractId = po.ContractId, BranchId = po.BranchId, Series = series, InvoiceNo = invoiceNo,
             CreatedById = _user.Id, Note = $"Theo đơn mua {po.Number}"
         };
         foreach (var l in lines)
         {
-            var q = l.ReceivedQty - l.InvoicedQty;
+            var q = l.BillableQty;
             inv.Lines.Add(new InvoiceLine
             {
                 ItemId = l.ItemId, Description = l.Item?.Name ?? "", Unit = l.Item?.Unit, Quantity = q, UnitPrice = l.UnitPrice,
@@ -262,8 +305,9 @@ public class SalesService
     private readonly AccountingService _acc;
     private readonly ErpSettings _cfg;
     private readonly CurrentUser _user;
-    public SalesService(ErpDbContext db, InventoryService inv, InvoiceService invoices, AccountingService acc, IOptions<ErpSettings> cfg, CurrentUser user)
-    { _db = db; _inv = inv; _invoices = invoices; _acc = acc; _cfg = cfg.Value; _user = user; }
+    private readonly WorkflowService _wf;
+    public SalesService(ErpDbContext db, InventoryService inv, InvoiceService invoices, AccountingService acc, IOptions<ErpSettings> cfg, CurrentUser user, WorkflowService wf)
+    { _db = db; _inv = inv; _invoices = invoices; _acc = acc; _cfg = cfg.Value; _user = user; _wf = wf; }
 
     public static void Recalc(SalesOrder so)
     {
@@ -299,6 +343,7 @@ public class SalesService
         if (!so.Lines.Any()) throw new BusinessException("Đơn bán chưa có dòng hàng.");
         Recalc(so);
         var c = await _db.Partners.FindAsync(so.CustomerId) ?? throw new BusinessException("Không tìm thấy khách hàng.");
+        if (c.IsBlocked) throw new BusinessException($"Khách hàng {c.Name} đang tạm ngừng giao dịch: {c.BlockReason}");
         string? warn = null;
         if (c.CreditLimit > 0)
         {
@@ -311,6 +356,13 @@ public class SalesService
                 so.CreditApprovedById = _user.Id;
                 warn = msg + " Đã được duyệt vượt hạn mức.";
             }
+        }
+        // Luồng duyệt đơn bán (theo giá trị): chưa được duyệt thì gửi duyệt, đơn giữ trạng thái nháp
+        if (!await _wf.IsApprovedAsync(ApprovalDocType.SalesOrder, so.Id))
+        {
+            if (await _wf.IsPendingAsync(ApprovalDocType.SalesOrder, so.Id)) throw new BusinessException("Đơn đang chờ duyệt, chưa xác nhận được.");
+            var req = await _wf.StartAsync(ApprovalDocType.SalesOrder, so.Id, so.Number, so.Total, $"Đơn bán {so.Number} – {c.Name}", so.BranchId);
+            if (req != null) { await _db.SaveChangesAsync(); throw new PendingApprovalException($"Đơn {so.Number} ({so.Total.ToMoney()}) cần duyệt trước khi xác nhận – {WorkflowService.Describe(req)}."); }
         }
         so.Status = SoStatus.Confirmed;
         await _db.SaveChangesAsync();
@@ -334,6 +386,12 @@ public class SalesService
         if (take.Any())
             doc = await _inv.CreateAndPostAsync(InvDocType.Issue, date, so.WarehouseId!.Value, DocOrigin.Sales, so.Number, so.Id, so.CustomerId,
                 $"Xuất bán theo đơn {so.Number}", take, _user.Id);
+        if (doc != null)
+        {
+            // Tự lập vận đơn gắn với phiếu xuất kho và đơn bán (cập nhật vận chuyển tại Giao hàng & vận chuyển)
+            var cust = await _db.Partners.FindAsync(so.CustomerId);
+            _db.Shipments.Add(new Shipment { InventoryDocId = doc.Id, SalesOrderId = so.Id, Address = cust?.Address, Receiver = cust?.ContactPerson, Number = await DocNumbers.NextAsync(_db.Shipments.Select(x => x.Number), "VD", date) });
+        }
         foreach (var l in so.Lines) if (qtyByLine.TryGetValue(l.Id, out var q)) l.DeliveredQty += q;
         RefreshStatus(so);
         await _db.SaveChangesAsync();
@@ -349,7 +407,7 @@ public class SalesService
         var inv = new Invoice
         {
             Direction = InvoiceDirection.Sales, Number = await _invoices.NextNumberAsync(InvoiceDirection.Sales, date), Date = date,
-            DueDate = date.AddDays(c?.PaymentTermDays ?? 30), PartnerId = so.CustomerId, SalesOrderId = so.Id, Series = _cfg.InvoiceSeries,
+            DueDate = date.AddDays(c?.PaymentTermDays ?? 30), PartnerId = so.CustomerId, SalesOrderId = so.Id, ContractId = so.ContractId, BranchId = so.BranchId, Series = _cfg.InvoiceSeries,
             CreatedById = _user.Id, Note = $"Theo đơn bán {so.Number}"
         };
         foreach (var l in lines)

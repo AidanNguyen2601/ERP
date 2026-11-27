@@ -39,6 +39,8 @@ public class PurchaseOrdersController : ErpControllerBase
         if (po == null) return NotFound();
         ViewBag.Receipts = await Db.InventoryDocs.Include(d => d.Lines).Where(d => d.Origin == DocOrigin.Purchase && d.OriginId == id).OrderBy(d => d.Date).ToListAsync();
         ViewBag.Invoices = await Db.Invoices.Where(i => i.PurchaseOrderId == id).OrderBy(i => i.Date).ToListAsync();
+        ViewBag.Returns = await Db.PurchaseReturns.Include(r => r.PurchaseOrderLine).ThenInclude(l => l!.Item).Include(r => r.Ncr).Include(r => r.InventoryDoc).Include(r => r.Offsets)
+            .Where(r => r.PurchaseOrderLine!.PurchaseOrderId == id).OrderBy(r => r.Date).ThenBy(r => r.Id).ToListAsync();
         ViewBag.CanEdit = CanEdit; ViewBag.CanReceive = CanReceive; ViewBag.Threshold = _svc.ApprovalThreshold;
         return View(po);
     }
@@ -66,7 +68,7 @@ public class PurchaseOrdersController : ErpControllerBase
         if (po.Status != PoStatus.Draft) { Error("Chỉ sửa đơn nháp."); return RedirectToAction(nameof(Details), new { id }); }
         var f = new OrderForm
         {
-            Id = po.Id, Number = po.Number, Date = po.Date, PartnerId = po.VendorId, WarehouseId = po.WarehouseId, DeliveryDate = po.ExpectedDate, Note = po.Note,
+            Id = po.Id, Number = po.Number, Date = po.Date, PartnerId = po.VendorId, WarehouseId = po.WarehouseId, DeliveryDate = po.ExpectedDate, Note = po.Note, ContractId = po.ContractId,
             Lines = po.Lines.Select(l => new LineInput { Id = l.Id, ItemId = l.ItemId, Quantity = l.Quantity, UnitPrice = l.UnitPrice, VatRate = l.VatRate }).ToList()
         };
         await FormDataAsync(f);
@@ -78,6 +80,7 @@ public class PurchaseOrdersController : ErpControllerBase
     {
         if (!CanEdit) return Denied();
         var lines = form.Lines.Where(l => l.ItemId != null).ToList();
+        await UomService.NormalizeAsync(Db, lines);
         if (!lines.Any()) ModelState.AddModelError("", "Nhập ít nhất một dòng hàng.");
         if (lines.Any(l => l.Quantity <= 0 || l.UnitPrice < 0)) ModelState.AddModelError("", "Số lượng phải > 0, đơn giá không âm.");
         if (lines.GroupBy(l => l.ItemId).Any(g => g.Count() > 1)) ModelState.AddModelError("", "Mỗi mặt hàng chỉ một dòng.");
@@ -95,7 +98,7 @@ public class PurchaseOrdersController : ErpControllerBase
             if (po.Status != PoStatus.Draft) throw new BusinessException("Đơn đã gửi duyệt, không sửa được.");
             Db.PurchaseOrderLines.RemoveRange(po.Lines.ToList()); po.Lines.Clear();
         }
-        po.Date = form.Date.Date; po.VendorId = form.PartnerId; po.WarehouseId = form.WarehouseId; po.ExpectedDate = form.DeliveryDate.Date; po.Note = form.Note;
+        po.Date = form.Date.Date; po.VendorId = form.PartnerId; po.WarehouseId = form.WarehouseId; po.ExpectedDate = form.DeliveryDate.Date; po.Note = form.Note; po.ContractId = form.ContractId;
         foreach (var l in lines) po.Lines.Add(new PurchaseOrderLine { ItemId = l.ItemId!.Value, Quantity = l.Quantity, UnitPrice = l.UnitPrice, VatRate = l.VatRate });
         PurchaseService.Recalc(po);
         await Db.SaveChangesAsync();
@@ -114,12 +117,10 @@ public class PurchaseOrdersController : ErpControllerBase
     }
 
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> Approve(int id, bool approve)
+    public async Task<IActionResult> Approve(int id, bool approve, string? comment)
     {
-        if (!User.InAny(AppRoles.Approvers)) return Denied();
         var po = await LoadAsync(id) ?? throw new BusinessException("Không tìm thấy đơn.");
-        await _svc.ApproveAsync(po, approve);
-        Success(approve ? $"Đã duyệt đơn mua {po.Number}." : $"Đã trả lại đơn {po.Number} về nháp.");
+        Success(await _svc.ApproveAsync(po, approve, comment));
         return RedirectToAction(nameof(Details), new { id });
     }
 
@@ -133,11 +134,13 @@ public class PurchaseOrdersController : ErpControllerBase
     }
 
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> Receive(int id, DateTime date, Dictionary<int, decimal> qty)
+    public async Task<IActionResult> Receive(int id, DateTime date, Dictionary<int, decimal> qty, Dictionary<int, string?>? lot, Dictionary<int, DateTime?>? expiry)
     {
         if (!CanReceive) return Denied();
         var po = await LoadAsync(id) ?? throw new BusinessException("Không tìm thấy đơn.");
-        var doc = await _svc.ReceiveAsync(po, date, qty);
+        var lotInfo = new Dictionary<int, (string? Lot, DateTime? Expiry)>();
+        foreach (var l in po.Lines) { var ln = lot?.GetValueOrDefault(l.Id); var ex = expiry?.GetValueOrDefault(l.Id); if (!string.IsNullOrWhiteSpace(ln) || ex != null) lotInfo[l.ItemId] = (string.IsNullOrWhiteSpace(ln) ? null : ln.Trim(), ex); }
+        var doc = await _svc.ReceiveAsync(po, date, qty, lotInfo);
         Success($"Đã nhập kho phiếu {doc.Number} ({doc.TotalAmount.ToMoney()} đ) và ghi nhận công nợ phải trả {po.Vendor?.Name}.");
         return RedirectToAction(nameof(Details), new { id });
     }
@@ -168,7 +171,8 @@ public class PurchaseOrdersController : ErpControllerBase
     {
         ViewBag.Partners = await VendorsAsync(f.PartnerId);
         ViewBag.Whs = await WarehousesAsync(f.WarehouseId);
-        ViewBag.LineOptions = new LineEditorOptions { Items = await ItemsAsync(i => i.IsStocked && i.Type != ItemType.FinishedGood), PriceSource = "cost", Lines = f.Lines, PriceLabel = "Đơn giá mua" };
+        ViewBag.Contracts = await ContractsAsync(ContractType.Purchase, f.ContractId);
+        ViewBag.LineOptions = new LineEditorOptions { ShowUnit = true, Uoms = await UomService.LoadAsync(Db), Items = await ItemsAsync(i => i.IsStocked && i.Type != ItemType.FinishedGood), PriceSource = "cost", Lines = f.Lines, PriceLabel = "Đơn giá mua" };
         ViewBag.Threshold = _svc.ApprovalThreshold;
     }
 }

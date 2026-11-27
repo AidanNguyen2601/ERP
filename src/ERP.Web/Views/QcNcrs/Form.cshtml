@@ -1,0 +1,33 @@
+@model QcNonconformance
+@{
+    ViewData["Title"] = Model.Id == 0 ? "Lập báo cáo không phù hợp" : $"Cập nhật {Model.Number}";
+    var locked = (bool)ViewBag.Locked;
+}
+<div class="card" style="max-width:1000px"><div class="card-body">
+<form asp-action="Save" method="post">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="All" class="alert alert-danger py-2 empty-hide"></div>
+    @if (locked)
+    {
+        <div class="alert alert-info py-2">Đã lập phiếu xuất kho theo NCR: mặt hàng, số lượng, kho và hướng xử lý không đổi được.</div>
+        <input type="hidden" asp-for="ItemId" /><input type="hidden" asp-for="Quantity" /><input type="hidden" asp-for="WarehouseId" /><input type="hidden" asp-for="Disposition" />
+    }
+    <div class="row g-3">
+        <div class="col-md-3"><label asp-for="Date" class="form-label"></label><input asp-for="Date" type="date" class="form-control" /></div>
+        <div class="col-md-6"><label asp-for="ItemId" class="form-label"></label><select asp-for="ItemId" asp-items="ViewBag.Items" class="form-select" disabled="@locked"><option value="">-- Chọn --</option></select><span asp-validation-for="ItemId" class="text-danger small"></span></div>
+        <div class="col-md-3"><label asp-for="Quantity" class="form-label"></label><input asp-for="Quantity" type="number" step="0.001" class="form-control" disabled="@locked" /><span asp-validation-for="Quantity" class="text-danger small"></span></div>
+        <div class="col-md-4"><label asp-for="WarehouseId" class="form-label"></label><select asp-for="WarehouseId" asp-items="ViewBag.Whs" class="form-select" disabled="@locked"><option value="">--</option></select></div>
+        <div class="col-md-5"><label asp-for="PartnerId" class="form-label"></label><select asp-for="PartnerId" asp-items="ViewBag.Partners" class="form-select"><option value="">--</option></select><span asp-validation-for="PartnerId" class="text-danger small"></span></div>
+        <div class="col-md-3"><label asp-for="DueDate" class="form-label"></label><input asp-for="DueDate" type="date" class="form-control" /></div>
+        <div class="col-12"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" rows="3" class="form-control"></textarea><span asp-validation-for="Description" class="text-danger small"></span></div>
+        <div class="col-md-6"><label asp-for="RootCause" class="form-label"></label><textarea asp-for="RootCause" rows="3" class="form-control" placeholder="5 Why, xương cá..."></textarea></div>
+        <div class="col-md-6"><label asp-for="CorrectiveAction" class="form-label"></label><textarea asp-for="CorrectiveAction" rows="3" class="form-control"></textarea></div>
+        <div class="col-md-5"><label asp-for="Disposition" class="form-label"></label><select asp-for="Disposition" asp-items="Html.GetEnumSelectList<NcrDisposition>()" class="form-select" disabled="@locked"></select>
+            <div class="form-text">Hủy bỏ / Trả lại NCC sẽ lập phiếu xuất kho và bút toán theo <a asp-controller="PostingRules" asp-action="Index" asp-route-module="Quản lý chất lượng" target="_blank">cấu hình bút toán</a>.</div></div>
+        <div class="col-md-4"><label asp-for="Responsible" class="form-label"></label><input asp-for="Responsible" class="form-control" /></div>
+    </div>
+    <div class="mt-4"><button class="btn btn-primary">Lưu</button>
+        <a class="btn btn-light" asp-action="@(Model.Id == 0 ? "Index" : "Details")" asp-route-id="@(Model.Id == 0 ? null : Model.Id)">Hủy</a></div>
+</form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

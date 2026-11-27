@@ -1,0 +1,41 @@
+@model Budget
+@{ ViewData["Title"] = Model.Id == 0 ? "Lập ngân sách" : $"Sửa ngân sách {Model.Name}"; var lines = Model.Lines.ToList(); var accs = (List<Account>)ViewBag.Accounts; }
+<form asp-action="Edit" method="post">
+<input type="hidden" asp-for="Id" />
+<div class="card mb-3"><div class="card-body">
+    <div asp-validation-summary="All" class="alert alert-danger py-2 empty-hide"></div>
+    <div class="row g-3">
+        <div class="col-md-4"><label class="form-label">Tên ngân sách</label><input asp-for="Name" class="form-control" /></div>
+        <div class="col-md-2"><label class="form-label">Năm</label><input asp-for="Year" type="number" class="form-control" /></div>
+        <div class="col-md-3"><label class="form-label">Chi nhánh</label><select asp-for="BranchId" asp-items="ViewBag.Branches" class="form-select"><option value="">Toàn công ty</option></select></div>
+        <div class="col-md-2"><label class="form-label">Khi vượt</label><select asp-for="Control" asp-items="Html.GetEnumSelectList<BudgetControl>()" class="form-select"></select></div>
+        <div class="col-md-1 d-flex align-items-end"><div class="form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label">Áp dụng</label></div></div>
+    </div>
+</div></div>
+<div class="card mb-3"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0" id="lines" data-grid="off" style="font-size:.85rem">
+    <thead><tr><th style="min-width:130px">Khoản mục (TK)</th><th style="min-width:130px">Bộ phận</th><th style="min-width:110px">Chia đều năm</th>@for (var i = 1; i <= 12; i++) { <th style="min-width:105px">T@i</th> }<th></th></tr></thead>
+    <tbody>
+    @for (var k = 0; k < lines.Count; k++)
+    {
+        var l = lines[k];
+        <tr><td><input name="lines[@k].AccountPrefix" value="@l.AccountPrefix" list="accs" class="form-control form-control-sm" placeholder="VD 641, 6427" /></td>
+            <td><input name="lines[@k].Department" value="@l.Department" list="depts" class="form-control form-control-sm" /></td>
+            <td><input type="number" step="1000" class="form-control form-control-sm" placeholder="Tổng năm" onchange="spread(this)" /></td>
+            @for (var i = 1; i <= 12; i++) { <td><input name="lines[@k].M@(i.ToString("00"))" type="number" step="1000" value="@l.Month(i).Raw()" class="form-control form-control-sm" /></td> }
+            <td><button type="button" class="btn btn-sm btn-link text-danger" onclick="this.closest('tr').remove()"><i class="bi bi-x"></i></button></td></tr>
+    }
+    </tbody>
+</table></div></div>
+<div class="card-footer"><button type="button" class="btn btn-sm btn-light" onclick="addLine()"><i class="bi bi-plus"></i> Thêm khoản mục</button></div></div>
+<datalist id="accs">@foreach (var a in accs) { <option value="@a.Code">@a.Name</option> }</datalist>
+<datalist id="depts">@foreach (string d in ViewBag.Depts) { <option value="@d"></option> }</datalist>
+<button class="btn btn-primary">Lưu</button> <a asp-action="Index" class="btn btn-light">Hủy</a>
+</form>
+@section Scripts {
+<script>
+function spread(el) { const v = Math.round((+el.value || 0) / 12 / 1000) * 1000; el.closest('tr').querySelectorAll('input[name$=".M01"],input[name*=".M"]').forEach(i => { if (/\.M\d\d$/.test(i.name)) i.value = v; }); }
+function addLine() { const tb = document.querySelector('#lines tbody'); const tr = tb.querySelector('tr').cloneNode(true); tr.querySelectorAll('input').forEach(i => i.value = ''); tb.appendChild(tr); renum(); }
+function renum() { document.querySelectorAll('#lines tbody tr').forEach((tr, k) => tr.querySelectorAll('[name]').forEach(el => el.name = el.name.replace(/lines\[\d+\]/, 'lines[' + k + ']'))); }
+document.querySelector('form').addEventListener('submit', renum);
+</script>
+}

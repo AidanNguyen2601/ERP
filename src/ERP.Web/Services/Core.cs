@@ -10,6 +10,12 @@ public class BusinessException : Exception
     public BusinessException(string message) : base(message) { }
 }
 
+/// <summary>Chứng từ đã được gửi duyệt (không phải lỗi): thông báo dạng cảnh báo, dữ liệu vẫn được lưu</summary>
+public class PendingApprovalException : BusinessException
+{
+    public PendingApprovalException(string message) : base(message) { }
+}
+
 /// <summary>Cấu hình nghiệp vụ (appsettings.json → "Erp")</summary>
 public class ErpSettings
 {
@@ -28,7 +34,7 @@ public static class DocNumbers
     public static async Task<string> NextAsync(IQueryable<string> existing, string prefix, DateTime date)
     {
         var head = $"{prefix}{date:yyMM}-";
-        var numbers = await existing.Where(n => n.StartsWith(head)).ToListAsync();
+        var numbers = await existing.IgnoreQueryFilters().Where(n => n.StartsWith(head)).ToListAsync();   // số chứng từ duy nhất trên mọi chi nhánh
         var max = numbers.Select(n => int.TryParse(n[head.Length..], out var k) ? k : 0).DefaultIfEmpty(0).Max();
         return $"{head}{max + 1:0000}";
     }
@@ -41,4 +47,5 @@ public class CurrentUser
     public CurrentUser(IHttpContextAccessor http) => _http = http;
     public int? Id => _http.HttpContext?.User.Identity?.IsAuthenticated == true ? _http.HttpContext.User.GetUserId() : null;
     public string Name => _http.HttpContext?.User.GetFullName() ?? "Hệ thống";
+    public System.Security.Claims.ClaimsPrincipal? Principal => _http.HttpContext?.User.Identity?.IsAuthenticated == true ? _http.HttpContext.User : null;
 }

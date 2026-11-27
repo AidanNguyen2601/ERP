@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ERP.Web.Data;
 using ERP.Web.Infrastructure;
@@ -41,6 +42,7 @@ public class SalesOrdersController : ErpControllerBase
         if (so == null) return NotFound();
         ViewBag.Deliveries = await Db.InventoryDocs.Include(d => d.Lines).Where(d => d.Origin == DocOrigin.Sales && d.OriginId == id).OrderBy(d => d.Date).ToListAsync();
         ViewBag.Invoices = await Db.Invoices.Where(i => i.SalesOrderId == id).OrderBy(i => i.Date).ToListAsync();
+        ViewBag.Shipments = await Db.Shipments.Include(s => s.InventoryDoc).Where(s => s.SalesOrderId == id).OrderBy(s => s.Id).ToListAsync();
         ViewBag.Stock = await _inv.OnHandAsync(so.WarehouseId!.Value, so.Lines.Select(l => l.ItemId));
         ViewBag.CanEdit = CanEdit; ViewBag.CanDeliver = CanDeliver; ViewBag.CanOverride = CanOverride;
         if (so.Status == SoStatus.Draft && so.Customer!.CreditLimit > 0)
@@ -67,7 +69,7 @@ public class SalesOrdersController : ErpControllerBase
         if (so.Status != SoStatus.Draft) { Error("Chỉ sửa đơn nháp."); return RedirectToAction(nameof(Details), new { id }); }
         var f = new OrderForm
         {
-            Id = so.Id, Number = so.Number, Date = so.Date, PartnerId = so.CustomerId, WarehouseId = so.WarehouseId, DeliveryDate = so.DeliveryDate, Note = so.Note,
+            Id = so.Id, Number = so.Number, Date = so.Date, PartnerId = so.CustomerId, WarehouseId = so.WarehouseId, DeliveryDate = so.DeliveryDate, Note = so.Note, ContractId = so.ContractId, SalespersonId = so.SalespersonId,
             Lines = so.Lines.Select(l => new LineInput { Id = l.Id, ItemId = l.ItemId, Quantity = l.Quantity, UnitPrice = l.UnitPrice, DiscountPct = l.DiscountPct, VatRate = l.VatRate }).ToList()
         };
         await FormDataAsync(f);
@@ -79,6 +81,7 @@ public class SalesOrdersController : ErpControllerBase
     {
         if (!CanEdit) return Denied();
         var lines = form.Lines.Where(l => l.ItemId != null).ToList();
+        await UomService.NormalizeAsync(Db, lines);
         if (!lines.Any()) ModelState.AddModelError("", "Nhập ít nhất một dòng hàng.");
         if (lines.Any(l => l.Quantity <= 0 || l.UnitPrice < 0 || l.DiscountPct < 0 || l.DiscountPct > 100)) ModelState.AddModelError("", "Số lượng > 0, đơn giá không âm, chiết khấu 0–100%.");
         if (lines.GroupBy(l => l.ItemId).Any(g => g.Count() > 1)) ModelState.AddModelError("", "Mỗi mặt hàng chỉ một dòng.");
@@ -96,13 +99,24 @@ public class SalesOrdersController : ErpControllerBase
             if (so.Status != SoStatus.Draft) throw new BusinessException("Đơn đã xác nhận, không sửa được.");
             Db.SalesOrderLines.RemoveRange(so.Lines.ToList()); so.Lines.Clear();
         }
-        so.Date = form.Date.Date; so.CustomerId = form.PartnerId; so.WarehouseId = form.WarehouseId; so.DeliveryDate = form.DeliveryDate.Date; so.Note = form.Note;
+        so.Date = form.Date.Date; so.CustomerId = form.PartnerId; so.WarehouseId = form.WarehouseId; so.DeliveryDate = form.DeliveryDate.Date; so.Note = form.Note; so.ContractId = form.ContractId; so.SalespersonId = form.SalespersonId ?? so.SalespersonId ?? Me;
         foreach (var l in lines) so.Lines.Add(new SalesOrderLine { ItemId = l.ItemId!.Value, Quantity = l.Quantity, UnitPrice = l.UnitPrice, DiscountPct = l.DiscountPct, VatRate = l.VatRate });
         SalesService.Recalc(so);
         await Db.SaveChangesAsync();
         Success($"Đã lưu đơn bán {so.Number}.");
         if (confirm) return await Confirm(so.Id);
         return RedirectToAction(nameof(Details), new { id = so.Id });
+    }
+
+    /// <summary>Áp dụng bảng giá, chiết khấu và khuyến mại cho các dòng của đơn nháp</summary>
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> ApplyPrices(int id, [FromServices] PricingService pricing)
+    {
+        if (!CanEdit) return Denied();
+        var so = await LoadAsync(id) ?? throw new BusinessException("Không tìm thấy đơn.");
+        var n = await pricing.ApplyAsync(so);
+        Success(n == 0 ? "Giá và chiết khấu trên đơn đã đúng theo bảng giá / khuyến mại." : $"Đã cập nhật giá, chiết khấu của {n} dòng theo bảng giá và khuyến mại.");
+        return RedirectToAction(nameof(Details), new { id });
     }
 
     [HttpPost, ValidateAntiForgeryToken]
@@ -116,6 +130,7 @@ public class SalesOrdersController : ErpControllerBase
             if (warn != null) TempData["Warning"] = warn;
             Success($"Đã xác nhận đơn {so.Number}, chuyển kho chuẩn bị giao hàng.");
         }
+        catch (PendingApprovalException ex) { TempData["Warning"] = ex.Message; }
         catch (BusinessException ex) { Error(ex.Message); }
         return RedirectToAction(nameof(Details), new { id });
     }
@@ -171,7 +186,9 @@ public class SalesOrdersController : ErpControllerBase
     {
         ViewBag.Partners = await CustomersAsync(f.PartnerId);
         ViewBag.Whs = await WarehousesAsync(f.WarehouseId);
-        ViewBag.LineOptions = new LineEditorOptions { Items = await ItemsAsync(i => i.Type != ItemType.Material), PriceSource = "sale", ShowDiscount = true, Lines = f.Lines, PriceLabel = "Đơn giá bán" };
+        ViewBag.Contracts = await ContractsAsync(ContractType.Sale, f.ContractId);
+        ViewBag.Salespeople = new SelectList(await Db.Users.Where(u => u.IsActive && (u.Role == AppRoles.Sales || u.Id == f.SalespersonId)).OrderBy(u => u.FullName).Select(u => new { u.Id, Name = u.FullName }).ToListAsync(), "Id", "Name", f.SalespersonId ?? Me);
+        ViewBag.LineOptions = new LineEditorOptions { ShowUnit = true, Uoms = await UomService.LoadAsync(Db), Items = await ItemsAsync(i => i.Type != ItemType.Material), PriceSource = "sale", ShowDiscount = true, Lines = f.Lines, PriceLabel = "Đơn giá bán" };
         var stock = (await Db.StockLevels.ToListAsync()).GroupBy(s => s.ItemId).ToDictionary(g => g.Key, g => g.Sum(x => x.Quantity));
         ViewBag.StockHint = stock;
     }

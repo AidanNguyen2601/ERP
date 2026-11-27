@@ -1,0 +1,42 @@
+@model List<ERP.Web.Controllers.ImportPreviewRow>
+@{
+    var k = (ERP.Web.Controllers.ImportController.Kind)ViewBag.Kind;
+    ViewData["Title"] = "Xem trước: nhập " + k.Title.ToLowerInvariant();
+    int errs = Model.Count(r => r.Errors.Any()), warns = Model.Count(r => r.Warnings.Any()), upd = Model.Count(r => r.IsUpdate);
+    var canOverride = ERP.Web.Services.DuplicateService.CanOverride(User);
+}
+<div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+    <span class="badge bg-light text-dark border">@ViewBag.FileName</span>
+    <span class="badge bg-secondary">@Model.Count dòng</span>
+    <span class="badge bg-success">Thêm mới @(Model.Count - upd)</span>
+    <span class="badge bg-info text-dark">Cập nhật @upd</span>
+    @if (errs > 0) { <span class="badge bg-danger">Lỗi @errs</span> }
+    @if (warns > 0) { <span class="badge bg-warning text-dark">Cảnh báo trùng @warns</span> }
+</div>
+@if (errs > 0) { <div class="alert alert-danger small">Có @errs dòng lỗi – sửa file rồi tải lên lại. Không ghi dữ liệu khi còn lỗi.</div> }
+else
+{
+    <form asp-action="Commit" method="post" class="card card-body mb-3 d-flex flex-row flex-wrap gap-3 align-items-center">
+        <input type="hidden" name="kind" value="@k.Key" /><input type="hidden" name="token" value="@ViewBag.Token" />
+        @if (warns > 0)
+        {
+            if (canOverride) { <div class="form-check"><input class="form-check-input" type="checkbox" name="allowDuplicates" value="true" id="ad" required /><label class="form-check-label small" for="ad">Tôi đã kiểm tra, vẫn nhập các dòng trùng dữ liệu</label></div> }
+            else { <span class="small text-danger">Có dòng trùng dữ liệu: cần Kế toán trưởng / Ban Giám đốc / Quản trị xác nhận nhập.</span> }
+        }
+        <button class="btn btn-primary btn-sm" @(warns > 0 && !canOverride ? "disabled" : "")><i class="bi bi-check2-all"></i> Ghi @Model.Count dòng</button>
+        <a asp-action="Index" class="btn btn-light btn-sm">Hủy</a>
+    </form>
+}
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0" data-grid="off">
+    <thead><tr><th>Dòng</th><th>Kết quả kiểm tra</th>@foreach (var c in k.Columns) { <th class="small">@c</th> }</tr></thead>
+    <tbody>
+    @foreach (var r in Model)
+    {
+        <tr class="@(r.Errors.Any() ? "table-danger" : r.Warnings.Any() ? "table-warning" : "")">
+            <td>@r.Line</td>
+            <td class="small">@if (r.Errors.Any()) { <span class="text-danger">@string.Join("; ", r.Errors)</span> } else if (r.Warnings.Any()) { <span>@string.Join("; ", r.Warnings)</span> } else { <span class="text-success">@(r.IsUpdate ? "Cập nhật" : "Thêm mới")</span> }</td>
+            @foreach (var c in k.Columns) { <td class="small">@ERP.Web.Infrastructure.TabularReader.Get(r.Values, c)</td> }
+        </tr>
+    }
+    </tbody>
+</table></div></div></div>

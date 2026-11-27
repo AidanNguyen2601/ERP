@@ -17,6 +17,8 @@
                 @(Model.SalesOrder != null ? " · Phục vụ đơn " + Model.SalesOrder.Number : "") · Lập bởi @(Model.CreatedBy?.FullName ?? "Hệ thống")</div>
             @if (!string.IsNullOrWhiteSpace(Model.Note)) { <div>@Model.Note</div> }</div>
         <div class="actions">
+            @if (Model.Status is ProductionStatus.InProgress or ProductionStatus.Completed)
+            { <partial name="_QcButton" model="@(new QcLink("productionId", Model.Id, Model.Number, new List<(int, string)> { (Model.ItemId, Model.Item?.Name ?? "") }))" /> }
             @if (can && Model.Status == ProductionStatus.Draft) { <form asp-action="Release" asp-route-id="@Model.Id" method="post"><button class="btn btn-sm btn-primary">Phát lệnh</button></form> }
             @if (canIssue && Model.Status is ProductionStatus.Released or ProductionStatus.InProgress && Model.Lines.Any(l => l.IssuedQty < l.RequiredQty))
             { <form asp-action="IssueMaterials" asp-route-id="@Model.Id" method="post"><button class="btn btn-sm btn-primary" @(shortage.Any() ? "disabled title='Thiếu nguyên vật liệu'" : "")>Xuất nguyên vật liệu</button></form> }
