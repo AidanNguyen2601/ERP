@@ -29,6 +29,7 @@ public static class DbSeeder
             await SeedQualityAsync(db);
             await SeedQcDemoAsync(sp, db);
             await GroupDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("GroupDemoSeeder"));
+            await GroupDemoSeeder.SeedInvestmentAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("GroupDemoSeeder"));
             await TradeDemoSeeder.SeedAsync(db);
             await ProcessDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("ProcessDemoSeeder"));
             await BackfillPurchaseReturnsAsync(sp, db);
@@ -42,6 +43,7 @@ public static class DbSeeder
         await SeedQualityAsync(db);
         await SeedQcDemoAsync(sp, db);
         await GroupDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("GroupDemoSeeder"));
+        await GroupDemoSeeder.SeedInvestmentAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("GroupDemoSeeder"));
         await TradeDemoSeeder.SeedAsync(db);
         await ProcessDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("ProcessDemoSeeder"));
         await BackfillPurchaseReturnsAsync(sp, db);

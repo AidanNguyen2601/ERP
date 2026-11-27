@@ -87,6 +87,8 @@ public static class Tt99Migration
         await AddAsync(db, "33312", "Thuế GTGT hàng nhập khẩu", AccountType.Liability, "3331");
         await AddAsync(db, "1383", "Thuế TTĐB của hàng nhập khẩu", AccountType.Asset, "138");
         await AddAsync(db, "332", "Phải trả cổ tức, lợi nhuận", AccountType.Liability, null);
+        await AddAsync(db, "221", "Đầu tư vào công ty con", AccountType.Asset, null);
+        var a221 = await db.Accounts.FirstOrDefaultAsync(a => a.Code == "221"); if (a221 != null && !a221.TrackPartner) { a221.TrackPartner = true; await db.SaveChangesAsync(); }
         await AddAsync(db, "215", "Tài sản sinh học", AccountType.Asset, null);
         await AddAsync(db, "2151", "Súc vật nuôi cho sản phẩm định kỳ", AccountType.Asset, "215");
         await AddAsync(db, "2152", "Súc vật nuôi lấy sản phẩm một lần", AccountType.Asset, "215");

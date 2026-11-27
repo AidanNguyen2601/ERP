@@ -29,7 +29,7 @@ public class OrgController : ErpControllerBase
         var c = m.Id == 0 ? new Company() : await Db.Companies.FindAsync(m.Id);
         if (c == null) return NotFound();
         if (await Db.Companies.AnyAsync(x => x.Code == m.Code && x.Id != m.Id)) { Error("Mã công ty đã tồn tại."); return RedirectToAction(nameof(Index)); }
-        c.Code = m.Code.Trim().ToUpperInvariant(); c.Name = m.Name.Trim(); c.TaxCode = m.TaxCode; c.Address = m.Address; c.IsParent = m.IsParent; c.OwnershipPct = m.OwnershipPct; c.IsActive = m.IsActive;
+        c.Code = m.Code.Trim().ToUpperInvariant(); c.Name = m.Name.Trim(); c.TaxCode = m.TaxCode; c.Address = m.Address; c.IsParent = m.IsParent; c.OwnershipPct = m.OwnershipPct; c.IsActive = m.IsActive; c.AcquisitionDate = m.AcquisitionDate; c.RetainedAtAcquisition = m.RetainedAtAcquisition;
         if (c.Id == 0) Db.Companies.Add(c);
         if (c.IsParent) foreach (var o in await Db.Companies.Where(x => x.Id != c.Id && x.IsParent).ToListAsync()) o.IsParent = false;
         await Db.SaveChangesAsync();

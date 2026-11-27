@@ -22,6 +22,8 @@ public class Company
     [StringLength(300)][Display(Name = "Địa chỉ")] public string? Address { get; set; }
     [Display(Name = "Là công ty mẹ")] public bool IsParent { get; set; }
     [Display(Name = "Tỷ lệ sở hữu của công ty mẹ (%)")][Range(0, 100)] public decimal OwnershipPct { get; set; } = 100;
+    [DataType(DataType.Date)][Display(Name = "Ngày công ty mẹ nắm quyền kiểm soát")] public DateTime? AcquisitionDate { get; set; }
+    [Display(Name = "LNST chưa phân phối của công ty con tại ngày mua")] public decimal RetainedAtAcquisition { get; set; }
     [Display(Name = "Đang hoạt động")] public bool IsActive { get; set; } = true;
     public ICollection<Branch> Branches { get; set; } = new List<Branch>();
 }
