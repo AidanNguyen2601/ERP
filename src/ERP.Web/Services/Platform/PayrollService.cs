@@ -55,7 +55,7 @@ public class PayrollService
         l.Overtime = Math.Round(e.BaseSalary / stdDays / 8m * 1.5m * otHours, 0);
         l.Allowance = e.Allowance; l.NonTaxAllowance = e.NonTaxAllowance;
         x ??= new HrService.Extras(0, 0, 0, 0, 0, "");
-        l.ExtraTaxable = x.Taxable; l.ExtraNonTax = x.NonTax; l.Bonus = x.Bonus; l.PieceRate = x.Piece; l.OtherDeduction = x.Deduction; l.ExtraNote = x.Note.Length > 600 ? x.Note[..600] : x.Note;
+        l.ExtraTaxable = x.Taxable; l.ExtraNonTax = x.NonTax; l.Bonus = x.Bonus; l.PieceRate = x.Piece; l.OtherDeduction = x.Deduction; l.Advance = x.Advance; l.ExtraNote = x.Note.Length > 600 ? x.Note[..600] : x.Note;
         l.Gross = l.SalaryByDays + l.Overtime + l.Allowance + l.NonTaxAllowance + l.ExtraTaxable + l.ExtraNonTax;
         l.InsuranceBase = Math.Min(e.InsuranceSalary, r.Cap);
         l.EmpBhxh = Math.Round(l.InsuranceBase * r.EmpBhxh / 100, 0); l.EmpBhyt = Math.Round(l.InsuranceBase * r.EmpBhyt / 100, 0); l.EmpBhtn = Math.Round(l.InsuranceBase * r.EmpBhtn / 100, 0);
@@ -66,7 +66,7 @@ public class PayrollService
         var otExempt = Math.Round(l.Overtime / 1.5m * 0.5m, 0);
         l.TaxableIncome = Math.Max(0, l.Gross - l.NonTaxAllowance - l.ExtraNonTax - otExempt - l.EmpTotal - l.FamilyDeduction);
         l.Pit = Pit(l.TaxableIncome, r.Brackets);
-        l.Net = l.Gross - l.EmpTotal - l.Pit - l.OtherDeduction;
+        l.Net = l.Gross - l.EmpTotal - l.Pit - l.OtherDeduction - l.Advance;   // tạm ứng đã ghi Nợ 334 lúc chi nên không hạch toán lại
     }
 
     public async Task<PayrollRun> CreateAsync(int year, int month, int? branchId)
@@ -90,6 +90,7 @@ public class PayrollService
         var bonuses = (await _db.PayrollBonuses.Where(b => b.Year == run.Year && b.Month == run.Month).ToListAsync()).GroupBy(x => x.EmployeeId).ToDictionary(g => g.Key, g => g.ToList());
         var from = new DateTime(run.Year, run.Month, 1); var to = from.AddMonths(1);
         var pieces = (await _db.PieceRateEntries.Where(p => p.Date >= from && p.Date < to).ToListAsync()).GroupBy(x => x.EmployeeId).ToDictionary(g => g.Key, g => g.ToList());
+        var advances = (await _db.SalaryAdvances.Where(a => a.Year == run.Year && a.Month == run.Month && a.Status == AdvanceStatus.Paid).ToListAsync()).GroupBy(a => a.EmployeeId).ToDictionary(g => g.Key, g => g.Sum(a => a.Amount));
         foreach (var e in emps)
         {
             var a = att.GetValueOrDefault(e.Id);
@@ -97,6 +98,7 @@ public class PayrollService
             var wd = a?.WorkDays ?? run.StandardDays; var oth = a?.OvertimeHours ?? 0;
             var byDays = Math.Round(e.BaseSalary * Math.Min(wd, run.StandardDays) / run.StandardDays, 0);
             var x = HrService.ExtrasFor(e, wd, oth, run.StandardDays, byDays, run.Year, run.Month, comps.GetValueOrDefault(e.Id) ?? new(), bonuses.GetValueOrDefault(e.Id) ?? new(), pieces.GetValueOrDefault(e.Id) ?? new());
+            if (advances.TryGetValue(e.Id, out var adv)) x = x with { Advance = adv, Note = (x.Note.Length > 0 ? x.Note + "; " : "") + $"Tạm ứng: −{adv:N0}" };
             Compute(l, e, wd, oth, run.StandardDays, r, x);
             run.Lines.Add(l);
         }

@@ -67,6 +67,7 @@ public class PayrollController : ErpControllerBase
             if (old.Department != m.Department) _hr.LogHistory(m.Id, HistoryKind.Transfer, old.Department, m.Department, null);
             if (old.Position != m.Position) _hr.LogHistory(m.Id, HistoryKind.Promotion, old.Position, m.Position, null);
             if (old.BaseSalary != m.BaseSalary) _hr.LogHistory(m.Id, HistoryKind.SalaryChange, old.BaseSalary.ToMoney(), m.BaseSalary.ToMoney(), null);
+            if (old.InsuranceSalary != m.InsuranceSalary) _hr.LogHistory(m.Id, HistoryKind.SalaryChange, old.InsuranceSalary.ToMoney(), m.InsuranceSalary.ToMoney(), "Lương đóng BHXH");
             if (old.IsActive && !m.IsActive && m.ResignDate == null) m.ResignDate = DateTime.Today;
             Db.Employees.Update(m);
         }

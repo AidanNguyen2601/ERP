@@ -1,0 +1,32 @@
+@model ERP.Web.Services.Pit05
+@{
+    ViewData["Title"] = "Tờ khai khấu trừ thuế TNCN (05/KK-TNCN)"; int y = ViewBag.Year; string kind = ViewBag.Kind; int p = ViewBag.Period;
+    (string No, string Name, string Val)[] ind =
+    {
+        ("[21]", "Tổng số người lao động", Model.C21.ToString()), ("[22]", "Trong đó: cá nhân cư trú có hợp đồng lao động", Model.C22.ToString()),
+        ("[23]", "Tổng số cá nhân đã khấu trừ thuế [23]=[24]+[25]", Model.C23.ToString()), ("[24]", "Cá nhân cư trú", Model.C24.ToString()), ("[25]", "Cá nhân không cư trú", Model.C25.ToString()),
+        ("[26]", "Tổng thu nhập chịu thuế (TNCT) trả cho cá nhân [26]=[27]+[28]", Model.C26.ToMoney()), ("[27]", "Cá nhân cư trú", Model.C27.ToMoney()), ("[28]", "Cá nhân không cư trú", Model.C28.ToMoney()),
+        ("[29]", "Trong đó: TNCT từ tiền phí mua bảo hiểm nhân thọ, bảo hiểm không bắt buộc khác", Model.C29.ToMoney()), ("[30]", "TNCT được miễn giảm theo Hiệp định", Model.C30.ToMoney()),
+        ("[31]", "Tổng TNCT trả cho cá nhân thuộc diện phải khấu trừ thuế [31]=[32]+[33]", Model.C31.ToMoney()), ("[32]", "Cá nhân cư trú", Model.C32.ToMoney()), ("[33]", "Cá nhân không cư trú", Model.C33.ToMoney()),
+        ("[34]", "Tổng số thuế TNCN đã khấu trừ [34]=[35]+[36]", Model.C34.ToMoney()), ("[35]", "Cá nhân cư trú", Model.C35.ToMoney()), ("[36]", "Cá nhân không cư trú", Model.C36.ToMoney()),
+    };
+}
+<partial name="_HrNav" model="@("pit05")" />
+<form method="get" class="toolbar">
+    <select name="kind" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()"><option value="M" selected="@(kind == "M")">Theo tháng</option><option value="Q" selected="@(kind == "Q")">Theo quý</option></select>
+    <select name="period" class="form-select form-select-sm" style="width:auto">@for (var i = 1; i <= (kind == "Q" ? 4 : 12); i++) { <option value="@i" selected="@(i == p)">@(kind == "Q" ? "Quý " + i : "Tháng " + i)</option> }</select>
+    <input name="year" type="number" value="@y" class="form-control form-control-sm" style="width:90px" /><button class="btn btn-sm btn-light border">Xem</button>
+    <a class="btn btn-sm btn-success ms-auto" asp-action="Pit05" asp-route-year="@y" asp-route-kind="@kind" asp-route-period="@p" asp-route-format="excel"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+    <a class="btn btn-sm btn-outline-primary" asp-action="Pit05" asp-route-year="@y" asp-route-kind="@kind" asp-route-period="@p" asp-route-format="xml"><i class="bi bi-filetype-xml"></i> XML</a>
+</form>
+@if (Model.Runs == 0) { <div class="alert alert-warning py-2 small">Chưa có bảng lương đã hạch toán trong kỳ @Model.From.ToDate() – @Model.To.ToDate().</div> }
+<div class="row g-3">
+    <div class="col-lg-6"><div class="card"><div class="card-header">Chỉ tiêu tờ khai – kỳ @Model.From.ToDate() – @Model.To.ToDate()</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+        @foreach (var i in ind) { <tr><td class="text-muted small" style="width:50px">@i.No</td><td class="small">@i.Name</td><td class="num fw-semibold">@i.Val</td></tr> }
+    </tbody></table></div>
+    <div class="card-footer small text-muted">Số liệu từ bảng lương đã hạch toán; mọi người lao động được coi là cá nhân cư trú. TNCT = tổng thu nhập − khoản không chịu thuế − phần làm thêm giờ được miễn. Tệp XML theo bố cục hồ sơ thuế điện tử – nên mở kiểm tra bằng HTKK / eTax trước khi nộp.</div></div></div>
+    <div class="col-lg-6"><div class="card"><div class="card-header">Chi tiết theo cá nhân</div><div class="card-body p-0"><table class="table table-sm mb-0">
+        <thead><tr><th>Nhân viên</th><th>MST cá nhân</th><th class="num">Tháng</th><th class="num">TNCT</th><th class="num">Thuế đã khấu trừ</th></tr></thead><tbody>
+        @foreach (var r in Model.Rows) { <tr><td>@r.Employee.Code <span class="small text-muted">@r.Employee.FullName</span></td><td class="small">@r.Employee.PersonalTaxCode</td><td class="num">@r.Months</td><td class="num">@r.Taxable.ToMoney()</td><td class="num">@r.Pit.ToMoney()</td></tr> }
+    </tbody></table></div></div></div>
+</div>

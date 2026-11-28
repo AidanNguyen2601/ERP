@@ -164,6 +164,8 @@ public class LeaveType
     public bool IsPaid { get; set; } = true;
     /// <summary>Trừ vào số ngày phép năm</summary>
     public bool DeductsAnnualBalance { get; set; }
+    /// <summary>Ngày nghỉ do BHXH chi trả (ốm đau, thai sản): doanh nghiệp không trả lương những ngày này</summary>
+    [Display(Name = "Chế độ BHXH")] public BenefitKind BenefitKind { get; set; }
     public bool IsActive { get; set; } = true;
 }
 

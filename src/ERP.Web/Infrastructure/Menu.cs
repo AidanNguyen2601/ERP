@@ -54,7 +54,7 @@ public static class Menu
         new() { Key = "gl", Title = "Kế toán tổng hợp", Icon = "bi-journal-bookmark", Tint = "#eef4ff", Items = new MenuItem[]
         {
             new() { Key = "journals", Title = "Chứng từ kế toán", Icon = "bi-journal-text", Controller = "Journals", Visible = Fin, Active = m => m.Is("Journals") },
-            new() { Key = "reports", Title = "Báo cáo tài chính", Icon = "bi-graph-up-arrow", Controller = "Reports", Action = "TrialBalance", Visible = Fin, Active = m => m.Is("Reports") && m.Action != "Periods" },
+            new() { Key = "reports", Title = "Báo cáo tài chính", Icon = "bi-graph-up-arrow", Controller = "Reports", Action = "TrialBalance", Visible = Fin, Active = m => (m.Is("Reports") && m.Action != "Periods") || m.Is("FinancialNotes") },
             new() { Key = "periods", Title = "Khóa sổ & kết chuyển", Icon = "bi-lock", Controller = "Reports", Action = "Periods", Visible = Fin, Active = m => m.Is("Reports", "Periods") },
             new() { Key = "reconcile", Title = "Đối chiếu phân hệ – kế toán", Icon = "bi-check2-square", Controller = "Reconciliation", Visible = Fin, Active = m => m.Is("Reconciliation") },
             new() { Key = "posting-rules", Title = "Cấu hình bút toán", Icon = "bi-sliders", Controller = "PostingRules", Visible = Fin, Active = m => m.Is("PostingRules") },
@@ -157,6 +157,7 @@ public static class Menu
             new() { Key = "hr-leave", Title = "Nghỉ phép", Icon = "bi-calendar-x", Controller = "Hr", Action = "Leave", Visible = Fin, Active = m => m.Is("Hr", "Leave") },
             new() { Key = "hr-comp", Title = "Thành phần lương & thưởng", Icon = "bi-sliders", Controller = "Hr", Action = "Components", Visible = Fin, Active = m => m.Is("Hr") && m.Action is "Components" or "Bonuses" },
             new() { Key = "hr-ins", Title = "Bảo hiểm & quyết toán TNCN", Icon = "bi-shield-check", Controller = "Hr", Action = "Insurance", Visible = Fin, Active = m => m.Is("Hr") && m.Action is "Insurance" or "PitFinalization" },
+            new() { Key = "hr-compliance", Title = "BHXH, thuế TNCN & tạm ứng", Icon = "bi-bank", Controller = "Compliance", Action = "Pit05", Visible = Fin, Active = m => m.Is("Compliance") },
         }},
         new() { Key = "quality", Title = "Quản lý chất lượng", Icon = "bi-patch-check", Tint = "#ecfeff", Items = new MenuItem[]
         {

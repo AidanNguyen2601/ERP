@@ -81,14 +81,26 @@ public class EInvoiceService
     private readonly ErpDbContext _db;
     private readonly SettingsService _set;
     private readonly ErpSettings _cfg;
-    public EInvoiceService(ErpDbContext db, SettingsService set, IOptions<ErpSettings> cfg) { _db = db; _set = set; _cfg = cfg.Value; }
+    private readonly IHttpClientFactory? _http;
+    public EInvoiceService(ErpDbContext db, SettingsService set, IOptions<ErpSettings> cfg, IHttpClientFactory? http = null) { _db = db; _set = set; _cfg = cfg.Value; _http = http; }
 
     public Task<bool> EnabledAsync() => _set.BoolAsync("EInvoice.Enabled");
 
-    private async Task<IEInvoiceProvider> ProviderAsync() =>
-        await _set.GetAsync("EInvoice.Provider", "demo") == "http"
-            ? new HttpEInvoiceProvider(await _set.GetAsync("EInvoice.Url"), await _set.GetAsync("EInvoice.Username"), await _set.GetAsync("EInvoice.ApiKey"))
-            : new DemoEInvoiceProvider();
+    private async Task<IEInvoiceProvider> ProviderAsync()
+    {
+        var kind = await _set.GetAsync("EInvoice.Provider", "demo");
+        if (kind == "demo") return new DemoEInvoiceProvider();
+        var url = await _set.GetAsync("EInvoice.Url"); var user = await _set.GetAsync("EInvoice.Username"); var key = await _set.GetAsync("EInvoice.ApiKey");
+        if (string.IsNullOrWhiteSpace(url)) throw new BusinessException("Chưa nhập địa chỉ API nhà cung cấp hóa đơn điện tử (Cài đặt → EInvoice.Url).");
+        if (kind == "http") return new HttpEInvoiceProvider(url, user, key);
+        var http = _http?.CreateClient("einvoice") ?? new HttpClient();
+        http.Timeout = TimeSpan.FromSeconds(60);
+        var cfg = new EInvoiceConfig(url, user, key, await _set.GetAsync("EInvoice.ServiceAccount"), await _set.GetAsync("EInvoice.ServicePassword"),
+            await _set.GetAsync("EInvoice.TemplateCode", "1"), _cfg.CompanyTaxCode ?? "", http);
+        return kind switch { "viettel" => new ViettelSInvoiceProvider(cfg), "vnpt" => new VnptInvoiceProvider(cfg), _ => new DemoEInvoiceProvider() };
+    }
+
+    public async Task<string> ProviderNameAsync() { try { return (await ProviderAsync()).Name; } catch (Exception ex) { return ex.Message; } }
 
     private static string N(decimal v) => v.ToString("0.##", CultureInfo.InvariantCulture);
 
@@ -104,6 +116,9 @@ public class EInvoiceService
         var ttChung = new XElement("TTChung", new XElement("PBan", "2.0.1"), new XElement("THDon", "Hóa đơn giá trị gia tăng"), new XElement("KHMSHDon", 1),
             new XElement("KHHDon", inv.Series), new XElement("SHDon", inv.InvoiceNo), new XElement("NLap", (note?.Date ?? inv.Date).ToString("yyyy-MM-dd")),
             new XElement("DVTTe", inv.CurrencyCode), new XElement("TGia", N(inv.ExchangeRate)), new XElement("HTTToan", "TM/CK"), new XElement("MSTTCGP", _cfg.CompanyTaxCode));
+        if (note == null && inv.ReplacesInvoice != null)
+            ttChung.Add(new XElement("TTHDLQuan", new XElement("TCHDon", 1), new XElement("LHDCLQuan", 1), new XElement("KHMSHDCLQuan", 1), new XElement("KHHDCLQuan", inv.ReplacesInvoice.Series),
+                new XElement("SHDCLQuan", inv.ReplacesInvoice.InvoiceNo), new XElement("NLHDCLQuan", inv.ReplacesInvoice.Date.ToString("yyyy-MM-dd")), new XElement("GChu", $"Thay thế hóa đơn {inv.ReplacesInvoice.Series} số {inv.ReplacesInvoice.InvoiceNo}")));
         if (note != null && original != null)
             ttChung.Add(new XElement("TTHDLQuan", new XElement("TCHDon", 2), new XElement("LHDCLQuan", 1), new XElement("KHMSHDCLQuan", 1), new XElement("KHHDCLQuan", original.Series),
                 new XElement("SHDCLQuan", original.InvoiceNo), new XElement("NLHDCLQuan", original.Date.ToString("yyyy-MM-dd")), new XElement("GChu", note.Reason)));
@@ -124,6 +139,7 @@ public class EInvoiceService
     public async Task IssueAsync(Invoice inv)
     {
         if (inv.Direction != InvoiceDirection.Sales || !await EnabledAsync()) return;
+        if (inv.ReplacesInvoiceId != null && inv.ReplacesInvoice == null) await _db.Entry(inv).Reference(i => i.ReplacesInvoice).LoadAsync();
         if (inv.Partner == null) await _db.Entry(inv).Reference(i => i.Partner).LoadAsync();
         foreach (var l in inv.Lines.Where(l => l.ItemId != null && l.Item == null)) await _db.Entry(l).Reference(x => x.Item).LoadAsync();
         var xml = BuildXml(inv);
@@ -137,10 +153,33 @@ public class EInvoiceService
     public async Task CancelAsync(Invoice inv, string reason)
     {
         if (inv.EInvoiceStatus != EInvoiceStatus.Issued) return;
+        inv.ErrorNoticeXml = ErrorNoticeXml(inv, reason, 1);
         var p = await ProviderAsync();
         var r = await p.CancelAsync(inv, reason);
         if (!r.Ok) throw new BusinessException("Không gửi được thông báo sai sót hóa đơn điện tử – " + r.Message);
         inv.EInvoiceStatus = EInvoiceStatus.Cancelled; inv.EInvoiceMessage = $"{p.Name}: {r.Message}";
+    }
+
+    /// <summary>Thông báo hóa đơn điện tử có sai sót – mẫu 04/SS-HĐĐT (NĐ 123/2020, sửa đổi NĐ 70/2025). Tính chất: 1 hủy, 2 điều chỉnh, 3 thay thế, 4 giải trình</summary>
+    public string ErrorNoticeXml(Invoice inv, string reason, int nature)
+    {
+        var x = new XElement("TBao", new XElement("DLTBao", new XAttribute("Id", "data"),
+            new XElement("PBan", "2.0.0"), new XElement("MSo", "04/SS-HĐĐT"), new XElement("Ten", "Thông báo hóa đơn điện tử có sai sót"), new XElement("Loai", 1),
+            new XElement("TCQT", "Cục Thuế"), new XElement("TNNT", _cfg.CompanyName), new XElement("MST", _cfg.CompanyTaxCode), new XElement("DDanh", _cfg.CompanyAddress),
+            new XElement("NTBao", DateTime.Today.ToString("yyyy-MM-dd")),
+            new XElement("DSHDon", new XElement("HDon", new XElement("STT", 1), new XElement("MCQTCap", inv.EInvoiceTaxCode), new XElement("KHMSHDon", 1), new XElement("KHHDon", inv.Series),
+                new XElement("SHDon", inv.InvoiceNo), new XElement("Ngay", inv.Date.ToString("yyyy-MM-dd")), new XElement("LADHDDT", 1), new XElement("TCTBao", nature), new XElement("LDo", reason)))),
+            new XElement("DSCKS", new XElement("NNT", "(chữ ký số người nộp thuế)")));
+        return new XDeclaration("1.0", "UTF-8", null) + Environment.NewLine + x;
+    }
+
+    /// <summary>Hóa đơn gốc bị thay thế: không gửi 04/SS riêng (hóa đơn thay thế đã tham chiếu hóa đơn gốc), chỉ đánh dấu và lưu thông báo để tra cứu</summary>
+    public void MarkReplaced(Invoice original, Invoice replacement)
+    {
+        if (original.EInvoiceStatus == EInvoiceStatus.None) return;
+        original.EInvoiceStatus = EInvoiceStatus.Replaced;
+        original.ErrorNoticeXml = ErrorNoticeXml(original, $"Thay thế bằng hóa đơn {replacement.Series} số {replacement.InvoiceNo}", 3);
+        original.EInvoiceMessage = $"Đã bị thay thế bởi hóa đơn {replacement.Series} {replacement.InvoiceNo}";
     }
 
     public async Task<string?> AdjustAsync(Invoice original, SalesCreditNote note)

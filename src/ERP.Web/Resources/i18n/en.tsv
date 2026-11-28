@@ -5724,3 +5724,176 @@ không hoàn tác	not reversible
 Địa chỉ ứng dụng (để chèn đường dẫn vào tin nhắn)	Application address (to insert links into messages)
 Nếu tài khoản ứng dụng không có quyền sysadmin, quản trị SQL chạy kịch bản sau rồi bấm nút Đã xóa thủ công:	If the application account has no sysadmin rights, the SQL administrator runs the script below and then clicks "Deleted manually":
 Trong Teams: kênh → Connectors / Workflows → Incoming Webhook → sao chép URL. Tin gửi vào kênh chung, không theo từng người.	In Teams: channel → Connectors / Workflows → Incoming Webhook → copy the URL. Messages go to a shared channel, not to individuals.
+(dải hóa đơn hết số)	(invoice number range exhausted)
+(dữ liệu XML không đúng quy định)	(XML data does not follow the specification)
+(hóa đơn cần thao tác không tồn tại)	(the invoice to process does not exist)
+(không phát hành được hóa đơn)	(the invoice could not be issued)
+(lô vượt số lượng cho phép)	(batch exceeds the allowed size)
+(mẫu số, ký hiệu không hợp lệ)	(invalid form / series)
+(trạng thái hóa đơn không cho phép thao tác)	(the invoice status does not allow this action)
+(tài khoản đăng nhập sai hoặc không có quyền)	(wrong login or no permission)
+(tên đăng nhập không đúng)	(wrong username)
+100% × {0} × {1} tháng + trợ cấp một lần 2 × {2}	100% × {0} × {1} months + lump-sum allowance 2 × {2}
+BHXH, thuế TNCN & tạm ứng	Social insurance, PIT & advances
+Báo tăng / giảm lao động BHXH (D02-LT)	Social insurance labor increase / decrease (D02-LT)
+Báo tăng giảm D02-LT	D02-LT increase / decrease
+BẢN THUYẾT MINH BÁO CÁO TÀI CHÍNH (B09-DN)	NOTES TO THE FINANCIAL STATEMENTS (B09-DN)
+Bảng lương tháng {0}/{1} đã hạch toán – chọn kỳ trừ lương sau.	Payroll {0}/{1} is already posted – choose a later deduction period.
+Bị thay thế bởi hóa đơn {0}	Replaced by invoice {0}
+Chi phí bán hàng và chi phí quản lý doanh nghiệp	Selling and general administrative expenses
+Chi phí khấu hao TSCĐ (quản lý)	Depreciation of fixed assets (administration)
+Chi phí thuế thu nhập doanh nghiệp hiện hành	Current corporate income tax expense
+Chi tiết theo cá nhân	Details by individual
+Chi tạm ứng lương	Salary advance payment
+Chi từ	Paid from
+Chi từ quỹ / tài khoản	Paid from cash / account
+Chuẩn mực và chế độ kế toán áp dụng	Accounting standards and regime applied
+Chưa có bảng lương đã hạch toán trong kỳ {0} – {1}.	No posted payroll in the period {0} – {1}.
+Chưa có tạm ứng cho kỳ này.	No advances for this period.
+Chưa nhập địa chỉ API nhà cung cấp hóa đơn điện tử (Cài đặt → EInvoice.Url).	The e-invoice provider API address is not set (Settings → EInvoice.Url).
+Chế độ BHXH cho loại nghỉ: nghỉ ốm do BHXH chi trả (doanh nghiệp không trả lương), thêm loại nghỉ thai sản	Social insurance benefit for leave types: sick leave paid by social insurance (not by the company), add maternity leave type
+Chế độ kế toán doanh nghiệp nhỏ và vừa theo Thông tư 133/2016/TT-BTC.	SME accounting regime under Circular 133/2016/TT-BTC.
+Chế độ kế toán doanh nghiệp theo Thông tư 99/2025/TT-BTC (thay thế Thông tư 200/2014/TT-BTC), áp dụng chuẩn mực kế toán Việt Nam.	Enterprise accounting regime under Circular 99/2025/TT-BTC (replacing Circular 200/2014/TT-BTC), applying Vietnamese Accounting Standards.
+Chế độ ốm đau, thai sản	Sickness and maternity benefits
+Chỉ dùng cho VNPT	VNPT only
+Chỉ lập hóa đơn thay thế cho hóa đơn bán ra.	Replacement invoices are only for sales invoices.
+Chỉ lập phiếu	Create only
+Chỉ thay thế hóa đơn đã phát hành.	Only issued invoices can be replaced.
+Chỉ tiêu tờ khai – kỳ {0} – {1}	Declaration indicators – period {0} – {1}
+Chọn nhân viên	Select an employee
+Chọn quỹ / tài khoản chi.	Select the paying cash / bank account.
+Chức vụ / chức danh	Position / title
+Cuối kỳ	Closing
+Cuối kỳ / kỳ này	Closing / this period
+Cá nhân cư trú	Resident individuals
+Cá nhân không cư trú	Non-resident individuals
+Các chính sách kế toán áp dụng	Accounting policies applied
+Các khoản giảm trừ doanh thu (hàng bán trả lại, giảm giá)	Revenue deductions (sales returns, allowances)
+Các loại thuế khác	Other taxes
+Các đối tượng khác ({0})	Other parties ({0})
+Căn cứ	Basis
+Cộng vốn chủ sở hữu	Total owners' equity
+DANH SÁCH CHI LƯƠNG THÁNG {0}/{1}	SALARY PAYMENT LIST {0}/{1}
+DANH SÁCH LAO ĐỘNG THAM GIA BHXH, BHYT, BHTN (D02-LT)	LIST OF EMPLOYEES PARTICIPATING IN SOCIAL, HEALTH, UNEMPLOYMENT INSURANCE (D02-LT)
+DANH SÁCH ĐỀ NGHỊ GIẢI QUYẾT HƯỞNG CHẾ ĐỘ ỐM ĐAU, THAI SẢN (01B-HSB)	LIST OF SICKNESS AND MATERNITY BENEFIT CLAIMS (01B-HSB)
+Doanh thu ghi nhận khi chuyển giao phần lớn rủi ro và lợi ích cho người mua (khi xuất hóa đơn). Giao dịch ngoại tệ quy đổi theo tỷ giá thực tế, đánh giá lại số dư cuối kỳ.	Revenue is recognized when most risks and rewards pass to the buyer (on invoicing). Foreign currency transactions are translated at actual rates and balances are revalued at period end.
+Doanh thu khác	Other revenue
+Doanh thu và chi phí hoạt động tài chính	Financial income and expenses
+Giảm hẳn – nghỉ việc	Permanent decrease – resigned
+Giảm trong kỳ	Decrease in period
+Hàng gửi bán	Goods on consignment
+Hàng tồn kho (giá gốc)	Inventories (at cost)
+Hàng tồn kho ghi nhận theo giá gốc, giá xuất kho theo phương pháp bình quân gia quyền (hoặc FIFO với mặt hàng khai báo), hạch toán theo phương pháp kê khai thường xuyên.	Inventories are stated at cost; issues are valued at weighted average cost (or FIFO for designated items) under the perpetual method.
+Hóa đơn gốc đã có hóa đơn điều chỉnh – không thay thế được.	The original invoice already has an adjustment invoice – it cannot be replaced.
+Hóa đơn đã thu tiền một phần – hãy hủy phiếu thu trước hoặc dùng hóa đơn điều chỉnh.	The invoice is partly collected – cancel the receipt first or use an adjustment invoice.
+I. Tăng	I. Increase
+II. Giảm	II. Decrease
+Khi chi: Nợ 3341 / Có TK tiền của quỹ. Bảng lương kỳ đã chọn tự trừ khoản tạm ứng vào thực lĩnh (không hạch toán lại). Tổng tạm ứng mỗi kỳ tối đa theo cài đặt Payroll.AdvanceMaxPct (mặc định 50% lương cơ bản).	On payment: Dr 3341 / Cr the cash account. The selected period's payroll deducts the advance from net pay automatically (no second entry). Total advances per period are capped by the Payroll.AdvanceMaxPct setting (default 50% of base salary).
+Không có biến động lao động trong tháng.	No labor changes this month.
+Không có đơn nghỉ hưởng chế độ BHXH bắt đầu trong tháng.	No social-insurance-paid leave starts this month.
+Không kết nối được VNPT Invoice:	Could not connect to VNPT Invoice:
+Không kết nối được Viettel S-Invoice:	Could not connect to Viettel S-Invoice:
+Không tìm thấy hóa đơn bị thay thế.	The replaced invoice was not found.
+Khấu trừ khác	Other deductions
+Kết nối HTTP chung (cổng tích hợp riêng)	Generic HTTP connection (custom integration gateway)
+Kỳ kế toán năm bắt đầu từ 01/01 và kết thúc 31/12. Kỳ lập thuyết minh: {0} – {1}. Đơn vị tiền tệ: đồng Việt Nam (VND).	The fiscal year runs from 01/01 to 31/12. Period of these notes: {0} – {1}. Currency: Vietnamese dong (VND).
+Kỳ kế toán, đơn vị tiền tệ sử dụng trong kế toán	Fiscal period and accounting currency
+Kỳ trừ lương:	Deduction period:
+Lương đóng BHXH	Social insurance salary
+Lập hóa đơn thay thế	Create replacement invoice
+Lập hóa đơn thay thế cho hóa đơn này? Hóa đơn gốc sẽ bị hủy khi phát hành hóa đơn thay thế.	Create a replacement for this invoice? The original is cancelled when the replacement is issued.
+Lập phiếu tạm ứng	Create salary advance
+Lập và chi	Create and pay
+MST {0} · Kỳ {1}	Tax code {0} · Period {1}
+Mã số BHXH	Social insurance no.
+Mật khẩu dịch vụ (VNPT: ACpass)	Service password (VNPT: ACpass)
+Mức lương đóng	Contribution salary
+Nghỉ không lương {0} ngày trong tháng	Unpaid leave {0} days in the month
+Nghỉ thai sản (hưởng BHXH)	Maternity leave (social insurance)
+Nghỉ thai sản từ	Maternity leave from
+Ngày / tháng	Days / months
+Ngày chi	Payment date
+Phiếu tạm ứng đã chi hoặc đã hủy.	The advance is already paid or cancelled.
+Phương án	Plan
+Phương án: TM tăng mới · GH giảm hẳn (nghỉ việc) · DC điều chỉnh mức đóng · TS nghỉ thai sản · KL nghỉ không lương từ 14 ngày làm việc trở lên trong tháng. Lấy từ hồ sơ nhân sự, quá trình công tác (thay đổi lương đóng BHXH) và đơn nghỉ đã duyệt. Nộp qua phần mềm kê khai BHXH / VssID theo QĐ 595/QĐ-BHXH.	Plans: TM new hire · GH permanent decrease (resigned) · DC contribution adjustment · TS maternity leave · KL unpaid leave of 14 working days or more in the month. Taken from HR profiles, work history (insurance salary changes) and approved leave. Submit via the social insurance declaration software / VssID per Decision 595/QĐ-BHXH.
+Phải trả người lao động và các khoản trích theo lương	Payables to employees and payroll contributions
+Số HĐ {0}	Invoice no. {0}
+Số liệu lập từ sổ cái (bút toán đã ghi sổ, không gồm bút toán kết chuyển với các chỉ tiêu phát sinh). Phần thuyết minh bằng lời (đặc điểm hoạt động, chính sách) cần kế toán trưởng rà soát, bổ sung trước khi ký.	Figures come from the ledger (posted entries, excluding closing entries for period movements). The narrative parts (business characteristics, policies) must be reviewed and completed by the chief accountant before signing.
+Số liệu từ bảng lương đã hạch toán; mọi người lao động được coi là cá nhân cư trú. TNCT = tổng thu nhập − khoản không chịu thuế − phần làm thêm giờ được miễn. Tệp XML theo bố cục hồ sơ thuế điện tử – nên mở kiểm tra bằng HTKK / eTax trước khi nộp.	Figures come from posted payrolls; all employees are treated as residents. Taxable income = total income − non-taxable items − exempt overtime. The XML follows the e-tax file layout – check it in HTKK / eTax before filing.
+Số ngày / tháng	Days / months
+Số tiền tạm ứng phải lớn hơn 0.	The advance amount must be greater than 0.
+TNCT được miễn giảm theo Hiệp định	Taxable income exempt under tax treaties
+Thai sản (BHXH chi trả)	Maternity (paid by social insurance)
+Thay thế bằng hóa đơn {0} số {1}	Replaced by invoice {0} no. {1}
+Thay thế hóa đơn {0} số {1}	Replaces invoice {0} no. {1}
+Thay thế hóa đơn {0} số {1} ngày {2}	Replaces invoice {0} no. {1} dated {2}
+Thay thế hóa đơn {0} {1}	Replaces invoice {0} {1}
+Theo quý	Quarterly
+Theo tháng	Monthly
+Thiếu số tài khoản:	Missing bank account:
+Thu nhập khác và chi phí khác	Other income and other expenses
+Thuyết minh BCTC	Financial notes
+Thuyết minh báo cáo tài chính (B09-DN)	Notes to the financial statements (B09-DN)
+Tháng {0}/{1} – số tiền là ước tính, cơ quan BHXH xét duyệt	Month {0}/{1} – amounts are estimates, approved by the social insurance agency
+Thông báo 04/SS-HĐĐT	Notice 04/SS-HĐĐT
+Thông báo hóa đơn điện tử có sai sót	Notice of erroneous e-invoice
+Thời gian nghỉ	Leave period
+Tiền gửi ngân hàng không kỳ hạn	Demand deposits
+Tiền hưởng	Benefit amount
+Tiền đang chuyển	Cash in transit
+Trong đó: TNCT từ tiền phí mua bảo hiểm nhân thọ, bảo hiểm không bắt buộc khác	Of which: taxable income from life and other voluntary insurance premiums
+Trong đó: chi phí nhân viên quản lý	Of which: administrative staff costs
+Trong đó: cá nhân cư trú có hợp đồng lao động	Of which: resident individuals with labor contracts
+Trợ cấp một lần	Lump-sum allowance
+Trừ lương T{0}	Deduct in M{0}
+Trừ vào lương năm	Deduct from salary in year
+Tài khoản dịch vụ (VNPT: Account)	Service account (VNPT: Account)
+Tài sản cố định ghi nhận theo nguyên giá, khấu hao theo phương pháp đường thẳng dựa trên thời gian sử dụng ước tính.	Fixed assets are stated at cost and depreciated on a straight-line basis over their estimated useful lives.
+Tên người nhận	Recipient name
+Tăng	Increase
+Tăng mới – vào làm	New hire – joined
+Tăng trong kỳ	Increase in period
+Tăng, giảm tài sản cố định hữu hình	Movements in tangible fixed assets
+Tạm ứng lương	Salary advances
+Tạm ứng lương {0} {1} – trừ lương {2}/{3}	Salary advance {0} {1} – deduct in {2}/{3}
+Tạm ứng đã nhận trong kỳ	Advances received in the period
+Tệp chi lương ngân hàng (Excel)	Bank salary payment file (Excel)
+Tổng TNCT trả cho cá nhân thuộc diện phải khấu trừ thuế [31]=[32]+[33]	Total taxable income paid to individuals subject to withholding [31]=[32]+[33]
+Tổng số cá nhân đã khấu trừ thuế [23]=[24]+[25]	Number of individuals with tax withheld [23]=[24]+[25]
+Tổng số người lao động	Total number of employees
+Tổng số thuế TNCN đã khấu trừ [34]=[35]+[36]	Total PIT withheld [34]=[35]+[36]
+Tổng thu nhập chịu thuế (TNCT) trả cho cá nhân [26]=[27]+[28]	Total taxable income paid to individuals [26]=[27]+[28]
+Tổng tạm ứng trong kỳ vượt {0}% lương cơ bản ({1} đ).	Total advances in the period exceed {0}% of base salary ({1} VND).
+Tổng {0} người · {1} đ	Total {0} people · {1} VND
+TỜ KHAI KHẤU TRỪ THUẾ TNCN (05/KK-TNCN)	PIT WITHHOLDING DECLARATION (05/KK-TNCN)
+Tờ khai 05/KK-TNCN	05/KK-TNCN declaration
+Tờ khai khấu trừ thuế TNCN (05/KK-TNCN)	PIT withholding declaration (05/KK-TNCN)
+Tỷ lệ (%)	Rate (%)
+VNPT trả lỗi {0}: {1}	VNPT returned error {0}: {1}
+Viettel trả lỗi {0}: {1}	Viettel returned error {0}: {1}
+Viettel: templateCode (VD 1/001 hoặc 1C24TAA); VNPT: pattern (VD 1/001). Demo: 1 = HĐ GTGT	Viettel: templateCode (e.g. 1/001 or 1C24TAA); VNPT: pattern (e.g. 1/001). Demo: 1 = VAT invoice
+Xuất Excel 01B-HSB	Export Excel 01B-HSB
+Xuất Excel D02-LT	Export Excel D02-LT
+demo = giả lập cấp mã; Viettel S-Invoice (API REST); VNPT Invoice (dịch vụ SOAP); http = cổng tích hợp riêng (MISA, BKAV... qua trung gian). Chạy thử trên môi trường thử nghiệm của nhà cung cấp trước	demo = simulated code issuance; Viettel S-Invoice (REST API); VNPT Invoice (SOAP service); http = custom gateway (MISA, BKAV... via middleware). Test on the provider's sandbox first
+không đọc được kết quả	could not read the result
+thiếu	missing
+{0} [Bị thay thế bởi {1}]	{0} [Replaced by {1}]
+{0} · MST {1} · {2}. Hình thức sở hữu, lĩnh vực và ngành nghề kinh doanh: theo Giấy chứng nhận đăng ký doanh nghiệp.	{0} · Tax code {1} · {2}. Ownership, business sector and activities: per the business registration certificate.
+{0}% × {1} / 24 ngày × {2} ngày	{0}% × {1} / 24 days × {2} days
+Điều chỉnh mức đóng: {0} → {1}	Contribution adjusted: {0} → {1}
+Đã bị thay thế	Replaced
+Đã bị thay thế bởi hóa đơn {0} {1}	Replaced by invoice {0} {1}
+Đã chi	Paid
+Đã chi (trừ vào lương tháng {0}/{1})	Paid (deducted from salary {0}/{1})
+Đã chi tạm ứng {0} và ghi sổ Nợ 334 / Có tiền.	Paid advance {0} and posted Dr 334 / Cr cash.
+Đã chi tạm ứng {0}.	Paid advance {0}.
+Đã có hóa đơn thay thế nháp {0}.	A draft replacement invoice {0} already exists.
+Đã hủy tạm ứng {0}	Cancelled advance {0}
+Đã lập hóa đơn thay thế nháp {0}. Sửa nội dung sai rồi bấm Phát hành – hóa đơn {1} sẽ tự hủy và đảo bút toán.	Created draft replacement invoice {0}. Fix the errors and click Issue – invoice {1} will be cancelled and its entry reversed automatically.
+Đã lập phiếu tạm ứng {0}.	Created salary advance {0}.
+Đã trừ vào bảng lương đã hạch toán – không hủy được.	Already deducted in a posted payroll – cannot be cancelled.
+Đặc điểm hoạt động của doanh nghiệp	Business characteristics
+Đến tháng	To month
+Ước tính theo Luật BHXH: ốm đau hưởng 75% mức lương đóng BHXH của tháng liền kề trước khi nghỉ, chia 24 ngày, nhân số ngày nghỉ làm việc; thai sản (sinh con) hưởng 100% mức bình quân lương đóng (dùng mức hiện hành) cho thời gian nghỉ và trợ cấp một lần bằng 2 lần mức lương cơ sở (cài đặt Payroll.BaseSalaryGov). Ngày nghỉ hưởng chế độ BHXH doanh nghiệp không trả lương. Cơ quan BHXH xét duyệt và chi trả số tiền chính thức.	Estimated per the Social Insurance Law: sickness pays 75% of the insurance salary of the month before leave, divided by 24 days, times working days off; maternity (childbirth) pays 100% of the average insurance salary (current level used) for the leave plus a lump sum of 2× the statutory base salary (setting Payroll.BaseSalaryGov). The company does not pay salary for days covered by social insurance. The social insurance agency approves and pays the official amounts.
+Ốm đau (BHXH chi trả)	Sickness (paid by social insurance)
+Ốm đau – thai sản	Sickness – maternity

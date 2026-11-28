@@ -63,6 +63,17 @@ public static class SchemaMigrations
                 DropIdx("dbo.SalesOrders", "IX_SalesOrders_Date_Id"), DropIdx("dbo.PurchaseOrders", "IX_PurchaseOrders_Date_Id"),
                 DropIdx("dbo.CashVouchers", "IX_CashVouchers_Date"), DropIdx("dbo.Invoices", "IX_Invoices_Direction_Date"),
             }),
+        new("20261129_01_che_do_bhxh", "Chế độ BHXH cho loại nghỉ: nghỉ ốm do BHXH chi trả (doanh nghiệp không trả lương), thêm loại nghỉ thai sản",
+            new[]
+            {
+                "IF OBJECT_ID(N'dbo.LeaveTypes', N'U') IS NOT NULL AND COL_LENGTH(N'dbo.LeaveTypes', N'BenefitKind') IS NOT NULL EXEC(N'UPDATE dbo.LeaveTypes SET BenefitKind = 1, IsPaid = 0 WHERE Code = N''OM'' AND BenefitKind = 0')",
+                "IF OBJECT_ID(N'dbo.LeaveTypes', N'U') IS NOT NULL AND COL_LENGTH(N'dbo.LeaveTypes', N'BenefitKind') IS NOT NULL AND EXISTS (SELECT 1 FROM dbo.LeaveTypes) AND NOT EXISTS (SELECT 1 FROM dbo.LeaveTypes WHERE Code = N'TS') EXEC(N'INSERT INTO dbo.LeaveTypes (Code, Name, IsPaid, DeductsAnnualBalance, IsActive, BenefitKind) VALUES (N''TS'', N''Nghỉ thai sản (hưởng BHXH)'', 0, 0, 1, 2)')",
+            },
+            new[]
+            {
+                "IF OBJECT_ID(N'dbo.LeaveTypes', N'U') IS NOT NULL EXEC(N'UPDATE dbo.LeaveTypes SET BenefitKind = 0, IsPaid = 1 WHERE Code = N''OM''')",
+                "IF OBJECT_ID(N'dbo.LeaveTypes', N'U') IS NOT NULL AND OBJECT_ID(N'dbo.LeaveRequests', N'U') IS NOT NULL EXEC(N'DELETE t FROM dbo.LeaveTypes t WHERE t.Code = N''TS'' AND NOT EXISTS (SELECT 1 FROM dbo.LeaveRequests r WHERE r.LeaveTypeId = t.Id)')",
+            }),
     };
 
     /// <summary>Áp dụng các migration chưa chạy (gọi khi khởi động, sau khi tạo bảng mới)</summary>

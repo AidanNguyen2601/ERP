@@ -148,6 +148,39 @@ public class InvoicesController : ErpControllerBase
         return RedirectToAction(nameof(Details), new { id });
     }
 
+    /// <summary>Lập hóa đơn thay thế (nháp) từ hóa đơn đã phát hành; khi phát hành hóa đơn thay thế, hóa đơn gốc tự hủy và đảo bút toán</summary>
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = AppRoles.Accounting)]
+    public async Task<IActionResult> Replace(int id)
+    {
+        var o = await Db.Invoices.Include(x => x.Lines).FirstOrDefaultAsync(x => x.Id == id);
+        if (o == null) return NotFound();
+        InvoiceService.ValidateReplaceable(o);
+        var exists = await Db.Invoices.FirstOrDefaultAsync(x => x.ReplacesInvoiceId == id && x.Status == InvoiceStatus.Draft);
+        if (exists != null) { Success($"Đã có hóa đơn thay thế nháp {exists.Number}."); return RedirectToAction(nameof(Details), new { id = exists.Id }); }
+        var copy = (Invoice)Db.Entry(o).CurrentValues.ToObject();
+        copy.Id = 0; copy.Number = await _svc.NextNumberAsync(o.Direction, DateTime.Today); copy.InvoiceNo = null; copy.Status = InvoiceStatus.Draft; copy.JournalEntryId = null; copy.PaidAmount = 0;
+        copy.Date = DateTime.Today; copy.CreatedById = Me; copy.CreatedAt = DateTime.Now; copy.ReplacesInvoiceId = o.Id; copy.ErrorNoticeXml = null;
+        copy.EInvoiceStatus = EInvoiceStatus.None; copy.EInvoiceLookupCode = null; copy.EInvoiceTaxCode = null; copy.EInvoiceMessage = null; copy.EInvoiceXml = null; copy.EInvoiceSentAt = null;
+        copy.Note = $"Thay thế hóa đơn {o.Series} số {o.InvoiceNo} ngày {o.Date:dd/MM/yyyy}";
+        copy.Lines = o.Lines.Select(l => { var n = (InvoiceLine)Db.Entry(l).CurrentValues.ToObject(); n.Id = 0; n.InvoiceId = 0; return n; }).ToList();
+        // như khi lập hóa đơn từ đơn hàng: dòng nháp đã tính vào số lượng đã lập hóa đơn (hóa đơn gốc trả lại khi bị hủy lúc phát hành bản thay thế)
+        var srcIds = copy.Lines.Where(l => l.SourceLineId != null).Select(l => l.SourceLineId!.Value).ToList();
+        if (o.SalesOrderId != null)
+            foreach (var sl in await Db.SalesOrderLines.Where(x => srcIds.Contains(x.Id)).ToListAsync())
+                sl.InvoicedQty += copy.Lines.Where(l => l.SourceLineId == sl.Id).Sum(l => l.Quantity);
+        Db.Invoices.Add(copy);
+        await Db.SaveChangesAsync();
+        Success($"Đã lập hóa đơn thay thế nháp {copy.Number}. Sửa nội dung sai rồi bấm Phát hành – hóa đơn {o.InvoiceNo} sẽ tự hủy và đảo bút toán.");
+        return RedirectToAction(nameof(Details), new { id = copy.Id });
+    }
+
+    public async Task<IActionResult> ErrorNoticeXml(int id)
+    {
+        var i = await Db.Invoices.FirstOrDefaultAsync(x => x.Id == id);
+        if (i?.ErrorNoticeXml == null) return NotFound();
+        return File(System.Text.Encoding.UTF8.GetBytes(i.ErrorNoticeXml), "application/xml", $"04SS_HDDT_{i.Series}_{i.InvoiceNo}.xml");
+    }
+
     [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = AppRoles.Accounting)]
     public async Task<IActionResult> Cancel(int id, string? reason)
     {

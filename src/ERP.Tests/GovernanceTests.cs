@@ -67,13 +67,20 @@ public class GovernanceTests
         Assert.All(SchemaMigrations.All, m => Assert.Contains(m.Id, applied));
         var admin = await _f.LoginAsync("admin");
         Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync("/Schema")).StatusCode);
-        var latest = SchemaMigrations.All.OrderByDescending(m => m.Id, StringComparer.Ordinal).First();
-        await _f.PostAsync(admin, "/Schema", "/Schema/Rollback");
-        Assert.NotNull(await _f.WithDbAsync(db => db.SchemaMigrations.Where(m => m.Id == latest.Id).Select(m => m.RolledBackAt).FirstAsync()));
+        var ordered = SchemaMigrations.All.OrderByDescending(m => m.Id, StringComparer.Ordinal).ToList();
+        // hoàn tác lần lượt đến bước chỉ mục danh sách, kiểm tra tác dụng, rồi áp dụng lại toàn bộ
+        var target = ordered.FindIndex(m => m.Id == "20261128_02_chi_muc_danh_sach");
+        for (var i = 0; i <= target; i++)
+        {
+            await _f.PostAsync(admin, "/Schema", "/Schema/Rollback");
+            Assert.NotNull(await _f.WithDbAsync(db => db.SchemaMigrations.Where(m => m.Id == ordered[i].Id).Select(m => m.RolledBackAt).FirstAsync()));
+        }
         Assert.Equal(0, await IndexCountAsync("IX_SalesOrders_Date_Id"));
         await _f.PostAsync(admin, "/Schema", "/Schema/Apply");
-        Assert.Null(await _f.WithDbAsync(db => db.SchemaMigrations.Where(m => m.Id == latest.Id).Select(m => m.RolledBackAt).FirstAsync()));
+        foreach (var m in ordered.Take(target + 1))
+            Assert.Null(await _f.WithDbAsync(db => db.SchemaMigrations.Where(x => x.Id == m.Id).Select(x => x.RolledBackAt).FirstAsync()));
         Assert.Equal(1, await IndexCountAsync("IX_SalesOrders_Date_Id"));
+        Assert.True(await _f.WithDbAsync(db => db.LeaveTypes.AnyAsync(t => t.Code == "OM" && t.BenefitKind == BenefitKind.Sickness && !t.IsPaid)));
     }
 
     private Task<int> IndexCountAsync(string name) => _f.WithDbAsync(async db =>
@@ -175,10 +182,13 @@ public sealed class FakeWebhook : IDisposable
     public System.Collections.Concurrent.ConcurrentBag<string> Bodies { get; } = new();
     public System.Collections.Concurrent.ConcurrentBag<string> Headers { get; } = new();
 
-    public FakeWebhook()
+    private readonly Func<string, string, string>? _respond;
+    public System.Collections.Concurrent.ConcurrentBag<string> Actions { get; } = new();
+    public FakeWebhook(Func<string, string, string>? respond = null)
     {
         var tcp = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0); tcp.Start();
         var port = ((IPEndPoint)tcp.LocalEndpoint).Port; tcp.Stop();
+        _respond = respond;
         Url = $"http://localhost:{port}/";
         _l.Prefixes.Add(Url);
         _l.Start();
@@ -188,9 +198,11 @@ public sealed class FakeWebhook : IDisposable
             {
                 HttpListenerContext ctx;
                 try { ctx = await _l.GetContextAsync(); } catch { return; }
-                using (var sr = new StreamReader(ctx.Request.InputStream)) Bodies.Add(await sr.ReadToEndAsync());
+                string reqBody; using (var sr = new StreamReader(ctx.Request.InputStream)) reqBody = await sr.ReadToEndAsync();
+                Bodies.Add(reqBody);
+                if (ctx.Request.Headers["SOAPAction"] is { } sa) Actions.Add(sa);
                 if (ctx.Request.Headers["access_token"] is { } t) Headers.Add(t);
-                var body = System.Text.Encoding.UTF8.GetBytes(ctx.Request.Url!.AbsolutePath.Contains("zalo") ? "{\"error\":0,\"message\":\"Success\"}" : "1");
+                var body = System.Text.Encoding.UTF8.GetBytes(_respond?.Invoke(ctx.Request.Url!.AbsolutePath, reqBody) ?? (ctx.Request.Url!.AbsolutePath.Contains("zalo") ? "{\"error\":0,\"message\":\"Success\"}" : "1"));
                 ctx.Response.StatusCode = 200; ctx.Response.ContentType = "application/json";
                 await ctx.Response.OutputStream.WriteAsync(body);
                 ctx.Response.Close();

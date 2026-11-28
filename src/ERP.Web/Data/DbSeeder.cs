@@ -136,7 +136,7 @@ public static class DbSeeder
     /// <summary>Giá trị mặc định cho cột mới NOT NULL thêm vào bảng đã có dữ liệu</summary>
     private static readonly Dictionary<string, string> ColumnDefaults = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["AllBranches"] = "1", ["ExchangeRate"] = "1", ["CurrencyCode"] = "N'VND'", ["ExpiryAlertDays"] = "30", ["VersionNo"] = "1", ["OrderType"] = "1", ["SamplingMethod"] = "1", ["AnnualLeaveDays"] = "12",
+        ["AllBranches"] = "1", ["BenefitKind"] = "0", ["Advance"] = "0", ["ExchangeRate"] = "1", ["CurrencyCode"] = "N'VND'", ["ExpiryAlertDays"] = "30", ["VersionNo"] = "1", ["OrderType"] = "1", ["SamplingMethod"] = "1", ["AnnualLeaveDays"] = "12",
     };
 
     /// <summary>Thêm các cột có trong model nhưng chưa có trong bảng (dựa trên lệnh CREATE TABLE do EF sinh). Không sửa / xóa cột cũ.</summary>

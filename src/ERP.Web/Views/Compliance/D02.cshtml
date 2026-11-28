@@ -1,0 +1,20 @@
+@model List<ERP.Web.Services.D02Row>
+@{ ViewData["Title"] = "Báo tăng / giảm lao động BHXH (D02-LT)"; int y = ViewBag.Year; int m = ViewBag.Month; }
+<partial name="_HrNav" model="@("d02")" />
+<form method="get" class="toolbar">
+    <select name="month" class="form-select form-select-sm" style="width:auto">@for (var i = 1; i <= 12; i++) { <option value="@i" selected="@(i == m)">Tháng @i</option> }</select>
+    <input name="year" type="number" value="@y" class="form-control form-control-sm" style="width:90px" /><button class="btn btn-sm btn-light border">Xem</button>
+    <a class="btn btn-sm btn-success ms-auto" asp-action="D02" asp-route-year="@y" asp-route-month="@m" asp-route-excel="true"><i class="bi bi-file-earmark-excel"></i> Xuất Excel D02-LT</a>
+</form>
+<div class="card"><div class="card-body p-0"><table class="table table-sm mb-0">
+    <thead><tr><th>Nhóm</th><th>Phương án</th><th>Họ và tên</th><th>Mã số BHXH</th><th>Chức danh</th><th class="num">Mức lương đóng</th><th>Từ tháng</th><th>Đến tháng</th><th>Ghi chú</th></tr></thead><tbody>
+    @foreach (var r in Model)
+    {
+        <tr><td class="small">@r.Group</td><td><span class="badge @(r.Group.StartsWith("I.") ? "bg-success" : "bg-secondary")">@r.Plan</span></td>
+            <td><a asp-controller="Hr" asp-action="Profile" asp-route-id="@r.Employee.Id">@r.Employee.FullName</a></td>
+            <td class="small @(string.IsNullOrEmpty(r.Employee.InsuranceBookNo) ? "text-danger" : "")">@(r.Employee.InsuranceBookNo ?? "thiếu")</td><td class="small">@r.Employee.Position</td>
+            <td class="num">@r.Salary.ToMoney()</td><td>@r.FromMonth.ToString("MM/yyyy")</td><td>@r.ToMonth?.ToString("MM/yyyy")</td><td class="small">@r.Note</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="9" class="text-center text-muted py-3">Không có biến động lao động trong tháng.</td></tr> }
+</tbody></table></div>
+<div class="card-footer small text-muted">Phương án: TM tăng mới · GH giảm hẳn (nghỉ việc) · DC điều chỉnh mức đóng · TS nghỉ thai sản · KL nghỉ không lương từ 14 ngày làm việc trở lên trong tháng. Lấy từ hồ sơ nhân sự, quá trình công tác (thay đổi lương đóng BHXH) và đơn nghỉ đã duyệt. Nộp qua phần mềm kê khai BHXH / VssID theo QĐ 595/QĐ-BHXH.</div></div>

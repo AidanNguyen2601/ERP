@@ -131,6 +131,7 @@ public class ErpDbContext : DbContext
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<SchemaMigration> SchemaMigrations => Set<SchemaMigration>();
     public DbSet<PermissionOverride> PermissionOverrides => Set<PermissionOverride>();
+    public DbSet<SalaryAdvance> SalaryAdvances => Set<SalaryAdvance>();
     public DbSet<ERP.Web.Services.BackupRecord> BackupRecords => Set<ERP.Web.Services.BackupRecord>();
     public DbSet<Lead> Leads => Set<Lead>();
     public DbSet<Opportunity> Opportunities => Set<Opportunity>();
@@ -280,6 +281,8 @@ public class ErpDbContext : DbContext
         modelBuilder.Entity<WorkCenter>().HasIndex(x => x.Code).IsUnique();
         modelBuilder.Entity<AlertRule>().HasIndex(x => x.Key).IsUnique();
         modelBuilder.Entity<Notification>().HasIndex(x => new { x.UserId, x.IsRead, x.CreatedAt });
+        modelBuilder.Entity<Invoice>().HasOne(i => i.ReplacesInvoice).WithMany().HasForeignKey(i => i.ReplacesInvoiceId).OnDelete(DeleteBehavior.NoAction);
+        modelBuilder.Entity<SalaryAdvance>().HasIndex(x => new { x.EmployeeId, x.Year, x.Month });
         modelBuilder.Entity<ReportSchedule>().HasIndex(x => new { x.IsActive, x.NextRunAt });
         modelBuilder.Entity<EmailOutbox>().HasIndex(x => x.CreatedAt);
         modelBuilder.Entity<Lead>().HasIndex(x => x.Code);

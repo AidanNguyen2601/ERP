@@ -369,7 +369,7 @@ public class HrController : ErpControllerBase
         public decimal Difference => AnnualTax - Withheld;
     }
 
-    public async Task<IActionResult> PitFinalization(int? year, bool excel = false)
+    public async Task<IActionResult> PitFinalization(int? year, bool excel = false, bool xml = false, [FromServices] Microsoft.Extensions.Options.IOptions<ErpSettings>? cfg = null)
     {
         var y = year ?? DateTime.Today.Year;
         var r = await _payroll.RatesAsync();
@@ -385,6 +385,8 @@ public class HrController : ErpControllerBase
             rows.Add(new PitRow(e, months, gross, non, ex, ins, family, taxable, PayrollService.Pit(taxable, annualBrackets), g.Sum(l => l.Pit)));
         }
         ViewBag.Year = y;
+        if (xml && cfg != null)
+            return File(System.Text.Encoding.UTF8.GetBytes(ComplianceService.Pit05QttXml(y, rows.Select(r => (r.Employee, r.Gross - r.NonTax - r.Exempt, r.Taxable, r.Insurance, r.Family, r.AnnualTax, r.Withheld)), cfg.Value)), "application/xml", $"05QTT_TNCN_{y}.xml");
         if (excel)
         {
             var cols = new List<ReportExport.Col> { new("Mã NV", FieldKind.Text), new("Họ tên", FieldKind.Text), new("MST", FieldKind.Text), new("Số tháng", FieldKind.Number), new("Tổng thu nhập", FieldKind.Money), new("Không chịu thuế", FieldKind.Money), new("Miễn thuế (làm thêm)", FieldKind.Money),

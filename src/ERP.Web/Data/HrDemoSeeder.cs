@@ -37,7 +37,8 @@ public static class HrDemoSeeder
         if (!await db.LeaveTypes.AnyAsync())
             db.LeaveTypes.AddRange(
                 new LeaveType { Code = "PN", Name = "Phép năm", IsPaid = true, DeductsAnnualBalance = true },
-                new LeaveType { Code = "OM", Name = "Nghỉ ốm (hưởng BHXH)", IsPaid = true },
+                new LeaveType { Code = "OM", Name = "Nghỉ ốm (hưởng BHXH)", IsPaid = false, BenefitKind = BenefitKind.Sickness },
+                new LeaveType { Code = "TS", Name = "Nghỉ thai sản (hưởng BHXH)", IsPaid = false, BenefitKind = BenefitKind.Maternity },
                 new LeaveType { Code = "VR", Name = "Việc riêng có lương (cưới, tang)", IsPaid = true },
                 new LeaveType { Code = "KL", Name = "Nghỉ không lương", IsPaid = false });
         await db.SaveChangesAsync();

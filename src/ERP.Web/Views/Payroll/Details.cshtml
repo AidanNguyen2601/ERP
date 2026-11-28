@@ -10,6 +10,8 @@
     <span class="small text-muted">@(Model.Branch?.Name ?? "Toàn công ty") · ngày công chuẩn @Model.StandardDays</span>
     @if (ap != null) { <a class="small" asp-controller="Approvals" asp-action="Index">Phê duyệt: @ap.Status.GetDisplayName() – @WorkflowService.Describe(ap)</a> }
     @if (Model.JournalEntryId != null) { <a class="btn btn-sm btn-light" asp-controller="Journals" asp-action="Details" asp-route-id="@Model.JournalEntryId"><i class="bi bi-journal-text"></i> Bút toán lương</a> }
+    <a class="btn btn-sm btn-light" asp-controller="Compliance" asp-action="BankFile" asp-route-runId="@Model.Id"><i class="bi bi-bank"></i> Tệp chi lương ngân hàng (Excel)</a>
+    <a class="btn btn-sm btn-light" asp-controller="Compliance" asp-action="BankFile" asp-route-runId="@Model.Id" asp-route-format="csv">CSV</a>
     <span class="ms-auto"></span>
     @if (Model.Status == DocStatus.Draft)
     {

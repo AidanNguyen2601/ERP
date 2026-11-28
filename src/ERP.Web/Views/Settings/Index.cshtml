@@ -46,7 +46,7 @@
                         <label class="form-label small">@f.Label</label><select name="@f.Key" class="form-select form-select-sm"><option value="TT99" selected="@(V(f.Key) == "TT99")">Thông tư 99/2025/TT-BTC (áp dụng từ 01/01/2026, thay thế TT200)</option><option value="TT200" selected="@(V(f.Key) == "TT200")">Thông tư 200/2014/TT-BTC (đã thay thế – chỉ để tham chiếu số liệu cũ)</option><option value="TT133" selected="@(V(f.Key) == "TT133")">Thông tư 133/2016/TT-BTC</option></select>
                         break;
                     case "provider":
-                        <label class="form-label small">@f.Label</label><select name="@f.Key" class="form-select form-select-sm"><option value="demo" selected="@(V(f.Key) == "demo")">Demo (giả lập)</option><option value="http" selected="@(V(f.Key) == "http")">Kết nối API nhà cung cấp</option></select>
+                        <label class="form-label small">@f.Label</label><select name="@f.Key" class="form-select form-select-sm"><option value="demo" selected="@(V(f.Key) == "demo")">Demo (giả lập)</option><option value="viettel" selected="@(V(f.Key) == "viettel")">Viettel S-Invoice</option><option value="vnpt" selected="@(V(f.Key) == "vnpt")">VNPT Invoice</option><option value="http" selected="@(V(f.Key) == "http")">Kết nối HTTP chung (cổng tích hợp riêng)</option></select>
                         break;
                     case "secret":
                         <label class="form-label small">@f.Label</label><input name="@f.Key" type="password" autocomplete="new-password" class="form-control form-control-sm" placeholder="@(V(f.Key) == "" ? "Chưa khai báo" : "••••••• (đã khai báo)")" />
