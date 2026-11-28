@@ -1,0 +1,25 @@
+@model MaintenanceOrder
+@{ ViewData["Title"] = Model.Kind == MaintenanceKind.Breakdown ? "Yêu cầu sửa chữa" : "Phiếu bảo dưỡng"; }
+<partial name="_MtNav" model="@("orders")" />
+<div class="card" style="max-width:1000px"><div class="card-body">
+<form asp-action="Save" method="post">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="All" class="alert alert-danger py-2 empty-hide"></div>
+    <div class="row g-3">
+        <div class="col-md-3"><label asp-for="Kind" class="form-label"></label><select asp-for="Kind" asp-items="Html.GetEnumSelectList<MaintenanceKind>()" class="form-select"></select></div>
+        <div class="col-md-5"><label asp-for="EquipmentId" class="form-label"></label><select asp-for="EquipmentId" asp-items="ViewBag.Equipments" class="form-select"><option value="">-- Chọn --</option></select><span asp-validation-for="EquipmentId" class="text-danger small"></span></div>
+        <div class="col-md-2"><label asp-for="Priority" class="form-label"></label><select asp-for="Priority" asp-items="Html.GetEnumSelectList<MaintenancePriority>()" class="form-select"></select></div>
+        <div class="col-md-2"><label asp-for="DueDate" class="form-label"></label><input asp-for="DueDate" type="date" class="form-control" /></div>
+        <div class="col-12"><label asp-for="Title" class="form-label"></label><input asp-for="Title" class="form-control" /><span asp-validation-for="Title" class="text-danger small"></span></div>
+        <div class="col-12"><label asp-for="Symptom" class="form-label"></label><textarea asp-for="Symptom" rows="3" class="form-control" placeholder="Mô tả hiện tượng: tiếng kêu, rò rỉ, báo lỗi, ngừng chạy…"></textarea></div>
+        <div class="col-md-3"><label asp-for="ReportedAt" class="form-label"></label><input asp-for="ReportedAt" type="datetime-local" class="form-control" /></div>
+        <div class="col-md-3"><label asp-for="RequestedBy" class="form-label"></label><input asp-for="RequestedBy" class="form-control" /></div>
+        <div class="col-md-3"><label asp-for="Technician" class="form-label"></label><input asp-for="Technician" class="form-control" /></div>
+        <div class="col-md-3"><label asp-for="EstimatedCost" class="form-label"></label><input asp-for="EstimatedCost" type="number" step="1000" min="0" class="form-control" /></div>
+        <div class="col-md-4"><label asp-for="WarehouseId" class="form-label"></label><select asp-for="WarehouseId" asp-items="ViewBag.Whs" class="form-select"><option value="">-- Chọn khi cần xuất phụ tùng --</option></select></div>
+    </div>
+    <div class="small text-muted mt-2">Phiếu nháp được gửi duyệt theo quy tắc phê duyệt (theo chi phí dự kiến); sau khi duyệt mới bắt đầu thực hiện, thêm phụ tùng, hoàn thành và nghiệm thu.</div>
+    <div class="mt-4 d-flex gap-2"><button class="btn btn-light border" name="submit" value="false">Lưu nháp</button><button class="btn btn-primary" name="submit" value="true">Lưu & gửi duyệt</button><a class="btn btn-light" asp-action="Index">Hủy</a></div>
+</form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

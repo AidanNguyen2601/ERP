@@ -1,0 +1,22 @@
+@model List<MaintenanceType>
+@{ ViewData["Title"] = "Loại bảo dưỡng"; var e = (MaintenanceType)ViewBag.Edit; var can = (bool)ViewBag.CanEdit; var used = (Dictionary<int, int>)ViewBag.Used; }
+<partial name="_MtNav" model="@("types")" />
+<div class="row g-3">
+    <div class="col-lg-8"><div class="card"><div class="card-body p-0"><table class="table table-sm table-hover mb-0">
+        <thead><tr><th>Mã</th><th>Tên</th><th>Hình thức</th><th class="num">Chu kỳ mặc định</th><th class="num">Kế hoạch dùng</th><th>Ghi chú</th><th></th></tr></thead><tbody>
+        @foreach (var t in Model) { <tr class="@(t.IsActive ? "" : "text-muted")"><td>@t.Code</td><td>@t.Name</td><td class="small">@t.Kind.GetDisplayName()</td><td class="num">@t.DefaultIntervalDays ngày</td><td class="num">@used.GetValueOrDefault(t.Id)</td><td class="small">@t.Note</td><td>@if (can) { <a class="small" asp-action="Types" asp-route-edit="@t.Id">Sửa</a> }</td></tr> }
+    </tbody></table></div></div></div>
+    @if (can)
+    {
+        <div class="col-lg-4"><div class="card"><div class="card-header">@(e.Id == 0 ? "Thêm loại bảo dưỡng" : $"Sửa {e.Code}")</div><div class="card-body">
+            <form asp-action="SaveType" method="post" class="row g-2"><input type="hidden" name="Id" value="@e.Id" />
+                <div class="col-4"><label class="form-label small">Mã</label><input name="Code" value="@e.Code" class="form-control form-control-sm" /></div>
+                <div class="col-8"><label class="form-label small">Tên</label><input name="Name" value="@e.Name" class="form-control form-control-sm" /></div>
+                <div class="col-7"><label class="form-label small">Hình thức</label><select name="Kind" asp-items="Html.GetEnumSelectList<MaintenanceKind>()" class="form-select form-select-sm"></select></div>
+                <div class="col-5"><label class="form-label small">Chu kỳ (ngày)</label><input name="DefaultIntervalDays" type="number" min="1" value="@e.DefaultIntervalDays" class="form-control form-control-sm" /></div>
+                <div class="col-12"><label class="form-label small">Ghi chú</label><input name="Note" value="@e.Note" class="form-control form-control-sm" /></div>
+                <div class="col-12"><div class="form-check"><input type="checkbox" class="form-check-input" name="IsActive" value="true" @(e.IsActive ? "checked" : "") /><input type="hidden" name="IsActive" value="false" /><label class="form-check-label small">Đang sử dụng</label></div></div>
+                <div class="col-12"><button class="btn btn-sm btn-primary">Lưu</button> @if (e.Id != 0) { <a class="btn btn-sm btn-light" asp-action="Types">Hủy</a> }</div>
+            </form></div></div></div>
+    }
+</div>

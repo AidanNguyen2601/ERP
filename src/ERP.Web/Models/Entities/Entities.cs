@@ -30,6 +30,7 @@ public static class AppRoles
     public const string Warehouse = "Warehouse";
     public const string Production = "Production";
     public const string Quality = "Quality";
+    public const string Maintenance = "Maintenance";
 
     // Nhóm quyền dùng cho [Authorize(Roles = ...)]
     public const string Accounting = Admin + "," + Accountant;
@@ -43,8 +44,10 @@ public static class AppRoles
     public const string QcInspectors = Admin + "," + Quality + "," + Warehouse + "," + Production;
     /// <summary>Khai báo tiêu chí kiểm tra, quyết định xử lý hàng không đạt</summary>
     public const string QcManagers = Admin + "," + Quality;
+    /// <summary>Bảo dưỡng thiết bị: lập kế hoạch, phiếu bảo dưỡng, sửa chữa</summary>
+    public const string MaintenanceTeam = Admin + "," + Maintenance + "," + Production;
 
-    public static readonly string[] All = { Admin, Director, Accountant, Sales, Purchasing, Warehouse, Production, Quality };
+    public static readonly string[] All = { Admin, Director, Accountant, Sales, Purchasing, Warehouse, Production, Quality, Maintenance };
 
     public static string DisplayName(string role) => role switch
     {
@@ -56,6 +59,7 @@ public static class AppRoles
         Warehouse => "Thủ kho",
         Production => "Sản xuất",
         Quality => "Quản lý chất lượng (QC)",
+        Maintenance => "Bảo trì thiết bị",
         _ => role
     };
 }

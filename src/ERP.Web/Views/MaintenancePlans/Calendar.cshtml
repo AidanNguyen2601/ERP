@@ -1,0 +1,46 @@
+@model List<(MaintenancePlan Plan, DateTime Due)>
+@{
+    ViewData["Title"] = "Lịch bảo dưỡng"; var view = (string)ViewBag.View; var d = (DateTime)ViewBag.Date; var from = (DateTime)ViewBag.From; var to = (DateTime)ViewBag.To;
+    var orders = (List<MaintenanceOrder>)ViewBag.Orders;
+    var step = view == "year" ? d.AddYears(1) : view == "week" ? d.AddDays(7) : d.AddMonths(1);
+    var back = view == "year" ? d.AddYears(-1) : view == "week" ? d.AddDays(-7) : d.AddMonths(-1);
+    var title = view == "year" ? $"Năm {d.Year}" : view == "week" ? $"Tuần {from:dd/MM} – {to:dd/MM/yyyy}" : $"Tháng {d:MM/yyyy}";
+}
+<partial name="_MtNav" model="@("cal")" />
+<div class="toolbar">
+    @foreach (var (k, t) in new[] { ("week", "Tuần"), ("month", "Tháng"), ("year", "Năm") }) { <a class="btn btn-sm @(view == k ? "btn-secondary" : "btn-light border")" asp-action="Calendar" asp-route-view="@k" asp-route-date="@d.ToString("yyyy-MM-dd")">@t</a> }
+    <a class="btn btn-sm btn-light border" asp-action="Calendar" asp-route-view="@view" asp-route-date="@back.ToString("yyyy-MM-dd")">‹</a>
+    <b class="px-2">@title</b>
+    <a class="btn btn-sm btn-light border" asp-action="Calendar" asp-route-view="@view" asp-route-date="@step.ToString("yyyy-MM-dd")">›</a>
+    <a class="btn btn-sm btn-light border" asp-action="Calendar" asp-route-view="@view">Hôm nay</a>
+</div>
+@if (view == "year")
+{
+    <div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-bordered mb-0 text-center">
+        <thead><tr><th class="text-start">Thiết bị</th>@for (var m = 1; m <= 12; m++) { <th>T@(m)</th> }<th>Cộng</th></tr></thead><tbody>
+        @foreach (var g in Model.GroupBy(x => x.Plan.EquipmentId).OrderBy(g => g.First().Plan.Equipment!.Code))
+        {
+            <tr><td class="text-start"><a asp-controller="Equipment" asp-action="Details" asp-route-id="@g.Key">@g.First().Plan.Equipment!.Code</a> <span class="small text-muted">@g.First().Plan.Equipment!.Name</span></td>
+                @for (var m = 1; m <= 12; m++) { var n = g.Count(x => x.Due.Month == m); <td class="@(n > 0 ? "table-warning fw-bold" : "")">@(n > 0 ? n.ToString() : "")</td> }<td class="fw-bold">@g.Count()</td></tr>
+        }
+        @if (!Model.Any()) { <tr><td colspan="14" class="text-muted py-4">Không có kế hoạch đến hạn trong năm.</td></tr> }
+    </tbody></table></div></div></div>
+}
+else
+{
+    <div class="card"><div class="card-body p-0"><table class="table table-sm mb-0">
+        <thead><tr><th style="width:130px">Ngày</th><th>Thiết bị</th><th>Nội dung</th><th>Hình thức</th><th>Phụ trách</th><th class="num">Dự kiến</th><th>Phiếu</th></tr></thead><tbody>
+        @foreach (var x in Model)
+        {
+            var o = orders.FirstOrDefault(y => y.PlanId == x.Plan.Id && y.DueDate.Date == x.Due.Date);
+            <tr class="@(x.Due < DateTime.Today && o == null ? "table-danger" : "")"><td>@x.Due.ToString("ddd dd/MM")</td><td><a asp-controller="Equipment" asp-action="Details" asp-route-id="@x.Plan.EquipmentId">@x.Plan.Equipment?.Code</a> @x.Plan.Equipment?.Name</td><td>@x.Plan.Title</td><td class="small">@x.Plan.Kind.GetDisplayName()</td><td>@x.Plan.Responsible</td><td class="num">@x.Plan.EstimatedCost.ToMoney()</td>
+                <td>@if (o != null) { <a asp-controller="MaintenanceOrders" asp-action="Details" asp-route-id="@o.Id">@o.Number</a> <span class="small text-muted">@o.Status.GetDisplayName()</span> }</td></tr>
+        }
+        @foreach (var o in orders.Where(o => !Model.Any(x => x.Plan.Id == o.PlanId && x.Due.Date == o.DueDate.Date)))
+        {
+            <tr class="table-light"><td>@o.DueDate.ToString("ddd dd/MM")</td><td>@o.Equipment?.Code @o.Equipment?.Name</td><td>@o.Title</td><td class="small">@o.Kind.GetDisplayName()</td><td>@o.Technician</td><td></td><td><a asp-controller="MaintenanceOrders" asp-action="Details" asp-route-id="@o.Id">@o.Number</a> <span class="small text-muted">@o.Status.GetDisplayName()</span></td></tr>
+        }
+        @if (!Model.Any() && !orders.Any()) { <tr><td colspan="7" class="text-center text-muted py-4">Không có công việc bảo dưỡng trong kỳ.</td></tr> }
+    </tbody></table></div></div>
+}
+<div class="small text-muted mt-2">Lịch tính từ lần đến hạn kế tiếp của các kế hoạch đang áp dụng, lặp theo chu kỳ. Đến hạn (trước hạn số ngày đã khai báo) bấm "Tạo phiếu đến hạn" ở trang Kế hoạch để sinh phiếu bảo dưỡng.</div>

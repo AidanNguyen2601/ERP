@@ -36,6 +36,7 @@ public static class PostingCatalog
     public const string AdLoss = "AD.Loss", AdIncome = "AD.Income";
     public const string PcSummary = "PC.Summary", PcRetained = "PC.Retained";
     public const string CnSalesReturn = "CN.SalesReturn", CnPriceReduction = "CN.PriceReduction";
+    public const string MtExpense = "MT.Expense";
     public const string QcScrap = "QC.Scrap", QcReturnPayable = "QC.ReturnPayable", QcReturnVariance = "QC.ReturnVariance";
 
     private const string Inventory = "TK hàng tồn kho theo loại hàng (cấu hình ở nhóm \"Hàng tồn kho\")";
@@ -111,6 +112,12 @@ public static class PostingCatalog
             new(null, "Nợ / Có", Inventory),
             new(ScSurplus, "Có", "Hàng thừa chờ xử lý", "3381", new[] { "338", "711", "632" }),
             new(ScShortage, "Nợ", "Hàng thiếu chờ xử lý", "1381", new[] { "138", "632", "811" }),
+        }),
+        new("maintenance", "Xuất phụ tùng bảo dưỡng thiết bị", "bi-wrench-adjustable", "Bảo dưỡng thiết bị",
+            "Phụ tùng xuất cho phiếu bảo dưỡng / sửa chữa ghi chi phí; thiết bị có thể chọn TK chi phí riêng. Phụ tùng trả lại kho ghi giảm chi phí.", new PostingLineDef[]
+        {
+            new(MtExpense, "Nợ", "Chi phí bảo dưỡng, sửa chữa thiết bị (mặc định)", "6272", new[] { "627", "641", "642", "811" }),
+            new(null, "Có", Inventory),
         }),
         new("qc-scrap", "Xuất hủy hàng không đạt chất lượng", "bi-trash3", "Quản lý chất lượng",
             "NCR quyết định hủy bỏ: xuất kho số lượng không phù hợp theo giá vốn bình quân.", new PostingLineDef[]

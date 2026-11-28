@@ -1,0 +1,21 @@
+@model List<MaintenanceOrder>
+@{ ViewData["Title"] = "Lịch sử bảo trì, dừng máy và chi phí"; var eqs = (List<Equipment>)ViewBag.Equipments; var kind = ViewBag.Kind as MaintenanceKind?; }
+<partial name="_MtNav" model="@("history")" />
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Thiết bị</label><select name="equipmentId" class="form-select form-select-sm"><option value="">-- Tất cả --</option>@foreach (var e in eqs) { <option value="@e.Id" selected="@(ViewBag.EquipmentId == e.Id)">@e.Code – @e.Name</option> }</select></div>
+    <div><label class="form-label small mb-0">Hình thức</label><select name="kind" class="form-select form-select-sm"><option value="">-- Tất cả --</option>@foreach (MaintenanceKind k in Enum.GetValues<MaintenanceKind>()) { <option value="@k" selected="@(kind == k)">@k.GetDisplayName()</option> }</select></div>
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@(((DateTime)ViewBag.To).Iso())" class="form-control form-control-sm" /></div>
+    <button class="btn btn-sm btn-outline-primary">Xem</button><a class="btn btn-sm btn-light border ms-auto" asp-action="Costs">Chi phí theo tháng / ngân sách →</a>
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Hoàn thành</th><th>Số phiếu</th><th>Thiết bị</th><th>Hình thức</th><th>Nội dung / nguyên nhân</th><th class="num">Dừng máy (giờ)</th><th class="num">Phụ tùng</th><th class="num">Nhân công</th><th class="num">Thuê ngoài</th><th class="num">Tổng</th></tr></thead><tbody>
+    @foreach (var o in Model)
+    {
+        <tr><td>@o.CompletedAt.ToDate()</td><td><a asp-controller="MaintenanceOrders" asp-action="Details" asp-route-id="@o.Id">@o.Number</a></td><td>@o.Equipment?.Code</td><td class="small">@o.Kind.GetDisplayName()</td><td>@o.Title @if (!string.IsNullOrEmpty(o.Cause)) { <div class="small text-muted">Nguyên nhân: @o.Cause</div> }</td>
+            <td class="num">@o.DowntimeHours.ToQty()</td><td class="num">@o.PartsCost.ToMoney()</td><td class="num">@o.LaborCost.ToMoney()</td><td class="num">@o.OutsideCost.ToMoney()</td><td class="num fw-bold">@o.TotalCost.ToMoney()</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="10" class="text-center text-muted py-4">Chưa có phiếu hoàn thành trong kỳ.</td></tr> }
+    </tbody>
+    @if (Model.Any()) { <tfoot><tr class="fw-bold"><td colspan="5" class="text-end">Cộng</td><td class="num">@Model.Sum(o => o.DowntimeHours).ToQty()</td><td class="num">@Model.Sum(o => o.PartsCost).ToMoney()</td><td class="num">@Model.Sum(o => o.LaborCost).ToMoney()</td><td class="num">@Model.Sum(o => o.OutsideCost).ToMoney()</td><td class="num">@Model.Sum(o => o.TotalCost).ToMoney()</td></tr></tfoot> }
+</table></div></div></div>

@@ -1,0 +1,9 @@
+@model string
+@{
+    (string Key, string Title, string Ctl, string Act)[] tabs =
+    {
+        ("dash", "Tổng quan", "MaintenanceReports", "Index"), ("eq", "Thiết bị", "Equipment", "Index"), ("plans", "Kế hoạch", "MaintenancePlans", "Index"), ("cal", "Lịch", "MaintenancePlans", "Calendar"),
+        ("orders", "Phiếu bảo dưỡng & sửa chữa", "MaintenanceOrders", "Index"), ("history", "Lịch sử & chi phí", "MaintenanceReports", "History"), ("kpi", "MTBF / MTTR", "MaintenanceReports", "Kpi"), ("types", "Loại bảo dưỡng", "Equipment", "Types")
+    };
+}
+<div class="subnav">@foreach (var t in tabs) { <a class="@(Model == t.Key ? "active" : "")" asp-controller="@t.Ctl" asp-action="@t.Act">@t.Title</a> }</div>

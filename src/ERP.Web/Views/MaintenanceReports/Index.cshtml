@@ -1,0 +1,32 @@
+@{
+    ViewData["Title"] = "Tổng quan bảo dưỡng";
+    var down = (List<Equipment>)ViewBag.Down; var overdue = (List<MaintenancePlan>)ViewBag.Overdue; var upcoming = (List<MaintenancePlan>)ViewBag.Upcoming;
+    var open = (List<MaintenanceOrder>)ViewBag.OpenOrders; var expiring = (List<EquipmentDocument>)ViewBag.Expiring; var warranty = (List<Equipment>)ViewBag.Warranty;
+    var t = ((int Breakdowns, decimal Downtime, decimal Cost, decimal Mttr, decimal Pm))ViewBag.Total;
+}
+<partial name="_MtNav" model="@("dash")" />
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3"><div class="card kpi"><div class="label">Thiết bị đang dừng / bảo dưỡng</div><div class="value @(down.Any() ? "bad" : "good")">@down.Count</div></div></div>
+    <div class="col-6 col-md-3"><div class="card kpi"><div class="label">Kế hoạch quá hạn</div><div class="value @(overdue.Any() ? "bad" : "good")">@overdue.Count</div><div class="sub">Sắp đến hạn 14 ngày: @upcoming.Count</div></div></div>
+    <div class="col-6 col-md-3"><div class="card kpi"><div class="label">Sửa chữa 12 tháng</div><div class="value">@t.Breakdowns</div><div class="sub">Dừng máy @t.Downtime.ToQty() giờ · MTTR @t.Mttr.ToQty() giờ</div></div></div>
+    <div class="col-6 col-md-3"><div class="card kpi"><div class="label">Tuân thủ bảo dưỡng định kỳ</div><div class="value">@t.Pm.ToPct()</div><div class="sub">Chi phí 12 tháng @t.Cost.ToShortMoney()</div></div></div>
+</div>
+<div class="row g-3">
+    <div class="col-lg-6"><div class="card h-100"><div class="card-header">Thiết bị đang dừng / đang bảo dưỡng</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+        @foreach (var e in down) { <tr><td><a asp-controller="Equipment" asp-action="Details" asp-route-id="@e.Id">@e.Code</a></td><td>@e.Name</td><td>@e.Department</td><td><span class="badge @(e.Status == EquipmentStatus.Down ? "bg-danger" : "bg-warning text-dark")">@e.Status.GetDisplayName()</span></td></tr> }
+        @if (!down.Any()) { <tr><td class="text-muted text-center py-3">Tất cả thiết bị đang chạy.</td></tr> }
+    </tbody></table></div></div></div>
+    <div class="col-lg-6"><div class="card h-100"><div class="card-header">Kế hoạch quá hạn và sắp đến hạn</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+        @foreach (var p in overdue.Concat(upcoming)) { <tr class="@(p.IsOverdue ? "table-danger" : "")"><td>@p.NextDueDate.ToDate()</td><td>@p.Equipment?.Code</td><td>@p.Title</td><td>@p.Responsible</td></tr> }
+        @if (!overdue.Any() && !upcoming.Any()) { <tr><td class="text-muted text-center py-3">Không có kế hoạch đến hạn.</td></tr> }
+    </tbody></table></div></div></div>
+    <div class="col-lg-7"><div class="card h-100"><div class="card-header">Phiếu đang mở (ưu tiên trước)</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+        @foreach (var o in open) { <tr><td><a asp-controller="MaintenanceOrders" asp-action="Details" asp-route-id="@o.Id">@o.Number</a></td><td>@o.Equipment?.Code</td><td>@o.Title</td><td><span class="badge @(o.Priority == MaintenancePriority.Urgent ? "bg-danger" : "bg-light text-dark border")">@o.Priority.GetDisplayName()</span></td><td class="small">@o.Status.GetDisplayName()</td></tr> }
+        @if (!open.Any()) { <tr><td class="text-muted text-center py-3">Không có phiếu đang mở.</td></tr> }
+    </tbody></table></div></div></div>
+    <div class="col-lg-5"><div class="card h-100"><div class="card-header">Giấy tờ kiểm định / bảo hành sắp hết hạn</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+        @foreach (var d in expiring) { <tr class="@(d.ExpiryDate < DateTime.Today ? "table-danger" : "")"><td>@d.Equipment?.Code</td><td>@d.Title</td><td>@d.ExpiryDate.ToDate()</td></tr> }
+        @foreach (var e in warranty) { <tr><td>@e.Code</td><td>Bảo hành thiết bị</td><td>@e.WarrantyUntil.ToDate()</td></tr> }
+        @if (!expiring.Any() && !warranty.Any()) { <tr><td class="text-muted text-center py-3">Không có giấy tờ sắp hết hạn.</td></tr> }
+    </tbody></table></div></div></div>
+</div>

@@ -63,7 +63,8 @@ public enum DocOrigin
     [Display(Name = "Sản xuất")] Production = 4,
     [Display(Name = "Quản lý chất lượng")] Quality = 5,
     [Display(Name = "Hàng bán bị trả lại")] SalesReturn = 6,
-    [Display(Name = "Gia công ngoài")] Outsource = 7
+    [Display(Name = "Gia công ngoài")] Outsource = 7,
+    [Display(Name = "Bảo dưỡng thiết bị")] Maintenance = 8
 }
 
 public enum PoStatus

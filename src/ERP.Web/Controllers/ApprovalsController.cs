@@ -28,6 +28,8 @@ public class ApprovalsController : ErpControllerBase
         ApprovalDocType.Payroll => url.Action("Details", "Payroll", new { id }),
         ApprovalDocType.PurchaseRequisition => url.Action("Details", "Requisitions", new { id }),
         ApprovalDocType.ProductionOrder => url.Action("Details", "Production", new { id }),
+        ApprovalDocType.MaintenanceOrder => url.Action("Details", "MaintenanceOrders", new { id }),
+        ApprovalDocType.MaintenancePlan => url.Action("Index", "MaintenancePlans"),
         _ => null
     };
 
@@ -69,6 +71,20 @@ public class ApprovalsController : ErpControllerBase
                 else if (moSt == ApprovalStatus.Rejected) mo.Status = ProductionStatus.Draft;
                 await Db.SaveChangesAsync();
                 msg = moSt == ApprovalStatus.Pending ? $"Đã duyệt cấp của bạn – {WorkflowService.Describe(req)}." : moSt == ApprovalStatus.Rejected ? $"Đã từ chối lệnh {req.DocNumber}, trở về nháp." : $"Lệnh {req.DocNumber} đã được duyệt hoàn tất, có thể phát lệnh.";
+                break;
+            case ApprovalDocType.MaintenanceOrder:
+                var mt = await Db.MaintenanceOrders.FirstAsync(p => p.Id == req.DocId);
+                var mtSt = await _wf.ActAsync(req, approve, comment);
+                if (mtSt == ApprovalStatus.Approved) mt.Status = MaintenanceStatus.Approved; else if (mtSt == ApprovalStatus.Rejected) mt.Status = MaintenanceStatus.Draft;
+                await Db.SaveChangesAsync();
+                msg = mtSt == ApprovalStatus.Pending ? $"Đã duyệt cấp của bạn – {WorkflowService.Describe(req)}." : mtSt == ApprovalStatus.Rejected ? $"Đã từ chối phiếu {req.DocNumber}, trở về nháp." : $"Phiếu {req.DocNumber} đã được duyệt hoàn tất.";
+                break;
+            case ApprovalDocType.MaintenancePlan:
+                var mp = await Db.MaintenancePlans.FirstAsync(p => p.Id == req.DocId);
+                var mpSt = await _wf.ActAsync(req, approve, comment);
+                if (mpSt == ApprovalStatus.Approved) { mp.Status = MaintenancePlanStatus.Active; mp.ApprovedById = Me; mp.ApprovedAt = DateTime.Now; } else if (mpSt == ApprovalStatus.Rejected) mp.Status = MaintenancePlanStatus.Draft;
+                await Db.SaveChangesAsync();
+                msg = mpSt == ApprovalStatus.Pending ? $"Đã duyệt cấp của bạn – {WorkflowService.Describe(req)}." : mpSt == ApprovalStatus.Rejected ? $"Đã từ chối kế hoạch {req.DocNumber}, trở về nháp." : $"Kế hoạch {req.DocNumber} đã được duyệt, bắt đầu áp dụng.";
                 break;
             default:
                 var st = await _wf.ActAsync(req, approve, comment);

@@ -4701,3 +4701,350 @@ Ngưỡng đạt: ≤ {0}% lỗi trong mẫu	Acceptance threshold: ≤ {0}% defe
 Giám đốc	Director
 Ký, đóng dấu	Sign and stamp
 Kiểm tra trong quá trình theo công đoạn	In-process inspection by operation
+(còn hạng mục chưa xong)	(tasks remaining)
++ Kế hoạch	+ Plan
++ Kế hoạch bảo dưỡng	+ Maintenance plan
++ Phiếu bảo dưỡng	+ Maintenance order
++ Thiết bị	+ Equipment
++ Yêu cầu sửa chữa	+ Repair request
+-- Chọn khi cần xuất phụ tùng --	-- Select when issuing spare parts --
+-- Không liên kết --	-- Not linked --
+-- Mặc định theo cấu hình bút toán --	-- Default per posting configuration --
+-- Mọi hình thức --	-- Any type --
+-- Mọi thiết bị --	-- Any equipment --
+-- Phụ tùng / vật tư --	-- Spare part / material --
+A – Quan trọng (dừng là ngừng sản xuất)	A – Critical (a stop halts production)
+B – Trung bình	B – Medium
+C – Thứ yếu	C – Minor
+BD định kỳ đúng hạn	On-time preventive maintenance
+Ban Giám đốc duyệt kế hoạch bảo dưỡng lớn	Board approves large maintenance plans
+Ban Giám đốc duyệt sửa chữa lớn	Board approves major repairs
+Biện pháp xử lý / kết quả	Action taken / result
+Buồng sơn PU & quạt hút	PU paint booth & exhaust fan
+Bãi xe	Parking yard
+Bình thường	Normal
+Băng nhám bị rách giữa ca	Sanding belt torn mid-shift
+Băng nhám quá hạn sử dụng	Sanding belt past service life
+Bảo dưỡng cấp 1 (hằng tháng)	Level 1 maintenance (monthly)
+Bảo dưỡng cấp 1 máy CNC	Level 1 maintenance of the CNC machine
+Bảo dưỡng cấp 1 máy chà nhám	Level 1 maintenance of the sanding machine
+Bảo dưỡng cấp 2 (6 tháng)	Level 2 maintenance (6 months)
+Bảo dưỡng cấp 2 buồng sơn	Level 2 maintenance of the paint booth
+Bảo dưỡng kế tiếp	Next maintenance
+Bảo dưỡng thiết bị	Equipment maintenance
+Bảo dưỡng định kỳ	Preventive maintenance
+Bảo hành	Warranty
+Bảo hành thiết bị	Equipment warranty
+Bảo hành đến	Warranty until
+Bảo trì thiết bị	Equipment maintenance
+Bắt đầu thực hiện	Start work
+Bắt đầu thực hiện {0}.	Started work on {0}.
+CNC cắt lệch kích thước	CNC cutting off dimension
+Chi phí 12 tháng {0}	12-month cost {0}
+Chi phí bảo dưỡng theo tháng	Monthly maintenance cost
+Chi phí bảo dưỡng, sửa chữa thiết bị (mặc định)	Equipment maintenance and repair expense (default)
+Chi phí bảo trì	Maintenance cost
+Chi phí dự kiến	Estimated cost
+Chi phí phụ tùng (xuất kho)	Spare parts cost (stock issue)
+Chi phí theo tháng / ngân sách →	Monthly cost / budget →
+Chi phí thuê ngoài	Outsourced cost
+Chu kỳ (ngày)	Interval (days)
+Chu kỳ 1–3650 ngày	Interval 1–3650 days
+Chu kỳ mặc định	Default interval
+Chu kỳ mặc định (ngày)	Default interval (days)
+Chu kỳ tối thiểu 1 ngày.	The minimum interval is 1 day.
+Chưa có hạng mục.	No tasks yet.
+Chưa có phiếu hoàn thành trong kỳ.	No completed orders in the period.
+Chưa có phiếu.	No orders yet.
+Chưa có phụ tùng.	No spare parts yet.
+Chưa có thiết bị.	No equipment yet.
+Chưa có tài liệu.	No documents yet.
+Chạy thử đạt	Test run passed
+Chạy thử, kiểm tra rò khí bằng nước xà phòng	Test run, check for air leaks with soapy water
+Chỉ bắt đầu thực hiện phiếu đã duyệt.	Only approved orders can be started.
+Chỉ chọn hàng có quản lý tồn kho.	Only stock-managed items can be chosen.
+Chỉ gửi duyệt kế hoạch nháp.	Only draft plans can be submitted for approval.
+Chỉ gửi duyệt phiếu nháp.	Only draft orders can be submitted for approval.
+Chỉ hoàn thành phiếu đang thực hiện.	Only orders in progress can be completed.
+Chỉ nghiệm thu phiếu đã hoàn thành.	Only completed orders can be accepted.
+Chỉ tạm ngưng / áp dụng lại kế hoạch đã duyệt.	Only approved plans can be suspended / resumed.
+Chỉ xuất phụ tùng cho phiếu đã duyệt hoặc đang thực hiện.	Spare parts can only be issued for approved or in-progress orders.
+Chọn kho xuất phụ tùng trên phiếu.	Select the spare-parts issuing warehouse on the order.
+Chọn thiết bị	Select equipment
+Chọn thiết bị.	Select equipment.
+Chờ nghiệm thu	Awaiting acceptance
+Còn hạng mục chưa hoàn thành trong danh mục công việc.	Some tasks in the task list are not completed.
+Cũ	Old
+Cũ thu hồi	Old recovered
+Cả năm	Full year
+Danh mục công việc	Task list
+Danh mục công việc (mỗi dòng một việc)	Task list (one task per line)
+Danh mục thiết bị	Equipment list
+Dây curoa trục chính đứt do mòn	Spindle belt snapped from wear
+Dừng máy (giờ)	Downtime (hours)
+Dừng máy {0} giờ · MTTR {1} giờ	Downtime {0} h · MTTR {1} h
+Dự kiến	Expected
+Dự kiến {0}	Expected {0}
+Ghi nhận phụ tùng cũ thu hồi	Record recovered old parts
+Giấy kiểm định an toàn kỹ thuật	Technical safety inspection certificate
+Giấy tờ kiểm định / bảo hành sắp hết hạn	Inspection / warranty documents expiring soon
+Giờ công	Labor hours
+Giờ công và chi phí không âm.	Labor hours and costs must not be negative.
+Giờ dừng máy	Downtime hours
+Giờ làm việc / ngày	Working hours / day
+Gần nhất	Latest
+Hiện tượng hỏng	Failure symptom
+Hiện tượng:	Symptom:
+Hoàn thành phiếu và chuyển chờ nghiệm thu?	Complete the order and send it for acceptance?
+Hoàn thành theo danh mục	Completed per the task list
+Hoàn trả phụ tùng từ phiếu bảo dưỡng {0}	Spare parts returned from maintenance order {0}
+Hãng sản xuất	Manufacturer
+Hôm nay	Today
+Hướng dẫn	Manual
+Hướng dẫn vận hành & bảo dưỡng	Operation & maintenance manual
+Hỏng biến tần	Inverter failure
+Hủy phiếu?	Cancel the order?
+Kho xuất phụ tùng	Spare parts issuing warehouse
+Không có công việc bảo dưỡng trong kỳ.	No maintenance work in the period.
+Không có giấy tờ sắp hết hạn.	No documents expiring soon.
+Không có kế hoạch nào đến hạn cần tạo phiếu.	No plan is due; no orders to create.
+Không có kế hoạch đến hạn trong năm.	No plans due this year.
+Không có kế hoạch đến hạn.	No plans due.
+Không có phiếu đang mở.	No open orders.
+Không tìm thấy dòng phụ tùng.	Spare part line not found.
+Không tìm thấy phụ tùng.	Spare part not found.
+Khẩn cấp	Urgent
+Kiểm định	Inspection
+Kiểm định / hiệu chuẩn	Inspection / calibration
+Kiểm định / hiệu chuẩn định kỳ	Periodic inspection / calibration
+Kiểm định an toàn kỹ thuật xe tải	Technical safety inspection of the truck
+Kiểm định bình chịu áp lực	Pressure vessel inspection
+Két làm mát tắc bụi	Cooler clogged with dust
+Kế hoạch	Plan
+Kế hoạch bảo dưỡng	Maintenance plan
+Kế hoạch bảo dưỡng {0} – {1}	Maintenance plan {0} – {1}
+Kế hoạch cần được duyệt theo quy tắc phê duyệt (theo chi phí dự kiến cả năm) trước khi áp dụng; khi đến hạn hệ thống tạo phiếu bảo dưỡng. Sửa nội dung / chu kỳ kế hoạch đang áp dụng phải duyệt lại.	Plans must be approved under the approval rules (by estimated annual cost) before they apply; when due, the system creates maintenance orders. Editing the content / interval of an active plan requires re-approval.
+Kế hoạch dùng	Plans using
+Kế hoạch quá hạn	Overdue plans
+Kế hoạch quá hạn và sắp đến hạn	Overdue and upcoming plans
+Kế hoạch {0} không cần duyệt theo quy tắc, đã áp dụng.	Plan {0} needs no approval under the rules and is now active.
+Kế hoạch {0} áp dụng trở lại.	Plan {0} is active again.
+Kế hoạch {0} đã gửi duyệt – {1}.	Plan {0} submitted for approval – {1}.
+Kế hoạch đang chờ duyệt, không sửa được.	The plan is pending approval and cannot be edited.
+Kế tiếp	Next
+Loại & thiết bị	Types & equipment
+Loại bảo dưỡng	Maintenance type
+Lần thực hiện gần nhất	Last performed
+Lần đến hạn kế tiếp	Next due date
+Lập hồ sơ thiết bị	Create equipment record
+Lắp đặt {0} · Bảo hành đến {1} {2}	Installed {0} · Warranty until {1} {2}
+Lịch	Calendar
+Lịch bảo dưỡng	Maintenance calendar
+Lịch sử	History
+Lịch sử & chi phí	History & cost
+Lịch sử bảo dưỡng & sửa chữa	Maintenance & repair history
+Lịch sử bảo trì, dừng máy và chi phí	Maintenance history, downtime and cost
+Lịch tính từ lần đến hạn kế tiếp của các kế hoạch đang áp dụng, lặp theo chu kỳ. Đến hạn (trước hạn số ngày đã khai báo) bấm "Tạo phiếu đến hạn" ở trang Kế hoạch để sinh phiếu bảo dưỡng.	The calendar is projected from the next due date of active plans, repeating by interval. When due (within the declared lead days) click "Create due orders" on the Plans page to generate maintenance orders.
+MTBF (giờ)	MTBF (hours)
+MTBF / MTTR	MTBF / MTTR
+MTBF / MTTR và chi phí theo thiết bị	MTBF / MTTR and cost by equipment
+MTTR (giờ)	MTTR (hours)
+Má phanh mòn	Worn brake pads
+Máy CNC cắt ván 2 đầu	Double-head CNC board cutting machine
+Máy CNC dừng, báo lỗi trục chính	CNC machine stopped, spindle error
+Máy chà nhám không chạy	Sanding machine will not run
+Máy chà nhám thùng	Drum sanding machine
+Máy nén khí báo quá nhiệt	Air compressor overheating alarm
+Máy nén khí rò khí ở khớp nối	Air compressor leaking at the coupling
+Máy nén khí trục vít 15kW	15 kW screw air compressor
+Mã loại đã tồn tại.	The type code already exists.
+Mã thiết bị	Equipment code
+Mã thiết bị đã tồn tại	The equipment code already exists
+Mô tả hiện tượng: tiếng kêu, rò rỉ, báo lỗi, ngừng chạy…	Describe the symptom: noise, leaks, error codes, stopped running…
+Mỗi dòng là một hạng mục, được sao vào phiếu bảo dưỡng để tích hoàn thành (TPM: dùng cho kiểm tra hằng ngày / tuần của vận hành viên).	Each line is a task copied into the maintenance order to tick off (TPM: used for the operator's daily / weekly checks).
+Mở lại	Reopen
+Mức độ	Level
+Mức độ quan trọng	Criticality
+Mức ưu tiên	Priority
+Nghiệm thu	Acceptance
+Nghiệm thu:	Accepted by:
+Nguyên nhân hỏng	Failure cause
+Nguyên nhân:	Cause:
+Nguyên nhân: {0}	Cause: {0}
+Ngày cấp	Issue date
+Ngày lắp đặt / đưa vào sử dụng	Installation / commissioning date
+Ngày đến hạn / cần xử lý	Due date / required date
+Ngân sách lấy từ các dòng	Budget is taken from the lines of
+Ngưng sử dụng	Retired
+Người nghiệm thu	Accepted by
+Người thực hiện	Technician
+Người yêu cầu	Requested by
+Nhân công ({0} giờ)	Labor ({0} h)
+Nhập mã và tên loại bảo dưỡng.	Enter the maintenance type code and name.
+Nhập nguyên nhân hỏng.	Enter the failure cause.
+Nhập người nghiệm thu.	Enter who accepted the work.
+Nhập nội dung	Enter the description
+Nhập nội dung công việc.	Enter the task description.
+Nhập tên tài liệu.	Enter the document name.
+Năm {0}	Year {0}
+Nội dung / nguyên nhân	Description / cause
+Nội dung / yêu cầu	Description / request
+Nội dung bảo dưỡng	Maintenance description
+Nội dung đã thay đổi nên cần gửi duyệt lại.	The content changed, so it must be re-submitted for approval.
+Phiếu	Order
+Phiếu bảo dưỡng	Maintenance order
+Phiếu bảo dưỡng & sửa chữa	Maintenance & repair orders
+Phiếu bảo hành	Warranty card
+Phiếu kho của phiếu bảo dưỡng	Stock documents of the maintenance order
+Phiếu nháp được gửi duyệt theo quy tắc phê duyệt (theo chi phí dự kiến); sau khi duyệt mới bắt đầu thực hiện, thêm phụ tùng, hoàn thành và nghiệm thu.	Draft orders are submitted for approval under the approval rules (by estimated cost); once approved you can start work, add spare parts, complete and accept.
+Phiếu {0} không cần duyệt theo quy tắc, đã được duyệt tự động.	Order {0} needs no approval under the rules and was auto-approved.
+Phiếu {0} đã gửi duyệt – {1}.	Order {0} submitted for approval – {1}.
+Phiếu đang mở	Open orders
+Phiếu đang mở (ưu tiên trước)	Open orders (priority first)
+Phiếu đang xử lý	Orders in progress
+Phiếu đã gửi duyệt / thực hiện, không sửa được.	The order has been submitted / started and cannot be edited.
+Phiếu đã kết thúc, không thêm phụ tùng.	The order is closed; spare parts cannot be added.
+Phiếu đã kết thúc.	The order is closed.
+Phiếu đã thực hiện, không hủy được.	The order has been carried out and cannot be cancelled.
+Phòng máy nén khí	Air compressor room
+Phụ trách	In charge
+Phụ tùng	Spare parts
+Phụ tùng cũ thu hồi	Old parts recovered
+Phụ tùng thay thế {0}	Replacement spare parts {0}
+Phụ tùng xuất cho phiếu bảo dưỡng / sửa chữa ghi chi phí; thiết bị có thể chọn TK chi phí riêng. Phụ tùng trả lại kho ghi giảm chi phí.	Spare parts issued for maintenance / repair orders are expensed; an equipment can use its own expense account. Parts returned to stock reduce the expense.
+Quạt hút buồng sơn rung mạnh, kêu to	Paint booth exhaust fan vibrating strongly and noisy
+Quạt rung, tiếng ồn bất thường, lưu lượng hút giảm	Fan vibration, abnormal noise, reduced suction flow
+Sắp đến hạn 14 ngày: {0}	Due within 14 days: {0}
+Số giờ dự kiến	Estimated hours
+Số lượng hoàn trả phải từ 0 đến {0} (đã xuất chưa trả).	The return quantity must be between 0 and {0} (issued, not yet returned).
+Số lượng không âm.	The quantity must not be negative.
+Số lượng xuất phải lớn hơn 0.	The issue quantity must be greater than 0.
+Số lần hỏng	Breakdowns
+Số lần hỏng (12 tháng)	Breakdowns (12 months)
+Số serial	Serial no.
+Sửa chữa 12 tháng	Repairs in 12 months
+Sửa chữa đột xuất	Breakdown repair
+Sửa thiết bị {0}	Edit equipment {0}
+Sửa tại gara ngoài	Repaired at an outside garage
+TK chi phí bảo dưỡng (để trống = mặc định)	Maintenance expense account (blank = default)
+TPM – tự bảo dưỡng	TPM – autonomous maintenance
+TPM – vận hành viên kiểm tra hằng ngày	TPM – operator daily checks
+TPM: kiểm tra hằng ngày máy CNC	TPM: daily check of the CNC machine
+Thay băng nhám mới	Replaced with a new sanding belt
+Thay bộ dao, hiệu chuẩn lại	Replaced the blade set and recalibrated
+Thay dây curoa, căn chỉnh lại độ căng	Replaced the belt and readjusted its tension
+Thay dầu bôi trơn	Change lubricating oil
+Thay dầu máy nén khí	Change air compressor oil
+Thay gioăng và siết lại khớp nối	Replace the gasket and retighten the coupling
+Thay thế chi tiết hao mòn, kiểm tra độ chính xác	Replace worn parts, check accuracy
+Thiết bị chuyển trạng thái dừng (hỏng).	The equipment is now in the stopped (failed) state.
+Thiết bị chạy thử đạt, bàn giao lại sản xuất	Equipment test-run passed, handed back to production
+Thiết bị {0}	Equipment {0}
+Thiết bị đang dừng / bảo dưỡng	Equipment stopped / under maintenance
+Thiết bị đang dừng / đang bảo dưỡng	Equipment stopped / under maintenance
+Thiết bị đã ngưng sử dụng.	The equipment is retired.
+Thuê ngoài	Outsourced
+Thuê đơn vị ngoài thay biến tần	Hired an outside contractor to replace the inverter
+Thêm hạng mục công việc	Add a task
+Thêm kế hoạch bảo dưỡng	Add maintenance plan
+Thêm loại bảo dưỡng	Add maintenance type
+Thêm thiết bị	Add equipment
+Thấp	Low
+Thời gian dừng máy (giờ)	Downtime (hours)
+Thời điểm báo hỏng	Reported at
+Trả	Return
+Tuân thủ bảo dưỡng định kỳ	Preventive maintenance compliance
+Tuần {0} – {1}	Week {0} – {1}
+Tài liệu / kiểm định trong hồ sơ	Documents / inspections on file
+Tài sản cố định chưa có hồ sơ thiết bị	Fixed assets without an equipment record
+Tài sản này đã có hồ sơ thiết bị khác	This asset already has another equipment record
+Tên loại bảo dưỡng	Maintenance type name
+Tên thiết bị	Equipment name
+Tên tài liệu	Document name
+Tìm số phiếu, nội dung	Search order no., description
+Tạm ngưng	Suspend
+Tạo phiếu bảo dưỡng cho các kế hoạch đã đến hạn?	Create maintenance orders for the plans that are due?
+Tạo phiếu trước hạn (ngày)	Create order in advance (days)
+Tạo phiếu đến hạn	Create due orders
+Tất cả thiết bị đang chạy.	All equipment is running.
+Tổ bảo trì	Maintenance team
+Tổng chi phí	Total cost
+Tổng chi phí · dừng máy {0} giờ	Total cost · downtime {0} h
+Tổng quan	Overview
+Tổng quan bảo dưỡng	Maintenance overview
+VD: Thay dầu, kiểm tra dây curoa, vệ sinh lọc gió	E.g. Change oil, check belts, clean air filter
+Vận hành viên CNC	CNC operator
+Vệ sinh két, thay lọc	Cleaned the cooler and replaced the filter
+Vệ sinh, bôi trơn, kiểm tra siết chặt	Cleaning, lubrication, tightening check
+Vị trí lắp đặt	Installation location
+Xe tải 2,5 tấn	2.5-ton truck
+Xe tải hỏng hệ thống phanh	Truck brake system failure
+Xuất phụ tùng bảo dưỡng thiết bị	Spare parts issue for equipment maintenance
+Xuất phụ tùng cho phiếu bảo dưỡng {0}	Spare parts issued for maintenance order {0}
+Xuất phụ tùng: Nợ TK chi phí bảo dưỡng / Có kho theo giá vốn bình quân; hoàn trả chưa dùng ghi giảm chi phí. Nhân công và thuê ngoài là chi phí theo dõi của phiếu (nhân công hạch toán qua bảng lương, thuê ngoài qua hóa đơn mua).	Spare parts issue: Dr maintenance expense / Cr stock at average cost; unused returns reduce the expense. Labor and outsourced cost are tracked on the order (labor is posted through payroll, outsourcing through purchase invoices).
+Xác nhận nghiệm thu?	Confirm acceptance?
+Xóa tài liệu?	Delete the document?
+Xưởng 1 – khu cắt	Workshop 1 – cutting area
+Xưởng 1 – khu hoàn thiện	Workshop 1 – finishing area
+Xưởng 2 – khu sơn	Workshop 2 – painting area
+Xả áp, ngắt nguồn máy nén khí	Release pressure and cut power to the air compressor
+Xử lý:	Action:
+Yêu cầu sửa chữa	Repair request
+bảo dưỡng	maintenance
+ngân sách	budget
+Áp suất tụt nhanh, nghe tiếng xì khí	Pressure drops quickly, hissing air heard
+Ý kiến nghiệm thu	Acceptance comments
+Đang bảo dưỡng	Under maintenance
+Đang chạy	Running
+Đang dừng (hỏng)	Stopped (failed)
+Đã ghi nhận phụ tùng cũ thu hồi.	Recovered old parts recorded.
+Đã hoàn thành {0}: dừng máy {1} giờ, chi phí {2} đ. Chờ nghiệm thu.	{0} completed: downtime {1} h, cost {2} VND. Awaiting acceptance.
+Đã hoàn trả phụ tùng phiếu {0}, trị giá {1} đ.	Spare parts returned on document {0}, value {1} VND.
+Đã khóa nguồn theo quy trình LOTO	Power locked out per the LOTO procedure
+Đã lưu hồ sơ thiết bị {0}.	Equipment record {0} saved.
+Đã lưu kế hoạch {0}.	Plan {0} saved.
+Đã lưu loại bảo dưỡng {0}.	Maintenance type {0} saved.
+Đã lưu phiếu {0}.	Order {0} saved.
+Đã nghiệm thu	Accepted
+Đã nghiệm thu {0}.	{0} accepted.
+Đã thêm phụ tùng vào phiếu.	Spare part added to the order.
+Đã thêm tài liệu vào hồ sơ.	Document added to the record.
+Đã tạm ngưng kế hoạch {0}.	Plan {0} suspended.
+Đã tạo {0} phiếu bảo dưỡng: {1}	Created {0} maintenance orders: {1}
+Đã xuất phụ tùng phiếu {0}, trị giá {1} đ (ghi chi phí bảo dưỡng).	Spare parts issued on document {0}, value {1} VND (maintenance expense).
+Đã xuất phụ tùng: hoàn trả hết phụ tùng trước khi hủy.	Spare parts were issued: return them all before cancelling.
+Đã xóa tài liệu.	Document deleted.
+Đơn giá giờ công	Labor rate / hour
+Độ sẵn sàng	Availability
+← Lịch sử	← History
+Quá hạn	Overdue
+Hạn	Due
+Danh mục công việc đã hoàn thành	Completed tasks
+Tạo phiếu bảo dưỡng	Create maintenance order
+Loại bảo dưỡng	Maintenance types
+Đã gửi duyệt	Submitted
+Chờ duyệt cấp {0}/{1}	Pending approval level {0}/{1}
+Tạm dừng	Suspended
+Đang áp dụng	Active
+Thiết bị	Equipment
+Thiết bị đang chạy	Equipment running
+Hình thức	Type
+Nghiệm thu phiếu	Order acceptance
+Xóa	Delete
+Yêu cầu bởi {0} lúc {1}	Requested by {0} at {1}
+Yêu cầu bởi {0}	Requested by {0}
+Hạn {0}	Due {0}
+· Hạn {0}	· Due {0}
+Thực hiện: {0}	Technician: {0}
+· Thực hiện: {0}	· Technician: {0}
+Lắp đặt {0}	Installed {0}
+Phụ tùng thay thế	Replacement spare parts
+Tự tính từ lúc báo hỏng	Calculated from the report time
+Bôi trơn ray dẫn hướng	Lubricate guide rails
+Kiểm tra dao cắt và thay nếu mòn	Check the cutting blades and replace if worn
+Kiểm tra siết bu lông trục chính	Check spindle bolt tightness
+Vệ sinh bụi gỗ hệ thống hút	Clean wood dust from the extraction system
+Hệ thống máy tính, máy chủ văn phòng	Office computers and servers
+Nhà xưởng sản xuất 1.200 m²	Production building 1,200 m²
+Giờ kế hoạch = số ngày làm việc (T2–T7) trong kỳ × giờ làm việc / ngày. MTBF = (giờ kế hoạch − giờ dừng máy) / số lần hỏng; MTTR = giờ sửa chữa / số lần hỏng; độ sẵn sàng = (giờ kế hoạch − dừng máy) / giờ kế hoạch; bảo dưỡng định kỳ đúng hạn = hoàn thành không quá 3 ngày sau hạn.	Planned hours = working days (Mon–Sat) in the period × working hours / day. MTBF = (planned hours − downtime) / breakdowns; MTTR = repair hours / breakdowns; availability = (planned hours − downtime) / planned hours; on-time preventive maintenance = completed no more than 3 days after the due date.
+năm {0} có khoản mục 6272 hoặc ghi chú chứa "bảo dưỡng". Phụ tùng xuất cho phiếu bảo dưỡng ghi vào TK chi phí bảo dưỡng nên cũng được kiểm soát ngân sách khi ghi sổ.	for year {0} with account 6272 or a note containing "maintenance". Spare parts issued for maintenance orders post to the maintenance expense account, so they are also budget-controlled when posted.
