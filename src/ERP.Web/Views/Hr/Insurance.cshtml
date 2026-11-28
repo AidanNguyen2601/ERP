@@ -1,0 +1,15 @@
+@model List<PayrollLine>
+@{ ViewData["Title"] = "Bảng kê đóng bảo hiểm"; int y = ViewBag.Year, m = ViewBag.Month; var r = (PayrollService.Rates)ViewBag.Rates; }
+<partial name="_HrNav" model="@("ins")" />
+<form class="toolbar" method="get"><select name="month" class="form-select form-select-sm" style="width:auto">@for (var i = 1; i <= 12; i++) { <option value="@i" selected="@(i == m)">Tháng @i</option> }</select>
+    <input name="year" type="number" value="@y" class="form-control form-control-sm" style="width:100px" /><button class="btn btn-sm btn-outline-primary">Xem</button>
+    <a class="btn btn-sm btn-outline-success ms-auto" asp-action="Insurance" asp-route-year="@y" asp-route-month="@m" asp-route-excel="true"><i class="bi bi-file-earmark-excel"></i> Xuất Excel</a></form>
+<div class="alert alert-info small py-2">Tỷ lệ đang áp dụng – người lao động: BHXH @r.EmpBhxh% · BHYT @r.EmpBhyt% · BHTN @r.EmpBhtn%; doanh nghiệp: BHXH @r.ErBhxh% · BHYT @r.ErBhyt% · BHTN @r.ErBhtn% · KPCĐ @r.ErKpcd%; trần đóng @r.Cap.ToMoney(). Thay đổi tại Cài đặt hệ thống khi chính sách thay đổi.</div>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Mã</th><th>Họ tên</th><th>Số sổ BHXH</th><th class="num">Lương đóng BH</th><th class="num">BHXH NLĐ</th><th class="num">BHYT NLĐ</th><th class="num">BHTN NLĐ</th><th class="num">BHXH DN</th><th class="num">BHYT DN</th><th class="num">BHTN DN</th><th class="num">KPCĐ</th><th class="num">Tổng nộp</th></tr></thead><tbody>
+    @foreach (var l in Model) { <tr><td>@l.Employee?.Code</td><td>@l.Employee?.FullName</td><td class="small">@l.Employee?.InsuranceBookNo</td><td class="num">@l.InsuranceBase.ToMoney()</td><td class="num">@l.EmpBhxh.ToMoney()</td><td class="num">@l.EmpBhyt.ToMoney()</td><td class="num">@l.EmpBhtn.ToMoney()</td><td class="num">@l.ErBhxh.ToMoney()</td><td class="num">@l.ErBhyt.ToMoney()</td><td class="num">@l.ErBhtn.ToMoney()</td><td class="num">@l.ErKpcd.ToMoney()</td><td class="num fw-bold">@((l.EmpTotal + l.ErTotal).ToMoney())</td></tr> }
+    @if (!Model.Any()) { <tr><td colspan="12" class="text-center text-muted py-4">Chưa có bảng lương tháng này.</td></tr> }
+    </tbody>
+    @if (Model.Any()) { <tfoot><tr class="fw-bold"><td colspan="3" class="text-end">Cộng</td><td class="num">@Model.Sum(l => l.InsuranceBase).ToMoney()</td><td class="num">@Model.Sum(l => l.EmpBhxh).ToMoney()</td><td class="num">@Model.Sum(l => l.EmpBhyt).ToMoney()</td><td class="num">@Model.Sum(l => l.EmpBhtn).ToMoney()</td><td class="num">@Model.Sum(l => l.ErBhxh).ToMoney()</td><td class="num">@Model.Sum(l => l.ErBhyt).ToMoney()</td><td class="num">@Model.Sum(l => l.ErBhtn).ToMoney()</td><td class="num">@Model.Sum(l => l.ErKpcd).ToMoney()</td><td class="num">@Model.Sum(l => l.EmpTotal + l.ErTotal).ToMoney()</td></tr></tfoot> }
+</table></div></div></div>
+<div class="small text-muted mt-2">Số phải nộp cơ quan bảo hiểm = phần người lao động + phần doanh nghiệp (BHXH, BHYT, BHTN) và KPCĐ nộp công đoàn. Các khoản này đã hạch toán vào TK 3383, 3384, 3386, 3382 khi hạch toán bảng lương.</div>

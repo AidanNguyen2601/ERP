@@ -1,0 +1,5 @@
+@model string
+@{
+    (string Key, string Title, string Act)[] tabs = { ("home", "Tổng quan", "Index"), ("leads", "Khách hàng tiềm năng", "Leads"), ("pipe", "Cơ hội (pipeline)", "Pipeline"), ("act", "Tương tác & công việc", "Activities") };
+}
+<div class="subnav">@foreach (var t in tabs) { <a class="@(Model == t.Key ? "active" : "")" asp-controller="Crm" asp-action="@t.Act">@t.Title</a> }</div>

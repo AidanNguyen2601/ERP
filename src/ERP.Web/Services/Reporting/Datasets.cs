@@ -518,7 +518,7 @@ public static class DatasetRegistry
     public static readonly IReadOnlyList<Dataset> All = new Dataset[]
     {
         new SalesDataset(), new MarginDataset(), new SalesOrderDataset(), new PurchaseOrderDataset(), new StockDataset(), new StockMoveDataset(),
-        new DebtDataset(), new JournalDataset(), new CashDataset(), new ProductionDataset(), new QcDataset(), new AssetDataset()
+        new DebtDataset(), new JournalDataset(), new CashDataset(), new ProductionDataset(), new QcDataset(), new AssetDataset(), new EmployeeDataset(), new AttendanceDataset(), new OpportunityDataset()
     };
     public static Dataset? Find(string? key) => All.FirstOrDefault(d => d.Key == key);
     public static bool Allowed(Dataset d, System.Security.Claims.ClaimsPrincipal u) => string.IsNullOrEmpty(d.Roles) || u.InAny(d.Roles);

@@ -1,0 +1,18 @@
+@model Lead
+@{ ViewData["Title"] = Model.Id == 0 ? "Thêm khách hàng tiềm năng" : "Sửa " + Model.Code; }
+<div class="card" style="max-width:860px"><div class="card-body">
+<form asp-action="SaveLead" method="post" class="row g-2">
+    <input type="hidden" asp-for="Id" /><div asp-validation-summary="ModelOnly" class="text-danger col-12"></div>
+    <div class="col-md-8"><label class="form-label">Công ty / khách hàng</label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+    <div class="col-md-4"><label class="form-label">Nguồn</label><select asp-for="Source" asp-items="Html.GetEnumSelectList<LeadSource>()" class="form-select"></select></div>
+    <div class="col-md-5"><label class="form-label">Người liên hệ</label><input asp-for="ContactName" class="form-control" /></div>
+    <div class="col-md-3"><label class="form-label">Chức vụ</label><input asp-for="ContactTitle" class="form-control" /></div>
+    <div class="col-md-4"><label class="form-label">Điện thoại</label><input asp-for="Phone" class="form-control" /></div>
+    <div class="col-md-5"><label class="form-label">Email</label><input asp-for="Email" class="form-control" /><span asp-validation-for="Email" class="text-danger small"></span></div>
+    <div class="col-md-7"><label class="form-label">Địa chỉ</label><input asp-for="Address" class="form-control" /></div>
+    <div class="col-md-4"><label class="form-label">Người phụ trách</label><select asp-for="OwnerId" asp-items="ViewBag.Owners" class="form-select"><option value="">--</option></select></div>
+    <div class="col-md-4"><label class="form-label">Giá trị dự kiến</label><input asp-for="EstimatedValue" type="number" step="1000" class="form-control" /></div>
+    @if (Model.Id != 0 && Model.Stage != LeadStage.Converted) { <div class="col-md-4"><label class="form-label">Giai đoạn</label><select asp-for="Stage" asp-items="Html.GetEnumSelectList<LeadStage>().Where(s => s.Value != ((int)LeadStage.Converted).ToString())" class="form-select"></select></div> }
+    <div class="col-12"><label class="form-label">Ghi chú / nhu cầu</label><textarea asp-for="Note" rows="3" class="form-control"></textarea></div>
+    <div class="col-12"><button class="btn btn-primary">Lưu</button> <a class="btn btn-light border" asp-action="Leads">Hủy</a></div>
+</form></div></div>

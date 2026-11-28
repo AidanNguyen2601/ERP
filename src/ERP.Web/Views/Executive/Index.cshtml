@@ -1,0 +1,59 @@
+@{
+    ViewData["Title"] = "Dashboard điều hành";
+    // Nhãn dùng trong JavaScript – dịch phía máy chủ theo ngôn ngữ đang chọn
+    var labels = new[]
+    {
+        "Doanh thu tháng này", "Lợi nhuận gộp tháng", "Doanh thu từ đầu năm", "Tiền & tương đương", "Phải thu", "Phải trả", "Giá trị tồn kho", "Pipeline bán hàng",
+        "so với tháng trước", "biên", "Quá hạn", "mặt hàng dưới tối thiểu", "cơ hội", "dự báo", "Trong hạn", "1–30 ngày", "31–60 ngày", "> 60 ngày", "Chưa có dữ liệu", "Không có cảnh báo.",
+        "Khẩn", "Lưu ý", "Tin", "Lệnh sản xuất đang mở", "Hoàn thành", "đã xong tổng cộng", "lệnh", "Chứng từ chờ duyệt", "Đơn bán hàng chờ giao", "Thiết bị đang dừng", "Nhân sự đang làm việc", "DT", "CP", "tỷ", "tr"
+    };
+    var dict = labels.ToDictionary(l => l, l => Lang.T(Context, l));
+}
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="small text-muted">Tự làm mới mỗi 60 giây · cập nhật lúc <b id="at">--:--:--</b></div>
+    <div><a class="btn btn-sm btn-light border" asp-controller="Alerts" asp-action="Index"><i class="bi bi-bell"></i> Cảnh báo tự động <span id="alertCnt" class="badge bg-secondary">0</span></a> <button class="btn btn-sm btn-light border" onclick="load()"><i class="bi bi-arrow-repeat"></i> Làm mới</button></div>
+</div>
+<div class="row g-3 mb-3" id="kpis"></div>
+<div class="row g-3">
+    <div class="col-lg-8"><div class="card"><div class="card-header">Doanh thu và chi phí 12 tháng</div><div class="card-body"><div id="chart" style="height:240px;display:flex;align-items:flex-end;gap:6px"></div><div class="small text-muted mt-1"><span style="color:var(--bs-primary)">■</span> Doanh thu &nbsp; <span style="color:#adb5bd">■</span> Chi phí (giá vốn + bán hàng + quản lý)</div></div></div></div>
+    <div class="col-lg-4"><div class="card mb-3"><div class="card-header">Tuổi nợ phải thu</div><div class="card-body" id="aging"></div></div>
+        <div class="card"><div class="card-header">Top khách hàng (từ đầu năm)</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody id="top"></tbody></table></div></div></div>
+    <div class="col-lg-6"><div class="card"><div class="card-header">Cảnh báo cần xử lý</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody id="alerts"></tbody></table></div></div></div>
+    <div class="col-lg-6"><div class="card"><div class="card-header">Sản xuất và vận hành</div><div class="card-body small" id="ops"></div></div></div>
+</div>
+@section Scripts {
+<script>
+var TT = @Json.Serialize(dict);
+function t(s) { return TT[s] || s; }
+var en = @(Lang.IsEn(Context) ? "true" : "false");
+var fmt = function (v) { return Math.round(v || 0).toLocaleString(en ? 'en-US' : 'vi-VN'); };
+var short = function (v) { var a = Math.abs(v); return a >= 1e9 ? (v / 1e9).toFixed(2) + ' ' + t('tỷ') : a >= 1e6 ? (v / 1e6).toFixed(1) + ' ' + t('tr') : fmt(v); };
+var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); };
+function kpi(title, value, sub) { return '<div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="small text-muted">' + title + '</div><div class="fs-4 fw-bold">' + value + '</div><div class="small text-muted">' + (sub || '&nbsp;') + '</div></div></div></div>'; }
+function row(label, value, cls) { return '<div class="d-flex justify-content-between"><span>' + label + '</span><b class="' + (cls || '') + '">' + value + '</b></div>'; }
+function load() {
+  fetch('@Url.Action("Data")', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
+    document.getElementById('at').textContent = d.at; document.getElementById('alertCnt').textContent = d.alertsTotal;
+    var chg = d.revenuePrev ? ((d.revenueMonth - d.revenuePrev) * 100 / d.revenuePrev).toFixed(1) + '% ' + t('so với tháng trước') : '';
+    document.getElementById('kpis').innerHTML =
+      kpi(t('Doanh thu tháng này'), short(d.revenueMonth), chg) + kpi(t('Lợi nhuận gộp tháng'), short(d.grossProfitMonth), d.revenueMonth ? (d.grossProfitMonth * 100 / d.revenueMonth).toFixed(1) + '% ' + t('biên') : '') +
+      kpi(t('Doanh thu từ đầu năm'), short(d.revenueYear), '') + kpi(t('Tiền & tương đương'), short(d.cash), '') +
+      kpi(t('Phải thu'), short(d.receivable), t('Quá hạn') + ' ' + short(d.overdue)) + kpi(t('Phải trả'), short(d.payable), '') +
+      kpi(t('Giá trị tồn kho'), short(d.inventoryValue), d.lowStock + ' ' + t('mặt hàng dưới tối thiểu')) + kpi(t('Pipeline bán hàng'), short(d.pipeline.value), d.pipeline.count + ' ' + t('cơ hội') + ' · ' + t('dự báo') + ' ' + short(d.pipeline.weighted));
+    var max = Math.max.apply(null, d.months.map(function (m) { return Math.max(m.revenue, m.cost, 1); }));
+    document.getElementById('chart').innerHTML = d.months.map(function (m) {
+      return '<div style="flex:1;text-align:center;font-size:.7rem" title="' + m.label + ': ' + t('DT') + ' ' + fmt(m.revenue) + ' / ' + t('CP') + ' ' + fmt(m.cost) + '"><div style="display:flex;align-items:flex-end;gap:2px;height:210px;justify-content:center"><div style="width:42%;background:var(--bs-primary);height:' + Math.max(1, m.revenue * 100 / max) + '%"></div><div style="width:42%;background:#adb5bd;height:' + Math.max(1, m.cost * 100 / max) + '%"></div></div>' + m.label + '</div>';
+    }).join('');
+    var amax = Math.max.apply(null, d.aging.map(function (a) { return a.value; }).concat([1]));
+    document.getElementById('aging').innerHTML = d.aging.map(function (a, i) { return '<div class="mb-2"><div class="d-flex justify-content-between small"><span>' + t(a.label) + '</span><b>' + fmt(a.value) + '</b></div><div class="progress" style="height:8px"><div class="progress-bar ' + (i === 0 ? '' : 'bg-danger') + '" style="width:' + a.value * 100 / amax + '%"></div></div></div>'; }).join('');
+    document.getElementById('top').innerHTML = d.topCustomers.map(function (c) { return '<tr><td>' + esc(c.name) + '</td><td class="text-end">' + fmt(c.value) + '</td></tr>'; }).join('') || '<tr><td class="text-muted text-center py-2">' + t('Chưa có dữ liệu') + '</td></tr>';
+    document.getElementById('alerts').innerHTML = d.topAlerts.map(function (a) { return '<tr><td style="width:70px"><span class="badge ' + (a.level === 'danger' ? 'bg-danger' : a.level === 'warning' ? 'bg-warning text-dark' : 'bg-info text-dark') + '">' + (a.level === 'danger' ? t('Khẩn') : a.level === 'warning' ? t('Lưu ý') : t('Tin')) + '</span></td><td><div class="fw-semibold small">' + esc(a.title) + '</div><div class="small text-muted">' + esc(a.detail) + '</div></td></tr>'; }).join('') || '<tr><td class="text-center text-success py-3">' + t('Không có cảnh báo.') + '</td></tr>';
+    var p = d.production, pct = p.plan ? Math.round(p.done * 100 / p.plan) : 0;
+    document.getElementById('ops').innerHTML =
+      row(t('Lệnh sản xuất đang mở'), p.open) + '<div class="progress my-1" style="height:8px"><div class="progress-bar" style="width:' + pct + '%"></div></div><div class="text-muted mb-2">' + t('Hoàn thành') + ' ' + fmt(p.done) + ' / ' + fmt(p.plan) + ' (' + pct + '%) · ' + t('đã xong tổng cộng') + ' ' + p.completed + ' ' + t('lệnh') + '</div>' +
+      row(t('Chứng từ chờ duyệt'), d.pendingApprovals) + row(t('Đơn bán hàng chờ giao'), d.soToDeliver) + row(t('Thiết bị đang dừng'), d.equipmentDown, d.equipmentDown ? 'text-danger' : '') + row(t('Nhân sự đang làm việc'), d.headcount);
+  }).catch(function () { });
+}
+load(); setInterval(load, 60000);
+</script>
+}

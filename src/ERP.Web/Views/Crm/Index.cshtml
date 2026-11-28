@@ -1,0 +1,36 @@
+@{
+    ViewData["Title"] = "CRM"; var leads = (List<Lead>)ViewBag.Leads; var opps = (List<Opportunity>)ViewBag.Opps; var open = opps.Where(o => o.IsOpen).ToList();
+    var tasks = (List<CrmActivity>)ViewBag.Tasks; var recent = (List<CrmActivity>)ViewBag.Recent;
+    var won = opps.Where(o => o.Stage == OppStage.Won).ToList(); var lost = opps.Count(o => o.Stage == OppStage.Lost);
+    var rate = won.Count + lost == 0 ? 0 : won.Count * 100m / (won.Count + lost);
+    var maxA = Math.Max(1, open.GroupBy(o => o.Stage).Select(g => g.Sum(o => o.Amount)).DefaultIfEmpty(1).Max());
+}
+<partial name="_CrmNav" model="@("home")" />
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="small text-muted">Khách hàng tiềm năng đang theo</div><div class="fs-3 fw-bold">@leads.Count(l => l.Stage is LeadStage.New or LeadStage.Contacted or LeadStage.Qualified)</div><div class="small text-muted">@leads.Count(l => l.Stage == LeadStage.New) mới chưa liên hệ</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="small text-muted">Cơ hội đang mở</div><div class="fs-3 fw-bold">@open.Count</div><div class="small text-muted">Giá trị @open.Sum(o => o.Amount).ToMoney() đ</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="small text-muted">Doanh thu dự báo (có trọng số)</div><div class="fs-3 fw-bold">@open.Sum(o => o.Weighted).ToMoney()</div><div class="small text-muted">Thắng tháng này @(((decimal)ViewBag.WonMonth).ToMoney()) đ</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="small text-muted">Tỷ lệ thắng</div><div class="fs-3 fw-bold">@rate.ToString("0.#")%</div><div class="small text-muted">@won.Count thắng / @lost thua</div></div></div></div>
+</div>
+<div class="row g-3">
+    <div class="col-lg-5"><div class="card mb-3"><div class="card-header">Phễu bán hàng</div><div class="card-body">
+        @foreach (var s in new[] { OppStage.Prospecting, OppStage.Qualified, OppStage.Proposal, OppStage.Negotiation })
+        {
+            var g = open.Where(o => o.Stage == s).ToList(); var sum = g.Sum(o => o.Amount);
+            <div class="mb-2"><div class="d-flex justify-content-between small"><span>@s.GetDisplayName() <span class="text-muted">(@g.Count)</span></span><b>@sum.ToMoney()</b></div>
+                <div class="progress" style="height:10px"><div class="progress-bar" style="width:@((double)(sum * 100 / maxA))%"></div></div></div>
+        }
+        <hr /><div class="small text-muted mb-1">Nguồn khách hàng tiềm năng</div>
+        @foreach (var g in leads.GroupBy(l => l.Source).OrderByDescending(g => g.Count())) { <span class="badge bg-light text-dark border me-1">@g.Key.GetDisplayName(): @g.Count()</span> }
+    </div></div></div>
+    <div class="col-lg-7">
+        <div class="card mb-3"><div class="card-header d-flex justify-content-between">Công việc cần làm <a class="small" asp-action="Activities" asp-route-openTasks="true">Xem tất cả</a></div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+            @foreach (var t in tasks) { <tr class="@(t.IsOverdue ? "table-danger" : "")"><td class="text-nowrap">@t.Date.ToString("dd/MM HH:mm")</td><td>@t.Subject <span class="small text-muted">@(t.Partner?.Name ?? t.Lead?.Name ?? t.Opportunity?.Title)</span></td>
+                <td class="text-end"><form asp-action="CompleteTask" asp-route-id="@t.Id" asp-route-returnUrl="@Url.Action("Index")" method="post"><button class="btn btn-sm btn-outline-success py-0">Xong</button></form></td></tr> }
+            @if (!tasks.Any()) { <tr><td class="text-center text-muted py-3">Không có công việc tồn.</td></tr> }
+        </tbody></table></div></div>
+        <div class="card"><div class="card-header">Tương tác gần đây</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+            @foreach (var a in recent) { <tr><td class="text-nowrap small">@a.Date.ToString("dd/MM HH:mm")</td><td><span class="badge bg-light text-dark border">@a.Kind.GetDisplayName()</span> @a.Subject <span class="small text-muted">@(a.Partner?.Name ?? a.Lead?.Name)</span></td><td class="small text-muted">@a.Owner?.FullName</td></tr> }
+        </tbody></table></div></div>
+    </div>
+</div>

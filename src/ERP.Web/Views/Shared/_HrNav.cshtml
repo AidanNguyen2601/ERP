@@ -1,0 +1,10 @@
+@model string
+@{
+    (string Key, string Title, string Ctl, string Act)[] tabs =
+    {
+        ("emp", "Nhân viên", "Payroll", "Employees"), ("contract", "Hợp đồng", "Hr", "Contracts"), ("shift", "Ca làm việc", "Hr", "Shifts"), ("clock", "Chấm công ngày", "Hr", "TimeClock"), ("att", "Công tháng", "Payroll", "Attendance"),
+        ("leave", "Nghỉ phép", "Hr", "Leave"), ("comp", "Thành phần lương", "Hr", "Components"), ("bonus", "Thưởng & lương SP", "Hr", "Bonuses"), ("payroll", "Bảng lương", "Payroll", "Index"),
+        ("ins", "Bảo hiểm", "Hr", "Insurance"), ("pit", "Quyết toán TNCN", "Hr", "PitFinalization")
+    };
+}
+<div class="subnav">@foreach (var t in tabs) { <a class="@(Model == t.Key ? "active" : "")" asp-controller="@t.Ctl" asp-action="@t.Act">@t.Title</a> }</div>

@@ -5048,3 +5048,560 @@ Hệ thống máy tính, máy chủ văn phòng	Office computers and servers
 Nhà xưởng sản xuất 1.200 m²	Production building 1,200 m²
 Giờ kế hoạch = số ngày làm việc (T2–T7) trong kỳ × giờ làm việc / ngày. MTBF = (giờ kế hoạch − giờ dừng máy) / số lần hỏng; MTTR = giờ sửa chữa / số lần hỏng; độ sẵn sàng = (giờ kế hoạch − dừng máy) / giờ kế hoạch; bảo dưỡng định kỳ đúng hạn = hoàn thành không quá 3 ngày sau hạn.	Planned hours = working days (Mon–Sat) in the period × working hours / day. MTBF = (planned hours − downtime) / breakdowns; MTTR = repair hours / breakdowns; availability = (planned hours − downtime) / planned hours; on-time preventive maintenance = completed no more than 3 days after the due date.
 năm {0} có khoản mục 6272 hoặc ghi chú chứa "bảo dưỡng". Phụ tùng xuất cho phiếu bảo dưỡng ghi vào TK chi phí bảo dưỡng nên cũng được kiểm soát ngân sách khi ghi sổ.	for year {0} with account 6272 or a note containing "maintenance". Spare parts issued for maintenance orders post to the maintenance expense account, so they are also budget-controlled when posted.
+% biên	% margin
+% so với tháng trước	% vs. previous month
+(không lương)	(unpaid)
+(số tiền cố định theo nhân viên)	(fixed amount per employee)
+(trừ phép năm)	(deducts annual leave)
++ Thêm	+ Add
++ Thêm cơ hội	+ Add opportunity
+-- Công việc khác --	-- Other tasks --
+-- Hoặc khách hàng tiềm năng --	-- Or lead --
+-- Khách hàng --	-- Customer --
+1% lương cơ bản	1% of base salary
+100.000 đ mỗi năm, tối đa 10 năm	VND 100,000 per year, up to 10 years
+BHTN NLĐ	Employee unemployment insurance
+BHXH NLĐ	Employee social insurance
+BHXH, BHYT, BHTN, KPCĐ	Social, health, unemployment insurance, union fee
+BHYT NLĐ	Employee health insurance
+Biến "{0}" không có trong công thức. Dùng: {1}	Variable "{0}" is not available in the formula. Use: {1}
+Biến:	Variables:
+Báo cáo tự thiết kế	Self-designed reports
+Báo cáo đã bị xóa.	The report has been deleted.
+Báo giá	Quotation
+Báo giá gần đây	Recent quotations
+Báo giá hết hiệu lực trong N ngày tới	Quotations expiring within the next N days
+Báo giá hết hiệu lực {0}	Quotation expires {0}
+Báo giá sắp hết hiệu lực	Quotations about to expire
+Báo giá:	Quotation:
+Bảng kê đóng bảo hiểm	Insurance contribution statement
+Bảng kê đóng bảo hiểm tháng {0}/{1}	Insurance contribution statement for {0}/{1}
+Bảo dưỡng quá hạn {0} ngày	Maintenance overdue by {0} days
+Bảo dưỡng đến hạn & thiết bị hỏng	Maintenance due & broken equipment
+Bảo dưỡng đến hạn {0}	Maintenance due {0}
+Bảo hiểm	Insurance
+Bổ nhiệm / thay đổi chức danh	Appointment / change of title
+CRM – cơ hội bán hàng	CRM – sales opportunities
+Ca & loại nghỉ	Shifts & leave types
+Ca làm việc	Work shifts
+Ca làm việc mặc định	Default work shift
+Ca mặc định	Default shift
+Ca đêm	Night shift
+Ca đêm (qua ngày)	Night shift (crosses midnight)
+Cao đẳng	College
+Chi phí (giá vốn + bán hàng + quản lý)	Expenses (COGS + selling + admin)
+Cho phép trễ	Grace period
+Cho phép đi trễ (phút)	Late grace (minutes)
+Chuyển giai đoạn: {0}	Stage changed: {0}
+Chuyển thành khách hàng	Convert to customer
+Chuyển thành khách hàng {0} và tạo cơ hội {1}	Converted to customer {0} and created opportunity {1}
+Chuyển đổi và tạo cơ hội	Convert and create opportunity
+Chào hàng / báo giá	Offer / quotation
+Chưa có	None yet
+Chưa có báo cáo đã lưu – tạo ở	No saved reports – create one in
+Chưa có bảng lương tháng này.	No payroll for this month yet.
+Chưa có bảng lương đã hạch toán trong năm.	No posted payroll this year.
+Chưa có cơ hội.	No opportunities yet.
+Chưa có email.	No emails yet.
+Chưa có khoản lương.	No salary components yet.
+Chưa có khoản thưởng.	No bonuses yet.
+Chưa có lượt quẹt.	No punches yet.
+Chưa có lịch nào.	No schedules yet.
+Chưa có tương tác.	No interactions yet.
+Chưa cấu hình SMTP	SMTP not configured
+Chưa cấu hình máy chủ SMTP (Cài đặt hệ thống → Smtp.Host).	SMTP server is not configured (System settings → Smtp.Host).
+Chưa gán khoản nào.	No components assigned.
+Chưa gán.	Not assigned.
+Chưa gửi được:	Could not send:
+Chưa phân công	Unassigned
+Chưa rõ	Unknown
+Chạy ngay	Run now
+Chấm công ngày	Daily attendance
+Chấm công ngày & máy chấm công	Daily attendance & time clock
+Chấm công theo ngày	Attendance by day
+Chấm công thủ công một ngày	Manual attendance for one day
+Chấm dứt	Terminate
+Chấm dứt hợp đồng:	Terminate contract:
+Chịu thuế	Taxable
+Chịu thuế TNCN	Subject to personal income tax
+Chọn báo cáo	Select a report
+Chọn khách hàng hoặc khách hàng tiềm năng.	Select a customer or a lead.
+Chọn khách hàng, khách hàng tiềm năng hoặc cơ hội.	Select a customer, lead or opportunity.
+Chọn loại nghỉ.	Select a leave type.
+Chọn nhân viên.	Select an employee.
+Chờ duyệt {0} ngày	Pending approval for {0} days
+Chờ gửi	Pending
+Chờ xử lý	Pending processing
+Chức vụ	Position
+Chứng từ chờ duyệt	Documents pending approval
+Cuộc gọi	Call
+Còn phải nộp (+) / hoàn (−)	Still payable (+) / refundable (−)
+Có hiệu lực từ	Effective from
+Có trọng số:	Weighted:
+Công nợ phải thu của khách vượt hạn mức đã đặt	Customer receivables exceed the credit limit
+Công nợ phải thu đến hạn / quá hạn	Receivables due / overdue
+Công nợ phải trả đến hạn / quá hạn	Payables due / overdue
+Công tháng	Monthly attendance
+Công thức	Formula
+Công thức (để trống = số tiền cố định)	Formula (leave blank = fixed amount)
+Công thức chia cho 0.	Formula divides by zero.
+Công thức không hợp lệ gần "{0}".	Invalid formula near "{0}".
+Công thức không hợp lệ.	Invalid formula.
+Công thức thiếu dấu ")".	Formula is missing ")".
+Công thức:	Formula:
+Công ty / khách hàng	Company / customer
+Công việc CRM quá hạn	Overdue CRM tasks
+Công việc CRM quá hạn {0} ngày	CRM task overdue by {0} days
+Công việc chăm sóc khách hàng quá hạn chưa hoàn thành	Customer follow-up tasks overdue and not completed
+Công việc chưa xong	Open tasks
+Công việc cần làm	To-do tasks
+Cơ hội	Opportunity
+Cơ hội (pipeline)	Opportunities (pipeline)
+Cơ hội bán hàng	Sales opportunities
+Cơ hội bán hàng – {0}	Sales opportunity – {0}
+Cơ hội bán hàng: giai đoạn, giá trị, xác suất, giá trị có trọng số, người phụ trách, nguồn khách hàng.	Sales opportunities: stage, value, probability, weighted value, owner, customer source.
+Cơ hội {0} đã thắng. Lập đơn bán hàng cho khách để thực hiện.	Opportunity {0} is won. Create a sales order for the customer to fulfil it.
+Cơ hội đang mở	Open opportunities
+Cơ hội đã đóng.	The opportunity is closed.
+Cảnh báo cần xử lý	Alerts to handle
+Cảnh báo tự động	Automatic alerts
+Cảnh báo đang hiệu lực	Active alerts
+Cấu hình SMTP	SMTP configuration
+Cấu hình →	Configure →
+Cập nhật lương cơ bản trong hồ sơ theo hợp đồng	Update base salary in the profile from the contract
+Cố định	Fixed
+Cố định theo nhân viên, miễn thuế trong mức quy định	Fixed per employee, tax-exempt within the statutory limit
+Danh sách nhân viên: phòng ban, chức vụ, lương, thâm niên, giới tính, trạng thái.	Employee list: department, position, salary, seniority, gender, status.
+Dashboard điều hành	Executive dashboard
+Doanh thu 12 tháng	12-month revenue
+Doanh thu dự báo (có trọng số)	Forecast revenue (weighted)
+Doanh thu từ đầu năm	Revenue year to date
+Doanh thu và chi phí 12 tháng	Revenue and expenses, 12 months
+Dùng SSL/TLS	Use SSL/TLS
+Dùng chức năng "Chuyển thành khách hàng".	Use the "Convert to customer" function.
+Dữ liệu nhập tay không bị lượt quẹt của máy ghi đè.	Manually entered data is not overwritten by machine punches.
+Dự kiến chốt	Expected close
+Dự kiến chốt:	Expected close:
+Email người gửi	Sender email
+Email người nhận (cách nhau dấu phẩy)	Recipient emails (comma-separated)
+Email người nhận không hợp lệ.	Invalid recipient email.
+Email nhận tổng hợp hằng ngày	Email for the daily digest
+Email tổng hợp gửi một lần mỗi ngày sau 7h khi có cảnh báo (cần cấu hình SMTP ở	The digest email is sent once a day after 7:00 when there are alerts (SMTP must be configured in
+Ghi chú / nhu cầu	Notes / requirements
+Ghi nhận tương tác / giao việc	Log interaction / assign task
+Giá trị có trọng số	Weighted value
+Giá trị dự kiến:	Expected value:
+Giá trị {0} đ	Value {0} VND
+Giá trị:	Value:
+Giới tính	Gender
+Giờ gửi	Send time
+Giờ làm	Hours worked
+Giờ ra	Check-out
+Giờ tăng ca	Overtime hours
+Giờ vào	Check-in
+Gán	Assign
+Gán cho nhân viên	Assign to employee
+Gắn	Attach
+Gắn báo giá của khách	Attach a customer quotation
+Gặp mặt	Meeting
+Gọi điện / thị trường	Phone / field outreach
+Gửi báo giá {0}	Sent quotation {0}
+Gửi lại	Resend
+Gửi đơn	Submit request
+Hiệu lực từ	Valid from
+Hàm {0} không hợp lệ hoặc sai số tham số (MIN, MAX, ROUND, IF).	Function {0} is invalid or has the wrong number of arguments (MIN, MAX, ROUND, IF).
+Hóa đơn bán ra chưa thu, đến hạn trong N ngày tới hoặc đã quá hạn	Unpaid sales invoices due within the next N days or already overdue
+Hóa đơn mua vào chưa trả, đến hạn trong N ngày tới hoặc đã quá hạn	Unpaid purchase invoices due within the next N days or already overdue
+Hằng ngày	Daily
+Hằng tháng (ngày 1)	Monthly (1st day)
+Hằng tuần (thứ Hai)	Weekly (Monday)
+Hệ số OT	OT rate
+Hệ số làm thêm	Overtime rate
+Hệ số làm thêm giờ	Overtime rate
+Học vấn / Hôn nhân	Education / Marital status
+Hồ sơ & hợp đồng	Profiles & contracts
+Hồ sơ nhân sự {0}	HR profile {0}
+Hộp thư đi (30 email gần nhất)	Outbox (latest 30 emails)
+Hợp đồng có thời hạn phải nhập ngày hết hạn.	A fixed-term contract needs an expiry date.
+Hợp đồng hết hạn	Contract expiry
+Hợp đồng lao động	Labor contracts
+Hợp đồng lao động còn {0} ngày	Labor contract has {0} days left
+Hợp đồng lao động hết hạn trong N ngày tới	Labor contracts expiring within the next N days
+Hợp đồng lao động sắp hết hạn	Labor contracts about to expire
+Hợp đồng lao động đã hết hạn {0} ngày	Labor contract expired {0} days ago
+Hợp đồng sắp hết hạn trong {0} ngày:	Contracts expiring within {0} days:
+IF(điều kiện; a; b)	IF(condition; a; b)
+In / Lưu PDF	Print / Save as PDF
+Khen thưởng	Commendation
+Khoản	Component
+Khoản khấu trừ (trừ sau thuế)	Deduction (after tax)
+Khoản lương (phụ cấp, thưởng, khấu trừ)	Salary components (allowance, bonus, deduction)
+Khoản thu nhập (cộng)	Income component (addition)
+Khác	Other
+Khách hàng 360° –	Customer 360° –
+Khách hàng giới thiệu	Customer referral
+Khách hàng tiềm năng	Leads
+Khách hàng tiềm năng đang theo	Leads being followed
+Khách hàng tiềm năng đã chuyển đổi.	The lead has already been converted.
+Khách hàng {0} – {1}	Customer {0} – {1}
+Không chịu thuế	Non-taxable
+Không có công việc tồn.	No outstanding tasks.
+Không có cảnh báo nào.	No alerts.
+Không có dữ liệu.	No data.
+Không phù hợp	Not a fit
+Không thời hạn	Indefinite term
+Không tìm thấy báo cáo.	Report not found.
+Không xác định thời hạn	Indefinite term
+Khẩn	Urgent
+Ký hợp đồng lao động {0} từ {1}	Signed labor contract {0} from {1}
+Kế hoạch bảo dưỡng quá hạn hoặc đến hạn trong N ngày; thiết bị đang dừng	Maintenance plans overdue or due within N days; equipment that is down
+Kết nối máy chấm công	Time clock integration
+Kết quả / ghi chú	Result / notes
+Kết quả chấm công từng ngày: ca, công, đi muộn, về sớm, tăng ca, nghỉ phép.	Daily attendance results: shift, workdays, late, early leave, overtime, leave.
+Kết quả:	Result:
+Kỷ luật	Disciplinary action
+Liên hệ cuối	Last contact
+Liên hệ khẩn cấp	Emergency contact
+Liên hệ:	Contact:
+Loại hợp đồng	Contract type
+Loại hợp đồng hiện hành	Current contract type
+Loại ngày công	Attendance type
+Làm mới	Refresh
+Lô sắp hết hạn	Lot about to expire
+Lô đã hết hạn	Lot expired
+Lý do không phù hợp	Reason not a fit
+Lý do không phù hợp: {0}	Reason not a fit: {0}
+Lý do thua	Reason lost
+Lý do thua: {0}	Reason lost: {0}
+Lưu dưới dạng PDF	Save as PDF
+Lưu hợp đồng	Save contract
+Lưu ý	Notice
+Lương cơ bản / phụ cấp	Base salary / allowance
+Lương sản phẩm ({0} SP): +{1}	Piece-rate pay ({0} units): +{1}
+Lượt quẹt gần nhất	Latest punches
+Lần gần nhất	Last run
+Lần tới	Next run
+Lập hợp đồng mới	New contract
+Lập hợp đồng →	Create contract →
+Lịch báo cáo	Report schedule
+Lịch gửi báo cáo	Report email schedule
+Lịch sử tương tác	Interaction history
+Lịch đã đặt	Scheduled
+Lỗi gửi:	Send error:
+Lỗi:	Error:
+Lợi nhuận gộp tháng	Gross profit this month
+Miễn (OT)	Exempt (OT)
+Miễn thuế	Tax-exempt
+Miễn thuế (làm thêm)	Tax-exempt (overtime)
+Mua hàng gần nhất	Last purchase
+Máy chấm công	Time clock
+Máy chấm công đẩy lượt quẹt qua API	The time clock pushes punches via the API
+Máy chủ (smtp.example.com)	Server (smtp.example.com)
+Mã NV	Emp. code
+Mã NV, dd/MM/yyyy HH:mm[, thiết bị]	Emp. code, dd/MM/yyyy HH:mm[, device]
+Mã ca	Shift code
+Mã ca đã tồn tại.	Shift code already exists.
+Mã cơ hội	Opportunity code
+Mã khoản đã tồn tại.	Component code already exists.
+Mã:	Code:
+Mô tả (nếu không chọn sản phẩm)	Description (if no product selected)
+Mạng xã hội / quảng cáo	Social media / ads
+Mẫu 05/QTT-TNCN – bảng kê tính thuế cả năm	Form 05/QTT-TNCN – annual tax computation statement
+Mật khẩu (để trống nếu không đổi)	Password (leave blank to keep)
+Mặt hàng dưới tồn tối thiểu; lô đã hoặc sắp hết hạn	Items below minimum stock; lots expired or about to expire
+Mọi nguồn	All sources
+Mọi người phụ trách	All owners
+Mức lương	Salary
+Nghỉ (phút)	Break (min)
+Nghỉ giữa ca	Mid-shift break
+Nghỉ giữa ca (phút)	Mid-shift break (minutes)
+Nghỉ không lương	Unpaid leave
+Nghỉ lễ / nghỉ tuần	Holiday / weekly day off
+Nghỉ phép	Leave
+Nghỉ việc	Resignation
+Nghỉ ốm (hưởng BHXH)	Sick leave (social insurance)
+Nguồn dữ liệu không còn tồn tại.	The data source no longer exists.
+Nguồn dữ liệu: {0}	Data source: {0}
+Nguồn khách hàng	Customer source
+Nguồn khách hàng tiềm năng	Lead sources
+Nguồn:	Source:
+Ngày hết hạn không trước ngày bắt đầu.	The expiry date must not be before the start date.
+Ngày nghỉ việc	Resignation date
+Ngày sinh	Date of birth
+Ngày tạo	Created
+Ngày tạo cơ hội	Opportunity created date
+Người liên hệ khẩn cấp	Emergency contact person
+Người nhận (cách nhau bằng dấu phẩy)	Recipients (comma-separated)
+Người phụ thuộc	Dependents
+Ngưỡng: {0} {1}	Threshold: {0} {1}
+Nhân sự	Human resources
+Nhân sự (hồ sơ nhân viên)	HR (employee profiles)
+Nhân viên đã có đơn nghỉ trùng thời gian này.	The employee already has a leave request for this period.
+Nhập & xử lý thành công theo ca	Imported and processed by shift
+Nhập email người nhận	Enter recipient emails
+Nhập file	Import file
+Nhập lý do không phù hợp.	Enter the reason it is not a fit.
+Nhập lý do thua.	Enter the reason for the loss.
+Nhập mã và tên ca.	Enter shift code and name.
+Nhập mã và tên khoản.	Enter component code and name.
+Nhập nội dung tương tác.	Enter the interaction details.
+Nhập nội dung và số tiền thưởng.	Enter the description and bonus amount.
+Nhập số hợp đồng.	Enter the contract number.
+Nhập tên công ty / khách hàng	Enter company / customer name
+Nhập tên cơ hội	Enter opportunity name
+Nữ	Female
+Phép năm	Annual leave
+Phép năm {0}	Annual leave {0}
+Phải nộp (+) / hoàn (−)	Payable (+) / refundable (−)
+Phễu bán hàng	Sales funnel
+Phụ cấp thâm niên	Seniority allowance
+Phụ cấp xăng xe	Fuel & transport allowance
+Phụ trách:	Owner:
+Pipeline bán hàng	Sales pipeline
+Quy tắc cảnh báo	Alert rules
+Quyết toán TNCN	PIT finalization
+Quyết toán thuế TNCN	Personal income tax finalization
+Quyết toán thuế TNCN năm {0}	Personal income tax finalization for {0}
+Quá hạn {0} ngày – {1}	Overdue {0} days – {1}
+Quá trình công tác	Work history
+Sản xuất và vận hành	Production and operations
+Số cơ hội	Opportunities
+Số cơ hội thắng	Won opportunities
+Số dư phép năm {0}	Annual leave balance {0}
+Số giờ công	Hours worked
+Số hợp đồng đã tồn tại.	Contract number already exists.
+Số ngày	Days
+Số ngày nghỉ phải lớn hơn 0.	Leave days must be greater than 0.
+Số ngày phép năm	Annual leave days
+Số nhân viên	Headcount
+Số sổ BHXH	Social insurance book no.
+Số tiền / hệ số	Amount / factor
+Số tiền cố định, hoặc hệ số nhân của công thức (0 = 1)	Fixed amount, or a multiplier for the formula result (0 = 1)
+Sửa ca	Edit shift
+Theo hợp đồng	Per contract
+Thiết bị đang dừng (hỏng)	Equipment down (broken)
+Thiếu lượt quẹt ra	Missing check-out punch
+Thuế cả năm	Annual tax
+Thuế phải nộp cả năm	Annual tax payable
+Thuế đã khấu trừ	Tax withheld
+Thành phần lương	Salary components
+Thành phần lương được gán	Assigned salary components
+Thâm niên (năm)	Seniority (years)
+Thêm ca	Add shift
+Thêm cơ hội	Add opportunity
+Thêm khoản lương	Add salary component
+Thêm khách hàng tiềm năng	Add lead
+Thông tin	Info
+Thưởng & lương SP	Bonuses & piece-rate pay
+Thưởng & lương sản phẩm	Bonuses & piece-rate pay
+Thưởng chuyên cần	Attendance bonus
+Thắng	Won
+Thắng tháng này {0} đ	Won this month {0} VND
+Thời lượng (phút)	Duration (minutes)
+Thời vụ / dưới 12 tháng	Seasonal / under 12 months
+Thời điểm / hạn (với công việc)	Time / due (for tasks)
+Thử	Test
+Thử việc	Probation
+Thử việc – sắp hết hạn	Probation – about to expire
+Tiêu đề	Subject
+Tiếp cận	Prospecting
+Tiền & tương đương	Cash & equivalents
+Top khách hàng (từ đầu năm)	Top customers (year to date)
+Triển lãm / sự kiện	Exhibition / event
+Trung cấp nghề	Vocational school
+Trình độ học vấn	Education level
+Trễ cho phép	Grace
+Trực tiếp	Direct
+Tuyển dụng	Hiring
+Tên ca	Shift name
+Tên cơ hội	Opportunity name
+Tên cơ hội (tùy chọn)	Opportunity name (optional)
+Tên khoản	Component name
+Tìm...	Search...
+Tình trạng hôn nhân	Marital status
+Tương tác & công việc	Interactions & tasks
+Tương tác gần đây	Recent interactions
+Tạo đơn nghỉ	Create leave request
+Tần suất	Frequency
+Tồn kho dưới mức tối thiểu	Stock below minimum
+Tồn kho dưới mức tối thiểu / lô hết hạn	Stock below minimum / expired lots
+Tổng hợp chấm công ngày	Daily attendance summary
+Tổng hợp công tháng {0}/{1} → bảng công tháng	Roll up {0}/{1} to the monthly attendance sheet
+Tổng nộp	Total payable
+Tới	To
+Từ – đến	From – to
+Tự làm mới mỗi 60 giây · cập nhật lúc	Auto-refreshes every 60 seconds · updated at
+Tỷ lệ thắng	Win rate
+Việc cá nhân	Personal matters
+Việc riêng có lương (cưới, tang)	Paid personal leave (wedding, funeral)
+Vượt hạn mức công nợ	Credit limit exceeded
+Vượt hạn mức công nợ khách hàng	Customer credit limit exceeded
+Vượt số ngày phép năm còn lại ({0} ngày, đã gồm đơn chờ duyệt).	Exceeds the remaining annual leave ({0} days, including pending requests).
+Vắng không phép	Unauthorized absence
+Về sớm (phút)	Early leave (min)
+Website / biểu mẫu	Website / form
+Xem tất cả	View all
+Xuất Excel (05/QTT-TNCN)	Export Excel (05/QTT-TNCN)
+Xuất ngày {0}	Exported on {0}
+Xác suất (%)	Probability (%)
+Xác suất thắng (%)	Win probability (%)
+Xác suất:	Probability:
+Xác định nhu cầu	Qualification
+Xác định thời hạn	Fixed term
+Xưởng	Workshop
+Xử lý lượt quẹt chưa xử lý ({0})	Process unprocessed punches ({0})
+Yêu cầu phê duyệt chưa xử lý quá N ngày (0 = tất cả)	Approval requests unhandled for more than N days (0 = all)
+[ERP] Báo cáo: {0} ({1})	[ERP] Report: {0} ({1})
+[ERP] {0} cảnh báo cần xử lý ({1})	[ERP] {0} alerts need attention ({1})
+còn	remaining
+cơ hội · dự báo	opportunities · forecast
+giờ	hour
+quá hạn	overdue
+tỷ	bn
+{0} (tiềm năng)	{0} (lead)
+{0} phút	{0} min
+{0} thắng / {1} thua	{0} won / {1} lost
+{0} {1} · nợ {2} / hạn mức {3} đ	{0} {1} · owes {2} / limit {3} VND
+{0} {1} · {2} · hết hạn {3}	{0} {1} · {2} · expires {3}
+{0} {1} · {2} · {3} đ	{0} {1} · {2} · {3} VND
+{0} · {1} · còn {2} đ	{0} · {1} · {2} VND outstanding
+{0} · {1} · {2} đ	{0} · {1} · {2} VND
+{0} đ ·	{0} VND ·
+{0} – {1} · {2} ({3} ngày)	{0} – {1} · {2} ({3} days)
+{0} – {1} · {2} · hết hạn	{0} – {1} · {2} · expires
+Đi làm	Present
+Đi muộn (phút)	Late (min)
+Điều chuyển bộ phận	Department transfer
+Điều chỉnh lương	Salary adjustment
+Điều chỉnh lương định kỳ	Periodic salary adjustment
+Điện thoại / Email	Phone / Email
+Điện thoại:	Phone:
+Đoàn phí công đoàn	Union dues
+Đàm phán	Negotiation
+Đào tạo	Training
+Đã chuyển thành khách hàng	Converted to customer
+Đã chuyển thành khách hàng {0} – {1} và tạo cơ hội {2}.	Converted to customer {0} – {1} and created opportunity {2}.
+Đã chuyển đổi trước đó.	Already converted.
+Đã chấm dứt	Terminated
+Đã chấm dứt hợp đồng {0}.	Contract {0} terminated.
+Đã có khách hàng trùng tên – chọn khách hàng hiện có để gắn.	A customer with the same name already exists – select the existing customer to link.
+Đã duyệt đơn nghỉ, ghi nhận vào chấm công.	Leave request approved and recorded in attendance.
+Đã ghi nhận lương sản phẩm.	Piece-rate pay recorded.
+Đã ghi nhận tương tác.	Interaction recorded.
+Đã ghi nhận vào quá trình công tác.	Recorded in the work history.
+Đã gán khoản lương cho nhân viên.	Salary component assigned to the employee.
+Đã gắn báo giá {0} vào cơ hội.	Quotation {0} attached to the opportunity.
+Đã gửi	Sent
+Đã gửi.	Sent.
+Đã khấu trừ	Withheld
+Đã kết hôn	Married
+Đã liên hệ	Contacted
+Đã lưu ca {0}.	Shift {0} saved.
+Đã lưu chấm công ngày	Daily attendance saved
+Đã lưu cơ hội {0}.	Opportunity {0} saved.
+Đã lưu cấu hình SMTP.	SMTP configuration saved.
+Đã lưu khoản lương {0}.	Salary component {0} saved.
+Đã lưu khách hàng tiềm năng {0}.	Lead {0} saved.
+Đã lưu quy tắc "{0}".	Rule "{0}" saved.
+Đã nghỉ	Resigned
+Đã nghỉ (đã duyệt)	Leave taken (approved)
+Đã nghỉ việc {0}	Resigned {0}
+Đã nhập {0} lượt quẹt (trùng {1}, lỗi {2}) và xử lý thành {3} ngày công.	Imported {0} punches (duplicates {1}, errors {2}) and processed into {3} attendance days.
+Đã thêm khoản thưởng. Tính lại bảng lương nháp để cập nhật.	Bonus added. Recalculate the draft payroll to update it.
+Đã tạo email – chưa cấu hình SMTP	Email created – SMTP not configured
+Đã tạo đơn nghỉ, chờ duyệt.	Leave request created and awaiting approval.
+Đã tổng hợp công tháng {0}/{1} cho {2} nhân viên vào bảng chấm công tháng (dùng tính lương).	Rolled up {0}/{1} for {2} employees into the monthly attendance sheet (used for payroll).
+Đã từ chối đơn nghỉ.	Leave request rejected.
+Đã xong	Done
+Đã xử lý	Processed
+Đã xử lý {0} lượt quẹt thành {1} ngày công.	Processed {0} punches into {1} attendance days.
+Đã đặt lịch gửi "{0}" – lần đầu {1}.	Scheduled sending of "{0}" – first run {1}.
+Đêm	Night
+Đóng:	Closed:
+Đơn bán hàng gần đây	Recent sales orders
+Đơn nghỉ	Leave requests
+Đơn nghỉ gần đây:	Recent leave requests:
+Đơn nghỉ phép	Leave requests
+Đơn đã duyệt, không hủy được (liên hệ nhân sự điều chỉnh chấm công).	Approved requests cannot be cancelled (ask HR to adjust attendance).
+Đơn đã được xử lý.	The request has already been processed.
+Được hưởng	Entitled
+Đại học	University
+Đạt yêu cầu	Qualified
+Đặt lịch	Schedule
+Đặt lịch gửi báo cáo	Schedule report email
+Đến hạn {0} – {1}	Due {0} – {1}
+Địa chỉ thường trú	Permanent address
+Địa chỉ:	Address:
+Định dạng	Format
+Định nghĩa báo cáo không hợp lệ.	Invalid report definition.
+Đối tác / đại lý	Partner / agent
+Đồng ý	OK
+Độc thân	Single
+Đủ công chuẩn trong tháng	Full standard days in the month
+‹ Danh sách	‹ List
+Thành phần lương & thưởng	Salary components & bonuses
+Ca & chấm công ngày	Shifts & daily attendance
+CRM – khách hàng & cơ hội	CRM – customers & opportunities
+Bảo hiểm & quyết toán TNCN	Insurance & PIT finalization
+Hồ sơ nhân sự	HR profile
+đi trễ ·	late ·
+xanh đậm	dark green
+vàng đậm	dark yellow
+có làm thêm · P nghỉ phép · V vắng · ? thiếu lượt quẹt ra. Cột "Công" là bảng công tháng đã tổng hợp.	has overtime · P leave · V absent · ? missing check-out punch. The "Công" column is the rolled-up monthly attendance.
+Điều chuyển, chức danh, lương thay đổi khi sửa hồ sơ được ghi tự động; chọn "Nghỉ việc" để đóng hồ sơ.	Transfers, title and salary changes made when editing a profile are logged automatically; choose "Resignation" to close the profile.
+Gửi báo giá chính thức	Send formal quotation
+Gửi hồ sơ năng lực và bảng giá	Send company profile and price list
+Mở rộng dòng sản phẩm mới	New product line expansion
+Họp chốt điều khoản thanh toán	Meeting to finalize payment terms
+Gọi giới thiệu năng lực công ty	Call to introduce company capabilities
+Thưởng hoàn thành đơn hàng dự án	Project order completion bonus
+Khách hẹn gặp tuần sau	Customer scheduled a meeting next week
+Liên hệ lần đầu khách đăng ký trên website	First contact with a customer who registered on the website
+Hợp đồng cung cấp quý IV	Q4 supply contract
+Gửi báo giá theo 3 mức số lượng	Send quotation for 3 quantity tiers
+Gặp khảo sát nhu cầu tại cửa hàng	Needs assessment meeting at the store
+Dự án nhượng quyền phân phối	Distribution franchise project
+Đơn hàng khuyến mại cuối năm	Year-end promotion order
+Về quê	Going home
+Máy vân tay cổng chính	Main gate fingerprint scanner
+Cần báo giá theo 3 mức số lượng	Needs quotation for 3 quantity tiers
+Hỏi báo giá bao bì thực phẩm 50.000 sp/tháng	Asked for a quotation for food packaging, 50,000 pcs/month
+Gặp tại hội chợ, quan tâm hợp đồng cung cấp dài hạn	Met at a trade fair, interested in a long-term supply contract
+Khách hiện hữu giới thiệu	Referred by an existing customer
+Cung cấp cho chuỗi nhà hàng Biển Đông	Supply for the Bien Dong restaurant chain
+Giá cao hơn đối thủ	Price higher than competitors
+Đã ký với nhà cung cấp khác	Signed with another supplier
+Giám đốc mua hàng	Purchasing director
+DT	Rev.
+CP	Exp.
+tr	M
+so với tháng trước	vs. previous month
+biên	margin
+Tin	Info
+mặt hàng dưới tối thiểu	items below minimum
+cơ hội	opportunities
+dự báo	forecast
+> 60 ngày	> 60 days
+Chưa có dữ liệu	No data yet
+Không có cảnh báo.	No alerts.
+đã xong tổng cộng	completed in total
+lệnh	orders
+Đơn bán hàng chờ giao	Sales orders awaiting delivery
+Thiết bị đang dừng	Equipment down
+Nhân sự đang làm việc	Active employees
+<h3>Tổng hợp cảnh báo ERP</h3><table border='1' cellpadding='4' cellspacing='0' style='border-collapse:collapse;font-family:Segoe UI,Arial;font-size:13px'><tr><th>Mức</th><th>Cảnh báo</th><th>Chi tiết</th></tr>	<h3>ERP alert digest</h3><table border='1' cellpadding='4' cellspacing='0' style='border-collapse:collapse;font-family:Segoe UI,Arial;font-size:13px'><tr><th>Level</th><th>Alert</th><th>Details</th></tr>
+<p>Báo cáo <b>{0}</b> – {1} dòng, xuất lúc {2}.</p><p>Tệp đính kèm: {3}</p>	<p>Report <b>{0}</b> – {1} rows, exported at {2}.</p><p>Attachment: {3}</p>
+Chưa cấu hình máy chủ SMTP – email sẽ được tạo và giữ trong hộp thư đi bên dưới (có thể tải tệp đính kèm), chưa gửi ra ngoài.	The SMTP server is not configured – emails are created and kept in the outbox below (attachments can be downloaded) but are not sent out.
+Giờ ra nhỏ hơn giờ vào là ca đêm (qua ngày). Giờ làm thêm = giờ làm thực tế vượt số giờ công của ca, làm tròn xuống nửa giờ. Gán ca mặc định cho nhân viên ở hồ sơ.	A check-out earlier than check-in means a night shift (crosses midnight). Overtime = actual hours beyond the shift's paid hours, rounded down to the half hour. Assign the default shift to employees in their profile.
+Hợp đồng mới thay thế hợp đồng đang hiệu lực; hợp đồng có thời hạn phải nhập ngày hết hạn và được cảnh báo trước khi hết hạn.	A new contract replaces the active one; a fixed-term contract needs an expiry date and is flagged before it expires.
+Phép năm = số ngày phép theo hồ sơ (mặc định 12) + 1 ngày mỗi 5 năm thâm niên; năm vào làm tính theo tháng còn lại. Đơn đã duyệt tự ghi vào chấm công ngày và công tháng.	Annual leave = days per profile (default 12) + 1 day per 5 years of service; in the year of joining it is prorated by the remaining months. Approved requests are recorded automatically in daily and monthly attendance.
+Số lượng > 0 và đơn giá không âm.	Quantity must be > 0 and the unit rate must not be negative.
+Số phải nộp cơ quan bảo hiểm = phần người lao động + phần doanh nghiệp (BHXH, BHYT, BHTN) và KPCĐ nộp công đoàn. Các khoản này đã hạch toán vào TK 3383, 3384, 3386, 3382 khi hạch toán bảng lương.	Amount payable to the insurance agency = employee share + employer share (social, health, unemployment insurance) and union fee paid to the union. These amounts are posted to accounts 3383, 3384, 3386, 3382 when the payroll is posted.
+Thu nhập tính thuế cả năm = tổng thu nhập − khoản không chịu thuế − phần làm thêm giờ được miễn − bảo hiểm bắt buộc − giảm trừ gia cảnh (số tháng có lương × mức giảm trừ). Thuế tính theo biểu lũy tiến cả năm (ngưỡng tháng × 12) từ các bảng lương đã hạch toán; chênh lệch với thuế đã khấu trừ hàng tháng là số phải nộp thêm (+) hoặc được hoàn (−).	Annual taxable income = total income − non-taxable items − exempt overtime pay − mandatory insurance − family deductions (months paid × deduction amount). Tax is computed on the annual progressive scale (monthly thresholds × 12) from posted payrolls; the difference from the tax withheld monthly is the additional amount payable (+) or refundable (−).
+Thưởng và lương sản phẩm của tháng được cộng vào thu nhập khi lập / tính lại bảng lương nháp (thưởng chịu thuế tính vào thu nhập chịu thuế TNCN).	The month's bonuses and piece-rate pay are added to income when a draft payroll is created / recalculated (taxable bonuses count toward PIT taxable income).
+Tỷ lệ đang áp dụng – người lao động: BHXH {0}% · BHYT {1}% · BHTN {2}%; doanh nghiệp: BHXH {3}% · BHYT {4}% · BHTN {5}% · KPCĐ {6}%; trần đóng {7}. Thay đổi tại Cài đặt hệ thống khi chính sách thay đổi.	Current rates – employee: social {0}% · health {1}% · unemployment {2}%; employer: social {3}% · health {4}% · unemployment {5}% · union {6}%; contribution cap {7}. Change them in System settings when the policy changes.
+có trọng số	weighted
+mới chưa liên hệ	new, not yet contacted
+. VD thưởng chuyên cần:	. E.g. attendance bonus:
+Sốt, có giấy khám	Fever, with medical certificate
+Du lịch gia đình	Family trip

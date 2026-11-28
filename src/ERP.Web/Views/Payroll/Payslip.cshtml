@@ -16,6 +16,7 @@
     <tr><td>Lương làm thêm giờ</td><td class="n">@Model.Overtime.ToMoney()</td></tr>
     <tr><td>Phụ cấp chịu thuế</td><td class="n">@Model.Allowance.ToMoney()</td></tr>
     <tr><td>Phụ cấp không chịu thuế</td><td class="n">@Model.NonTaxAllowance.ToMoney()</td></tr>
+    @if (Model.ExtraTaxable + Model.ExtraNonTax > 0) { <tr><td>Thưởng, phụ cấp khác, lương sản phẩm <span class="small">@Model.ExtraNote</span></td><td class="n">@((Model.ExtraTaxable + Model.ExtraNonTax).ToMoney())</td></tr> }
     <tr class="b"><td>Tổng thu nhập</td><td class="n">@Model.Gross.ToMoney()</td></tr>
     <tr><td>BHXH (8%)</td><td class="n">-@Model.EmpBhxh.ToMoney()</td></tr>
     <tr><td>BHYT (1,5%)</td><td class="n">-@Model.EmpBhyt.ToMoney()</td></tr>
@@ -23,6 +24,7 @@
     <tr><td>Giảm trừ gia cảnh</td><td class="n">@Model.FamilyDeduction.ToMoney()</td></tr>
     <tr><td>Thu nhập tính thuế</td><td class="n">@Model.TaxableIncome.ToMoney()</td></tr>
     <tr><td>Thuế TNCN</td><td class="n">-@Model.Pit.ToMoney()</td></tr>
+    @if (Model.OtherDeduction > 0) { <tr><td>Khấu trừ khác</td><td class="n">-@Model.OtherDeduction.ToMoney()</td></tr> }
     <tr class="b"><td>THỰC LĨNH</td><td class="n">@Model.Net.ToMoney()</td></tr>
 </table>
 <p style="margin-top:24px"><button onclick="window.print()">In phiếu lương</button></p>

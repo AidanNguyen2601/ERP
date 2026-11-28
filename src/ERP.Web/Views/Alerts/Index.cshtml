@@ -1,0 +1,38 @@
+@model List<AlertItem>
+@{
+    ViewData["Title"] = "Cảnh báo tự động"; var rules = (List<AlertRule>)ViewBag.Rules; var admin = (bool)ViewBag.IsAdmin;
+    var names = rules.ToDictionary(r => r.Key, r => r.Name);
+}
+<div class="row g-3">
+    <div class="col-lg-8"><div class="card"><div class="card-header">Cảnh báo đang hiệu lực <span class="badge bg-secondary">@Model.Count</span></div><div class="card-body p-0">
+        <table class="table table-sm mb-0"><tbody>
+        @foreach (var a in Model)
+        {
+            <tr><td style="width:90px"><span class="badge @(a.Level == "danger" ? "bg-danger" : a.Level == "warning" ? "bg-warning text-dark" : "bg-info text-dark")">@(a.Level == "danger" ? "Khẩn" : a.Level == "warning" ? "Lưu ý" : "Thông tin")</span></td>
+                <td><div class="fw-semibold">@a.Title</div><div class="small text-muted">@a.Detail</div></td>
+                <td class="small text-muted">@(names.TryGetValue(a.RuleKey, out var n) ? n : "")</td>
+                <td class="text-end"><a class="btn btn-sm btn-light border py-0" href="@Url.Action(a.Action, a.Controller, a.Route)">Xem</a></td></tr>
+        }
+        @if (!Model.Any()) { <tr><td class="text-center text-success py-4"><i class="bi bi-check-circle"></i> Không có cảnh báo nào.</td></tr> }
+        </tbody></table></div></div></div>
+    <div class="col-lg-4"><div class="card"><div class="card-header">Quy tắc cảnh báo</div><div class="card-body p-2">
+        @foreach (var r in rules)
+        {
+            <form asp-action="SaveRule" method="post" class="border-bottom pb-2 mb-2 small">
+                <input type="hidden" name="id" value="@r.Id" />
+                <div class="form-check"><input class="form-check-input" type="checkbox" name="isEnabled" value="true" checked="@r.IsEnabled" disabled="@(!admin)" /><input type="hidden" name="isEnabled" value="false" /><label class="form-check-label fw-semibold">@r.Name</label></div>
+                <div class="text-muted">@r.Description</div>
+                @if (admin)
+                {
+                    <div class="d-flex gap-1 mt-1 align-items-center">
+                        @if (!string.IsNullOrEmpty(r.ThresholdLabel)) { <input name="threshold" type="number" min="0" value="@r.Threshold.ToString("0")" class="form-control form-control-sm" style="width:70px" /><span>@r.ThresholdLabel</span> } else { <input type="hidden" name="threshold" value="@r.Threshold.ToString("0")" /> }
+                        <input name="emailTo" value="@r.EmailTo" class="form-control form-control-sm" placeholder="Email nhận tổng hợp hằng ngày" />
+                        <button class="btn btn-sm btn-primary">Lưu</button>
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(r.ThresholdLabel)) { <div>Ngưỡng: @r.Threshold.ToString("0") @r.ThresholdLabel</div> }
+            </form>
+        }
+        <div class="small text-muted">Email tổng hợp gửi một lần mỗi ngày sau 7h khi có cảnh báo (cần cấu hình SMTP ở <a asp-controller="ReportSchedules" asp-action="Index">Lịch gửi báo cáo</a>).</div>
+    </div></div></div>
+</div>

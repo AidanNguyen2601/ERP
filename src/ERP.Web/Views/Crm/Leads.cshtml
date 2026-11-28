@@ -1,0 +1,25 @@
+@model List<Lead>
+@{
+    ViewData["Title"] = "Khách hàng tiềm năng"; var can = (bool)ViewBag.CanEdit; var stage = ViewBag.Stage as LeadStage?; var src = ViewBag.Source as LeadSource?; var counts = (Dictionary<LeadStage, int>)ViewBag.Counts;
+}
+<partial name="_CrmNav" model="@("leads")" />
+<div class="toolbar">
+    <a class="btn btn-sm @(stage == null ? "btn-secondary" : "btn-light border")" asp-action="Leads">Tất cả</a>
+    @foreach (LeadStage s in Enum.GetValues<LeadStage>()) { <a class="btn btn-sm @(stage == s ? "btn-secondary" : "btn-light border")" asp-action="Leads" asp-route-stage="@s">@s.GetDisplayName() <span class="badge bg-light text-dark">@(counts.TryGetValue(s, out var n) ? n : 0)</span></a> }
+    <form method="get" class="d-inline-flex gap-1 ms-auto">
+        <select name="source" class="form-select form-select-sm"><option value="">Mọi nguồn</option>@foreach (LeadSource s in Enum.GetValues<LeadSource>()) { <option value="@((int)s)" selected="@(src == s)">@s.GetDisplayName()</option> }</select>
+        <select name="ownerId" asp-items="ViewBag.Owners" class="form-select form-select-sm"><option value="">Mọi người phụ trách</option></select>
+        <input name="q" value="@ViewBag.Q" class="form-control form-control-sm" placeholder="Tìm..." /><button class="btn btn-sm btn-light border">Lọc</button>
+    </form>
+    @if (can) { <a class="btn btn-sm btn-primary" asp-action="LeadForm">+ Thêm</a> }
+</div>
+<div class="card"><div class="card-body p-0"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Mã</th><th>Công ty</th><th>Liên hệ</th><th>Nguồn</th><th>Giai đoạn</th><th>Phụ trách</th><th class="num">Giá trị dự kiến</th><th>Liên hệ cuối</th></tr></thead><tbody>
+    @foreach (var l in Model)
+    {
+        <tr><td><a asp-action="LeadDetails" asp-route-id="@l.Id">@l.Code</a></td><td>@l.Name</td><td class="small">@l.ContactName <span class="text-muted">@l.Phone</span></td><td class="small">@l.Source.GetDisplayName()</td>
+            <td><span class="badge @(l.Stage == LeadStage.Converted ? "bg-success" : l.Stage == LeadStage.Lost ? "bg-secondary" : l.Stage == LeadStage.Qualified ? "bg-info text-dark" : "bg-light text-dark border")">@l.Stage.GetDisplayName()</span></td>
+            <td class="small">@l.Owner?.FullName</td><td class="num">@l.EstimatedValue.ToMoney()</td><td class="small">@(l.LastContactAt?.ToString("dd/MM/yyyy"))</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="8" class="text-center text-muted py-3">Chưa có dữ liệu.</td></tr> }
+</tbody></table></div></div>

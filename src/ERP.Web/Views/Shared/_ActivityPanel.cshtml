@@ -1,0 +1,20 @@
+@model ActivityPanel
+<div class="card"><div class="card-header">Lịch sử tương tác</div>
+@if (Model.CanEdit) {
+<div class="card-body border-bottom"><form asp-controller="Crm" asp-action="AddActivity" method="post" class="row g-2">
+    <input type="hidden" name="LeadId" value="@Model.LeadId" /><input type="hidden" name="PartnerId" value="@Model.PartnerId" /><input type="hidden" name="OpportunityId" value="@Model.OppId" /><input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+    <div class="col-md-3"><select name="Kind" asp-items="Html.GetEnumSelectList<ActivityKind>()" class="form-select form-select-sm"></select></div>
+    <div class="col-md-5"><input name="Subject" class="form-control form-control-sm" placeholder="Nội dung" required /></div>
+    <div class="col-md-4"><input name="Date" type="datetime-local" value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" class="form-control form-control-sm" title="Thời điểm / hạn (với công việc)" /></div>
+    <div class="col-md-9"><input name="Outcome" class="form-control form-control-sm" placeholder="Kết quả / ghi chú" /></div>
+    <div class="col-md-3"><button class="btn btn-sm btn-primary w-100">Ghi nhận</button></div>
+</form></div> }
+<div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+    @foreach (var a in Model.Items) {
+        <tr class="@(a.IsOverdue ? "table-danger" : "")"><td class="text-nowrap small">@a.Date.ToString("dd/MM/yy HH:mm")</td>
+            <td><span class="badge bg-light text-dark border">@a.Kind.GetDisplayName()</span> @a.Subject @if (!string.IsNullOrEmpty(a.Outcome)) { <div class="small text-muted">@a.Outcome</div> }</td>
+            <td class="small text-muted">@a.Owner?.FullName</td>
+            <td class="text-end">@if (a.Kind == ActivityKind.Task && !a.Done && Model.CanEdit) { <form asp-controller="Crm" asp-action="CompleteTask" asp-route-id="@a.Id" asp-route-returnUrl="@Model.ReturnUrl" method="post"><button class="btn btn-sm btn-outline-success py-0">Xong</button></form> } else if (a.Kind == ActivityKind.Task) { <span class="badge bg-success">Đã xong</span> }</td></tr>
+    }
+    @if (!Model.Items.Any()) { <tr><td class="text-center text-muted py-3">Chưa có tương tác.</td></tr> }
+</tbody></table></div></div>

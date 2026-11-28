@@ -23,6 +23,7 @@
             {
                 <button class="btn btn-sm btn-success" formaction="@Url.Action("Export")" name="format" value="xlsx" formnovalidate><i class="bi bi-file-earmark-excel"></i> Excel</button>
                 <button class="btn btn-sm btn-outline-success" formaction="@Url.Action("Export")" name="format" value="csv" formnovalidate><i class="bi bi-filetype-csv"></i> CSV</button>
+                <button class="btn btn-sm btn-outline-danger" formaction="@Url.Action("Export")" formtarget="_blank" name="format" value="pdf" formnovalidate><i class="bi bi-filetype-pdf"></i> PDF</button>
                 <button type="button" class="btn btn-sm btn-light border" onclick="window.print()"><i class="bi bi-printer"></i> In</button>
             }
             <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#saveModal"><i class="bi bi-bookmark-plus"></i> Lưu báo cáo</button>

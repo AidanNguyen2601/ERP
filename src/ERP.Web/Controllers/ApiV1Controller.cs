@@ -116,6 +116,27 @@ public class ApiV1Controller : ControllerBase
         return Ok(new { Saved = n, Rejected = missing });
     }
 
+    public record PunchDto(string EmployeeCode, DateTime PunchTime, string? Device);
+
+    /// <summary>Máy chấm công đẩy lượt quẹt thô (vân tay / thẻ / khuôn mặt); hệ thống tự xử lý thành chấm công ngày theo ca</summary>
+    [HttpPost("timeclock"), ApiKey("attendance.write")]
+    public async Task<IActionResult> TimeClock([FromBody] List<PunchDto> rows)
+    {
+        if (rows == null || rows.Count == 0 || rows.Count > 5000) throw new BusinessException("Gửi từ 1 đến 5.000 lượt quẹt mỗi lần.");
+        var codes = (await _db.Employees.IgnoreQueryFilters().Select(e => e.Code).ToListAsync()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        int n = 0; var missing = new HashSet<string>();
+        foreach (var r in rows)
+        {
+            if (string.IsNullOrWhiteSpace(r.EmployeeCode) || !codes.Contains(r.EmployeeCode.Trim())) { missing.Add(r.EmployeeCode ?? ""); continue; }
+            var code = r.EmployeeCode.Trim().ToUpperInvariant();
+            if (await _db.TimeClockPunches.AnyAsync(p => p.EmployeeCode == code && p.PunchTime == r.PunchTime)) continue;
+            _db.TimeClockPunches.Add(new TimeClockPunch { EmployeeCode = code, PunchTime = r.PunchTime, Device = r.Device ?? HttpContext.Items["ApiClient"]?.ToString() });
+            n++;
+        }
+        await _db.SaveChangesAsync();
+        return Ok(new { Saved = n, UnknownEmployees = missing });
+    }
+
     public record ScaleDto(string TicketNo, DateTime? WeighedAt, string? VehicleNo, string? ItemCode, string? PartnerCode, string? Direction, decimal GrossKg, decimal TareKg, string? Reference, string? Device, string? Note);
 
     [HttpPost("scale-readings"), ApiKey("scale.write")]

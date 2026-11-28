@@ -1,0 +1,42 @@
+@model List<LeaveRequest>
+@{
+    ViewData["Title"] = "Nghỉ phép"; int y = ViewBag.Year; var can = (bool)ViewBag.CanEdit; var bal = (List<LeaveBalance>)ViewBag.Balances; var types = (List<LeaveType>)ViewBag.Types; var st = ViewBag.Status as LeaveStatus?;
+}
+<partial name="_HrNav" model="@("leave")" />
+<div class="toolbar">
+    <a class="btn btn-sm btn-light border" asp-action="Leave" asp-route-year="@(y - 1)">‹</a><b class="px-2">Năm @y</b><a class="btn btn-sm btn-light border" asp-action="Leave" asp-route-year="@(y + 1)">›</a>
+    <a class="btn btn-sm @(st == null ? "btn-secondary" : "btn-light border")" asp-action="Leave" asp-route-year="@y">Tất cả</a>
+    @foreach (LeaveStatus s in Enum.GetValues<LeaveStatus>()) { <a class="btn btn-sm @(st == s ? "btn-secondary" : "btn-light border")" asp-action="Leave" asp-route-year="@y" asp-route-status="@s">@s.GetDisplayName()</a> }
+</div>
+<div class="row g-3">
+    <div class="col-lg-7"><div class="card mb-3"><div class="card-header">Đơn nghỉ</div><div class="card-body p-0"><table class="table table-sm mb-0">
+        <thead><tr><th>Nhân viên</th><th>Loại</th><th>Từ – đến</th><th class="num">Ngày</th><th>Lý do</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+        @foreach (var l in Model)
+        {
+            <tr><td>@l.Employee?.Code <span class="small text-muted">@l.Employee?.FullName</span></td><td class="small">@l.LeaveType?.Name</td><td>@l.FromDate.ToString("dd/MM") – @l.ToDate.ToDate()</td><td class="num">@l.Days.ToQty()</td><td class="small">@l.Reason</td>
+                <td><span class="badge @(l.Status == LeaveStatus.Approved ? "bg-success" : l.Status == LeaveStatus.Pending ? "bg-warning text-dark" : "bg-secondary")">@l.Status.GetDisplayName()</span> @if (l.DecidedBy != null) { <div class="small text-muted">@l.DecidedBy</div> }</td>
+                <td class="text-nowrap">@if (l.Status == LeaveStatus.Pending)
+                {
+                    @if (can) { <form asp-action="DecideLeave" asp-route-id="@l.Id" method="post" class="d-inline"><input type="hidden" name="approve" value="true" /><button class="btn btn-sm btn-success py-0">Duyệt</button></form>
+                        <form asp-action="DecideLeave" asp-route-id="@l.Id" method="post" class="d-inline"><input type="hidden" name="approve" value="false" /><button class="btn btn-sm btn-outline-danger py-0">Từ chối</button></form> }
+                    <form asp-action="CancelLeave" asp-route-id="@l.Id" method="post" class="d-inline"><button class="btn btn-sm btn-link py-0">Hủy</button></form>
+                }</td></tr>
+        }
+        @if (!Model.Any()) { <tr><td colspan="7" class="text-center text-muted py-3">Không có đơn.</td></tr> }
+    </tbody></table></div></div></div>
+    <div class="col-lg-5"><div class="card mb-3"><div class="card-header">Tạo đơn nghỉ</div><div class="card-body">
+        <form asp-action="RequestLeave" method="post" class="row g-2">
+            <div class="col-12"><select name="EmployeeId" asp-items="ViewBag.Emps" class="form-select form-select-sm"></select></div>
+            <div class="col-6"><select name="LeaveTypeId" class="form-select form-select-sm">@foreach (var t in types) { <option value="@t.Id">@t.Name @(t.DeductsAnnualBalance ? Lang.T(Context, "(trừ phép năm)") : t.IsPaid ? "" : Lang.T(Context, "(không lương)"))</option> }</select></div>
+            <div class="col-6"><input type="number" step="0.5" min="0.5" name="Days" value="1" class="form-control form-control-sm" title="Số ngày" /></div>
+            <div class="col-6"><input type="date" name="FromDate" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+            <div class="col-6"><input type="date" name="ToDate" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+            <div class="col-12"><input name="Reason" class="form-control form-control-sm" placeholder="Lý do" /></div>
+            <div class="col-12"><button class="btn btn-sm btn-primary">Gửi đơn</button></div>
+        </form></div></div>
+        <div class="card"><div class="card-header">Số dư phép năm @y</div><div class="card-body p-0"><div style="max-height:360px;overflow:auto"><table class="table table-sm mb-0"><thead><tr><th>Nhân viên</th><th class="num">Được hưởng</th><th class="num">Đã nghỉ</th><th class="num">Chờ duyệt</th><th class="num">Còn lại</th></tr></thead><tbody>
+            @foreach (var b in bal) { <tr><td><a asp-action="Profile" asp-route-id="@b.Employee.Id">@b.Employee.Code</a> <span class="small text-muted">@b.Employee.FullName</span></td><td class="num">@b.Entitlement.ToQty()</td><td class="num">@b.Used.ToQty()</td><td class="num">@(b.Pending > 0 ? b.Pending.ToQty() : "")</td><td class="num fw-bold @(b.Remaining <= 2 ? "warn" : "")">@b.Remaining.ToQty()</td></tr> }
+        </tbody></table></div></div>
+        <div class="card-footer small text-muted">Phép năm = số ngày phép theo hồ sơ (mặc định 12) + 1 ngày mỗi 5 năm thâm niên; năm vào làm tính theo tháng còn lại. Đơn đã duyệt tự ghi vào chấm công ngày và công tháng.</div></div>
+    </div>
+</div>
