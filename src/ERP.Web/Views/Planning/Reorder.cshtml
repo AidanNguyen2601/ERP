@@ -1,0 +1,32 @@
+@model List<ERP.Web.Services.ReorderRow>
+@{ ViewData["Title"] = "Tồn kho an toàn & điểm đặt hàng"; int days = ViewBag.Days, review = ViewBag.Review; decimal z = ViewBag.Z; var can = (bool)ViewBag.CanEdit; var below = Model.Count(r => r.SuggestQty > 0); }
+<form method="get" class="toolbar">
+    <span class="small">Lịch sử xuất kho</span><input name="days" type="number" value="@days" class="form-control form-control-sm" style="width:80px" /><span class="small">ngày · mức phục vụ</span>
+    <select name="z" class="form-select form-select-sm" style="width:auto">@foreach (var (v, t) in new[] { (1.28m, "90%"), (1.65m, "95%"), (2.05m, "98%"), (2.33m, "99%") }) { <option value="@v.Raw()" selected="@(v == z)">@t</option> }</select>
+    <span class="small">· chu kỳ đặt hàng</span><input name="review" type="number" value="@review" class="form-control form-control-sm" style="width:70px" /><span class="small">ngày</span>
+    <div class="form-check ms-2"><input class="form-check-input" type="checkbox" name="onlyBelow" value="true" checked="@((bool)ViewBag.OnlyBelow)" /><label class="form-check-label small">Chỉ hàng cần đặt</label></div>
+    <button class="btn btn-sm btn-light border">Tính</button>
+</form>
+<form method="post">
+<input type="hidden" name="days" value="@days" /><input type="hidden" name="z" value="@z.Raw()" /><input type="hidden" name="review" value="@review" />
+<div class="card"><div class="card-body p-0"><table class="table table-sm mb-0">
+    <thead><tr>@if (can) { <th><input type="checkbox" onclick="document.querySelectorAll('[name=itemIds]').forEach(c=>c.checked=this.checked)" /></th> }<th>Mặt hàng</th><th class="num">Nhu cầu / ngày</th><th class="num">Độ lệch / ngày</th><th class="num">Giao hàng (ngày)</th>
+        <th class="num">Tồn an toàn</th><th class="num">Điểm đặt hàng</th><th class="num">Mức tối đa</th><th class="num">Hiện có</th><th class="num">Đang về</th><th class="num">Đề xuất đặt</th><th class="num">Tối thiểu hiện tại</th></tr></thead><tbody>
+    @foreach (var r in Model)
+    {
+        <tr class="@(r.SuggestQty > 0 ? "table-warning" : "")">@if (can) { <td><input type="checkbox" name="itemIds" value="@r.Item.Id" checked="@(r.SuggestQty > 0)" /></td> }
+            <td>@r.Item.Code <span class="small text-muted">@r.Item.Name</span></td><td class="num">@r.DailyUsage.ToQty()</td><td class="num">@r.StdDev.ToQty()</td><td class="num">@r.LeadDays</td>
+            <td class="num">@r.Safety.ToQty()</td><td class="num fw-semibold">@r.ReorderPoint.ToQty()</td><td class="num">@r.MaxLevel.ToQty()</td><td class="num">@r.OnHand.ToQty()</td><td class="num">@r.OnOrder.ToQty()</td>
+            <td class="num fw-bold">@(r.SuggestQty > 0 ? r.SuggestQty.ToQty() : "")</td><td class="num text-muted">@r.Item.MinStock.ToQty() / @r.Item.MaxStock.ToQty()</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="12" class="text-center text-muted py-3">Không có mặt hàng phát sinh xuất kho trong kỳ.</td></tr> }
+</tbody></table></div>
+<div class="card-footer small text-muted">Nhu cầu và độ lệch tính từ phiếu xuất kho đã ghi sổ; thời gian giao hàng = trung bình từ ngày đơn mua đến ngày nhập kho (không có thì dùng Stock.DefaultLeadDays, mặc định 7). Tồn an toàn = z × độ lệch ngày × √thời gian giao; điểm đặt hàng = nhu cầu × thời gian giao + tồn an toàn; mức tối đa = điểm đặt hàng + nhu cầu × chu kỳ đặt hàng. @below mặt hàng đang dưới điểm đặt hàng (tính cả hàng đang về).</div></div>
+@if (can)
+{
+    <div class="mt-2 d-flex gap-1">
+        <button class="btn btn-sm btn-primary" formaction="@Url.Action("ApplyLevels")">Ghi điểm đặt hàng / mức tối đa vào danh mục (dòng chọn)</button>
+        <button class="btn btn-sm btn-success" formaction="@Url.Action("CreateRequisition")">Lập đề nghị mua hàng cho dòng chọn cần đặt</button>
+    </div>
+}
+</form>

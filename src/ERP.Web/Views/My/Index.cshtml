@@ -1,0 +1,67 @@
+@model Employee
+@{
+    ViewData["Title"] = "Cổng nhân viên"; var bal = ViewBag.Balance as LeaveBalance; var slips = (List<PayrollLine>)ViewBag.Payslips; var leaves = (List<LeaveRequest>)ViewBag.Leaves;
+    var types = (List<LeaveType>)ViewBag.Types; var assets = (List<EmployeeAssetIssue>)ViewBag.Assets; var trainings = (List<TrainingAttendee>)ViewBag.Trainings;
+    var appr = ViewBag.Appraisal as Appraisal; var contract = ViewBag.Contract as LaborContract;
+}
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="card mb-3"><div class="card-body">
+            <h5 class="mb-1">@Model.FullName</h5><div class="text-muted small">@Model.Code · @Model.Position · @Model.Department</div>
+            <div class="small mt-2">Vào làm @Model.StartDate.ToDate() · thâm niên @HrService.YearsOfService(Model).ToString("0.#") năm</div>
+            @if (contract != null) { <div class="small">Hợp đồng @contract.Number (@contract.Type.GetDisplayName()) @(contract.EndDate != null ? "– hết hạn " + contract.EndDate.Value.ToDate() : "")</div> }
+            <div class="small">Điện thoại @Model.Phone · Email @Model.Email</div>
+            <div class="small text-muted mt-1">Thông tin sai? Liên hệ phòng nhân sự để cập nhật.</div>
+        </div></div>
+        <div class="card mb-3"><div class="card-header">Phép năm @DateTime.Today.Year</div><div class="card-body">
+            @if (bal != null)
+            {
+                <div class="d-flex justify-content-between"><span>Được hưởng</span><b>@bal.Entitlement.ToQty()</b></div>
+                <div class="d-flex justify-content-between"><span>Đã nghỉ</span><b>@bal.Used.ToQty()</b></div>
+                <div class="d-flex justify-content-between"><span>Chờ duyệt</span><b>@bal.Pending.ToQty()</b></div>
+                <div class="d-flex justify-content-between fs-5"><span>Còn lại</span><b>@bal.Remaining.ToQty()</b></div>
+            }
+            <hr />
+            <form asp-action="RequestLeave" method="post" class="row g-2">
+                <div class="col-12"><select name="leaveTypeId" class="form-select form-select-sm">@foreach (var t in types) { <option value="@t.Id">@t.Name</option> }</select></div>
+                <div class="col-6"><input name="fromDate" type="date" value="@DateTime.Today.AddDays(1).Iso()" class="form-control form-control-sm" /></div>
+                <div class="col-6"><input name="toDate" type="date" value="@DateTime.Today.AddDays(1).Iso()" class="form-control form-control-sm" /></div>
+                <div class="col-4"><input name="days" type="number" step="0.5" min="0.5" value="1" class="form-control form-control-sm" title="Số ngày" /></div>
+                <div class="col-8"><input name="reason" class="form-control form-control-sm" placeholder="Lý do" /></div>
+                <div class="col-12"><button class="btn btn-sm btn-primary">Gửi đơn nghỉ</button></div>
+            </form>
+        </div></div>
+        @if (appr != null)
+        {
+            <div class="card"><div class="card-header">Tự đánh giá – @appr.Cycle?.Name</div><div class="card-body">
+                @if (appr.Status == AppraisalStatus.Approved) { <div>Kết quả: <b>@appr.Total.ToString("0.#") điểm – loại @appr.Rating</b></div><div class="small text-muted">@appr.ManagerComment</div> }
+                else
+                {
+                    <form asp-action="SelfReview" asp-route-id="@appr.Id" method="post"><textarea name="text" rows="4" class="form-control form-control-sm" placeholder="Kết quả công việc, khó khăn, đề xuất...">@appr.SelfReview</textarea><button class="btn btn-sm btn-primary mt-2">Gửi tự đánh giá</button></form>
+                }
+            </div></div>
+        }
+    </div>
+    <div class="col-lg-8">
+        <div class="card mb-3"><div class="card-header">Phiếu lương</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off">
+            <thead><tr><th>Tháng</th><th class="num">Công</th><th class="num">Tổng thu nhập</th><th class="num">Bảo hiểm</th><th class="num">Thuế TNCN</th><th class="num">Thực lĩnh</th><th></th></tr></thead><tbody>
+            @foreach (var l in slips) { <tr><td>@l.PayrollRun!.Month.ToString("00")/@l.PayrollRun.Year</td><td class="num">@l.WorkDays.ToQty()</td><td class="num">@l.Gross.ToMoney()</td><td class="num">@l.EmpTotal.ToMoney()</td><td class="num">@l.Pit.ToMoney()</td><td class="num fw-bold">@l.Net.ToMoney()</td><td><a asp-action="Payslip" asp-route-lineId="@l.Id" target="_blank"><i class="bi bi-printer"></i></a></td></tr> }
+            @if (!slips.Any()) { <tr><td colspan="7" class="text-center text-muted py-3">Chưa có phiếu lương.</td></tr> }
+        </tbody></table></div></div>
+        <div class="card mb-3"><div class="card-header">Đơn nghỉ của tôi</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+            @foreach (var l in leaves) { <tr><td>@l.LeaveType?.Name</td><td class="small">@l.FromDate.ToDate() – @l.ToDate.ToDate()</td><td class="num">@l.Days.ToQty()</td><td><span class="badge @(l.Status == LeaveStatus.Approved ? "bg-success" : l.Status == LeaveStatus.Pending ? "bg-warning text-dark" : "bg-secondary")">@l.Status.GetDisplayName()</span></td>
+                <td>@if (l.Status == LeaveStatus.Pending) { <form asp-action="CancelLeave" asp-route-id="@l.Id" method="post"><button class="btn btn-sm btn-link py-0">Hủy</button></form> }</td></tr> }
+            @if (!leaves.Any()) { <tr><td class="text-center text-muted py-3">Chưa có đơn nghỉ.</td></tr> }
+        </tbody></table></div></div>
+        <div class="row g-3">
+            <div class="col-md-6"><div class="card"><div class="card-header">Tài sản đang giữ</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+                @foreach (var a in assets) { <tr><td>@a.Description <span class="small text-muted">@a.SerialNo</span></td><td class="small">@a.IssuedDate.ToDate()</td></tr> }
+                @if (!assets.Any()) { <tr><td class="text-center text-muted py-2">Không có.</td></tr> }
+            </tbody></table></div></div></div>
+            <div class="col-md-6"><div class="card"><div class="card-header">Đào tạo</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+                @foreach (var t in trainings) { <tr><td>@t.Course?.Title</td><td class="small">@t.Course?.FromDate.ToDate()</td><td><span class="badge bg-light text-dark border">@t.Status.GetDisplayName()</span></td></tr> }
+                @if (!trainings.Any()) { <tr><td class="text-center text-muted py-2">Chưa có.</td></tr> }
+            </tbody></table></div></div></div>
+        </div>
+    </div>
+</div>

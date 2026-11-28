@@ -69,6 +69,8 @@ public class Lead : IBranchOwned
     [StringLength(300)] public string? LostReason { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime? LastContactAt { get; set; }
+    [Display(Name = "Chiến dịch")] public int? CampaignId { get; set; }
+    public Campaign? Campaign { get; set; }
 }
 
 public class Opportunity : IBranchOwned

@@ -5,7 +5,8 @@
         ("emp", "Nhân viên", "Payroll", "Employees"), ("contract", "Hợp đồng", "Hr", "Contracts"), ("shift", "Ca làm việc", "Hr", "Shifts"), ("clock", "Chấm công ngày", "Hr", "TimeClock"), ("att", "Công tháng", "Payroll", "Attendance"),
         ("leave", "Nghỉ phép", "Hr", "Leave"), ("comp", "Thành phần lương", "Hr", "Components"), ("bonus", "Thưởng & lương SP", "Hr", "Bonuses"), ("payroll", "Bảng lương", "Payroll", "Index"),
         ("ins", "Bảo hiểm", "Hr", "Insurance"), ("d02", "Báo tăng giảm D02-LT", "Compliance", "D02"), ("benefit", "Ốm đau – thai sản", "Compliance", "Benefits"),
-        ("adv", "Tạm ứng lương", "Compliance", "Advances"), ("pit05", "Tờ khai 05/KK-TNCN", "Compliance", "Pit05"), ("pit", "Quyết toán TNCN", "Hr", "PitFinalization")
+("recruit", "Tuyển dụng", "Talent", "Jobs"), ("kpi", "Đánh giá KPI", "Talent", "Appraisals"), ("training", "Đào tạo", "Talent", "Training"), ("assets", "Cấp phát tài sản", "Talent", "Assets"),
+                ("adv", "Tạm ứng lương", "Compliance", "Advances"), ("pit05", "Tờ khai 05/KK-TNCN", "Compliance", "Pit05"), ("pit", "Quyết toán TNCN", "Hr", "PitFinalization")
     };
 }
 <div class="subnav">@foreach (var t in tabs) { <a class="@(Model == t.Key ? "active" : "")" asp-controller="@t.Ctl" asp-action="@t.Act">@t.Title</a> }</div>

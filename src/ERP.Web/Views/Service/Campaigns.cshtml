@@ -1,0 +1,32 @@
+@model List<ERP.Web.Controllers.ServiceController.CampaignStat>
+@{ ViewData["Title"] = "Chiến dịch marketing"; var can = (bool)ViewBag.CanEdit; }
+<partial name="_CrmNav" model="@("camp")" />
+<div class="row g-3">
+    <div class="col-lg-9"><div class="card"><div class="card-body p-0"><table class="table table-sm mb-0">
+        <thead><tr><th>Chiến dịch</th><th>Kênh</th><th>Thời gian</th><th class="num">Ngân sách / chi thực tế</th><th class="num">KH tiềm năng</th><th class="num">Chuyển đổi</th><th class="num">Cơ hội thắng</th><th class="num">Doanh số thắng</th><th class="num">Chi phí / KH</th><th class="num">ROI</th></tr></thead><tbody>
+        @foreach (var s in Model)
+        {
+            var c = s.Campaign;
+            <tr><td>@c.Code – @c.Name @if (c.Note != null) { <div class="small text-muted">@c.Note</div> }</td><td class="small">@c.Channel.GetDisplayName()</td><td class="small">@c.FromDate.ToString("dd/MM") – @c.ToDate.ToDate()</td>
+                <td class="num">@c.Budget.ToMoney()<div class="small @(c.ActualCost > c.Budget && c.Budget > 0 ? "text-danger" : "text-muted")">@c.ActualCost.ToMoney()</div></td>
+                <td class="num">@s.Leads @if (c.TargetLeads > 0) { <div class="small text-muted">/ @c.TargetLeads</div> }</td><td class="num">@s.Converted</td><td class="num">@s.Won/@s.Opps</td>
+                <td class="num">@s.WonAmount.ToMoney() @if (s.Pipeline > 0) { <div class="small text-muted">dự báo @s.Pipeline.ToMoney()</div> }</td><td class="num">@s.CostPerLead.ToMoney()</td>
+                <td class="num fw-bold @(s.Roi < 0 ? "text-danger" : "")">@(s.Roi == null ? "" : s.Roi.Value.ToString("0.#") + "%")</td></tr>
+        }
+        @if (!Model.Any()) { <tr><td colspan="10" class="text-center text-muted py-3">Chưa có chiến dịch.</td></tr> }
+    </tbody></table></div>
+    <div class="card-footer small text-muted">Khách hàng tiềm năng gắn chiến dịch khi nhập (ô “Chiến dịch”). Doanh số thắng = tổng giá trị cơ hội thắng từ các khách hàng tiềm năng đó; ROI = (doanh số thắng − chi phí thực tế) / chi phí thực tế.</div></div></div>
+    @if (can)
+    {
+        <div class="col-lg-3"><div class="card"><div class="card-header">Tạo chiến dịch</div><div class="card-body"><form asp-action="SaveCampaign" method="post" class="row g-2">
+            <div class="col-12"><input name="Name" class="form-control form-control-sm" placeholder="Tên chiến dịch" required /></div>
+            <div class="col-12"><select name="Channel" asp-items="Html.GetEnumSelectList<CampaignChannel>()" class="form-select form-select-sm"></select></div>
+            <div class="col-6"><input name="FromDate" type="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+            <div class="col-6"><input name="ToDate" type="date" value="@DateTime.Today.AddDays(30).Iso()" class="form-control form-control-sm" /></div>
+            <div class="col-6"><input name="Budget" type="number" step="100000" class="form-control form-control-sm" placeholder="Ngân sách" /></div>
+            <div class="col-6"><input name="ActualCost" type="number" step="100000" class="form-control form-control-sm" placeholder="Chi thực tế" /></div>
+            <div class="col-12"><input name="TargetLeads" type="number" class="form-control form-control-sm" placeholder="Mục tiêu số KH tiềm năng" /></div>
+            <div class="col-12"><input name="Note" class="form-control form-control-sm" placeholder="Mô tả" /></div>
+            <div class="col-12"><button class="btn btn-sm btn-primary">Lưu</button></div></form></div></div></div>
+    }
+</div>

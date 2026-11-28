@@ -41,7 +41,7 @@ public class UsersController : Controller
         LoadRoles();
         return View("Form", new UserFormViewModel
         {
-            Id = u.Id, Username = u.Username, FullName = u.FullName, Email = u.Email, Department = u.Department, Role = u.Role, IsActive = u.IsActive, BranchId = u.BranchId, AllBranches = u.AllBranches, Language = u.Language
+            Id = u.Id, Username = u.Username, FullName = u.FullName, Email = u.Email, Department = u.Department, Role = u.Role, IsActive = u.IsActive, BranchId = u.BranchId, EmployeeId = u.EmployeeId, AllBranches = u.AllBranches, Language = u.Language
         });
     }
 
@@ -74,6 +74,7 @@ public class UsersController : Controller
         user.Department = vm.Department.Trim();
         user.Role = vm.Role;
         user.IsActive = vm.IsActive;
+        user.EmployeeId = vm.EmployeeId;
         user.BranchId = vm.BranchId; user.AllBranches = vm.AllBranches || vm.BranchId == null; user.Language = vm.Language is "en" ? "en" : "vi";
         if (!string.IsNullOrWhiteSpace(vm.Password)) user.PasswordHash = _hasher.HashPassword(user, vm.Password);
         await _db.SaveChangesAsync();
@@ -85,5 +86,6 @@ public class UsersController : Controller
     {
         ViewBag.Roles = new SelectList(AppRoles.All.Select(r => new { Value = r, Text = AppRoles.DisplayName(r) }), "Value", "Text");
         ViewBag.Branches = new SelectList(_db.Branches.OrderBy(b => b.Code).Select(b => new { b.Id, Name = b.Code + " – " + b.Name }).ToList(), "Id", "Name");
+        ViewBag.Employees = new SelectList(_db.Employees.Where(e => e.IsActive).OrderBy(e => e.Code).Select(e => new { e.Id, Name = e.Code + " – " + e.FullName }).ToList(), "Id", "Name");
     }
 }

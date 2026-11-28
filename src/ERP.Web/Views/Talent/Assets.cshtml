@@ -1,0 +1,35 @@
+@model List<EmployeeAssetIssue>
+@{ ViewData["Title"] = "Cấp phát tài sản cho nhân viên"; var can = (bool)ViewBag.CanEdit; var open = (bool)ViewBag.Open; }
+<partial name="_HrNav" model="@("assets")" />
+<div class="toolbar">
+    <a class="btn btn-sm @(open ? "btn-secondary" : "btn-light border")" asp-action="Assets">Đang giao</a><a class="btn btn-sm @(!open ? "btn-secondary" : "btn-light border")" asp-action="Assets" asp-route-open="false">Tất cả</a>
+</div>
+<div class="row g-3">
+    <div class="col-lg-8"><div class="card"><div class="card-body p-0"><table class="table table-sm mb-0">
+        <thead><tr><th>Nhân viên</th><th>Tài sản / thiết bị</th><th>Serial</th><th class="num">SL</th><th>Ngày giao</th><th>Thu hồi</th><th></th></tr></thead><tbody>
+        @foreach (var a in Model)
+        {
+            <tr><td>@a.Employee?.Code <span class="small text-muted">@a.Employee?.FullName</span> <a class="small" asp-action="Handover" asp-route-employeeId="@a.EmployeeId" target="_blank" title="Biên bản bàn giao"><i class="bi bi-printer"></i></a></td>
+                <td>@a.Description <div class="small text-muted">@(a.ToolItem != null ? "CCDC " + a.ToolItem.Code : a.FixedAsset != null ? "TSCĐ " + a.FixedAsset.Code : "")</div></td>
+                <td class="small">@a.SerialNo</td><td class="num">@a.Quantity.ToQty()</td><td>@a.IssuedDate.ToDate()</td>
+                <td class="small">@a.ReturnedDate?.ToString("dd/MM/yyyy") @a.ReturnCondition</td>
+                <td>@if (can && a.ReturnedDate == null) { <form asp-action="Return" asp-route-id="@a.Id" method="post" class="d-flex gap-1"><input name="condition" class="form-control form-control-sm py-0" placeholder="Tình trạng" style="width:110px" /><button class="btn btn-sm btn-outline-secondary py-0">Thu hồi</button></form> }</td></tr>
+        }
+        @if (!Model.Any()) { <tr><td colspan="7" class="text-center text-muted py-3">Không có.</td></tr> }
+    </tbody></table></div></div></div>
+    @if (can)
+    {
+        <div class="col-lg-4"><div class="card"><div class="card-header">Bàn giao tài sản</div><div class="card-body">
+            <form asp-action="Issue" method="post" class="row g-2">
+                <div class="col-12"><select name="EmployeeId" asp-items="ViewBag.Emps" class="form-select form-select-sm"></select></div>
+                <div class="col-12"><select name="ToolItemId" asp-items="ViewBag.Tools" class="form-select form-select-sm"><option value="">-- Công cụ dụng cụ --</option></select></div>
+                <div class="col-12"><select name="FixedAssetId" asp-items="ViewBag.Fixed" class="form-select form-select-sm"><option value="">-- Hoặc tài sản cố định --</option></select></div>
+                <div class="col-12"><input name="Description" class="form-control form-control-sm" placeholder="Hoặc tên tài sản (laptop, đồng phục, thẻ từ...)" /></div>
+                <div class="col-7"><input name="SerialNo" class="form-control form-control-sm" placeholder="Số serial" /></div>
+                <div class="col-5"><input name="Quantity" type="number" step="0.001" value="1" class="form-control form-control-sm" /></div>
+                <div class="col-12"><input name="IssuedDate" type="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+                <div class="col-12"><input name="Note" class="form-control form-control-sm" placeholder="Ghi chú" /></div>
+                <div class="col-12"><button class="btn btn-sm btn-primary">Ghi nhận bàn giao</button></div>
+            </form><div class="small text-muted mt-2">Khi nhân viên nghỉ việc, kiểm tra danh sách “Đang giao” để thu hồi trước khi thanh toán lương cuối.</div></div></div></div>
+    }
+</div>

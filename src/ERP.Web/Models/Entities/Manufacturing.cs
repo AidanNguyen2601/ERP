@@ -76,6 +76,9 @@ public partial class Bom
 public class ProductionOperation
 {
     public int Id { get; set; }
+    /// <summary>Lịch theo năng lực hữu hạn (bộ lập lịch)</summary>
+    public DateTime? PlannedStart { get; set; }
+    public DateTime? PlannedEnd { get; set; }
     public int ProductionOrderId { get; set; }
     public ProductionOrder? ProductionOrder { get; set; }
     public int Seq { get; set; }

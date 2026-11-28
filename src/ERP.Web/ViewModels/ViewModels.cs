@@ -23,6 +23,7 @@ public class ChangePasswordViewModel
 
 public class UserFormViewModel
 {
+    [System.ComponentModel.DataAnnotations.Display(Name = "Hồ sơ nhân viên (cổng tự phục vụ)")] public int? EmployeeId { get; set; }
     public int Id { get; set; }
     [Required(ErrorMessage = "Nhập tên đăng nhập"), StringLength(50, MinimumLength = 3)]
     [RegularExpression(@"^[a-zA-Z0-9_.]+$", ErrorMessage = "Chỉ dùng chữ không dấu, số, dấu chấm, gạch dưới")]

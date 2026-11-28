@@ -95,6 +95,7 @@
                 }
                 <a class="icon-btn position-relative" asp-controller="Approvals" asp-action="Index" title="@Lang.T(Context, "Chờ duyệt")"><i class="bi bi-check2-circle"></i>
                     @if (pendingCount > 0) { <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:.6rem">@pendingCount</span> }</a>
+                <a class="icon-btn" asp-controller="My" asp-action="Index" title="@Lang.T(Context, "Cổng nhân viên")"><i class="bi bi-person-badge"></i></a>
                 <a class="icon-btn position-relative" asp-controller="Notifications" asp-action="Index" title="@Lang.T(Context, "Thông báo")"><i class="bi bi-envelope"></i><span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size:.6rem"></span></a>
                 <a class="icon-btn position-relative" asp-controller="Alerts" asp-action="Index" title="@Lang.T(Context, "Cảnh báo")"><i class="bi bi-bell"></i><span id="alertBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark d-none" style="font-size:.6rem"></span></a>
                 <form asp-controller="Org" asp-action="Language" method="post" class="d-inline"><input type="hidden" name="returnUrl" value="@currentUrl" /><input type="hidden" name="lang" value="@(isEn ? "vi" : "en")" />

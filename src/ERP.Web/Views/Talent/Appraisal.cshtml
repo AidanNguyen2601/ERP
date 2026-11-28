@@ -1,0 +1,27 @@
+@model Appraisal
+@{ ViewData["Title"] = "Đánh giá " + Model.Employee?.FullName; var can = (bool)ViewBag.CanEdit; }
+<partial name="_HrNav" model="@("kpi")" />
+<div class="card" style="max-width:960px"><div class="card-header d-flex justify-content-between"><span>@Model.Cycle?.Name · @Model.Employee?.Code @Model.Employee?.FullName · @Model.Employee?.Position</span>
+    <span>@if (Model.Rating != null) { <b>@Model.Total.ToString("0.#") điểm – loại @Model.Rating</b> } · @Model.Status.GetDisplayName()</span></div>
+<div class="card-body">
+<form asp-action="ScoreAppraisal" asp-route-id="@Model.Id" method="post">
+    <table class="table table-sm" data-grid="off"><thead><tr><th>Tiêu chí</th><th>Chỉ tiêu</th><th class="num">Trọng số</th><th style="width:110px">Điểm (0–100)</th><th>Nhận xét</th></tr></thead><tbody>
+    @foreach (var c in Model.Cycle!.Criteria)
+    {
+        var s = Model.Scores.FirstOrDefault(x => x.AppraisalCriterionId == c.Id);
+        <tr><td>@c.Name</td><td class="small text-muted">@c.Target</td><td class="num">@c.Weight%</td>
+            <td><input name="score[@c.Id]" type="number" min="0" max="100" value="@(s?.Score ?? 0)" class="form-control form-control-sm" disabled="@(!can)" /></td>
+            <td><input name="comment[@c.Id]" value="@s?.Comment" class="form-control form-control-sm" disabled="@(!can)" /></td></tr>
+    }
+    </tbody></table>
+    <div class="row g-2">
+        <div class="col-md-6"><label class="form-label small">Tự đánh giá của nhân viên</label><textarea name="selfReview" rows="3" class="form-control form-control-sm" disabled="@(!can)">@Model.SelfReview</textarea></div>
+        <div class="col-md-6"><label class="form-label small">Nhận xét của quản lý</label><textarea name="managerComment" rows="3" class="form-control form-control-sm" disabled="@(!can)">@Model.ManagerComment</textarea></div>
+    </div>
+    @if (can)
+    {
+        <div class="mt-2 d-flex gap-1"><button name="op" value="save" class="btn btn-sm btn-light border">Lưu nháp</button><button name="op" value="submit" class="btn btn-sm btn-primary">Gửi duyệt</button>
+            <button name="op" value="approve" class="btn btn-sm btn-success">Chốt kết quả</button> <a class="btn btn-sm btn-link" asp-action="Appraisals" asp-route-cycleId="@Model.AppraisalCycleId">Quay lại</a></div>
+    }
+</form>
+</div></div>

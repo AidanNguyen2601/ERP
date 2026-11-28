@@ -1,0 +1,48 @@
+@model List<ERP.Web.Services.ScheduleSlot>
+@{
+    ViewData["Title"] = "Lập lịch sản xuất theo năng lực"; DateTime start = ViewBag.Start; int days = ViewBag.Days; var can = (bool)ViewBag.CanEdit;
+    var centers = Model.Select(s => s.Center).DistinctBy(c => c.Id).OrderBy(c => c.Code).ToList();
+    var end = start.Date.AddDays(days);
+    double Pct(DateTime t) => Math.Clamp((t - start.Date).TotalHours / (days * 24.0) * 100, 0, 100);
+    var colors = new[] { "#4e79a7", "#f28e2b", "#59a14f", "#b07aa1", "#76b7b2", "#edc948", "#ff9da7", "#9c755f" };
+    var orderColor = Model.Select(s => s.Order.Id).Distinct().Select((id, i) => (id, i)).ToDictionary(x => x.id, x => colors[x.i % colors.Length]);
+    var late = Model.Where(s => s.Late).Select(s => s.Order).DistinctBy(o => o.Id).ToList();
+}
+<partial name="_MfgNav" model="@("schedule")" />
+<form method="get" class="toolbar">
+    <span class="small">Bắt đầu</span><input name="start" type="date" value="@start.Iso()" class="form-control form-control-sm" style="width:auto" />
+    <span class="small">Hiển thị</span><input name="days" type="number" value="@days" min="7" max="60" class="form-control form-control-sm" style="width:70px" /><span class="small">ngày</span>
+    <button class="btn btn-sm btn-light border">Lập lịch</button>
+</form>
+@if (can) { <form asp-action="SaveSchedule" method="post" class="mb-2"><input type="hidden" name="start" value="@start.Iso()" /><button class="btn btn-sm btn-primary">Ghi lịch dự kiến vào công đoạn</button></form> }
+@if (late.Any()) { <div class="alert alert-danger py-2 small"><b>Dự kiến trễ hạn:</b> @string.Join(", ", late.Select(o => $"{o.Number} (hạn {o.DueDate:dd/MM})"))</div> }
+<div class="card mb-3"><div class="card-body" style="overflow-x:auto">
+    <div style="min-width:900px">
+        <div class="d-flex small text-muted" style="margin-left:160px">@for (var d = 0; d < days; d++) { var day = start.Date.AddDays(d); <div style="flex:1;border-left:1px solid #ddd;padding-left:2px;@(day.DayOfWeek == DayOfWeek.Sunday ? "background:#f5f5f5" : "")">@day.ToString("dd/MM")</div> }</div>
+        @foreach (var c in centers)
+        {
+            var mine = Model.Where(s => s.Center.Id == c.Id && s.Start < end).ToList();
+            var hours = mine.Sum(s => (decimal)(s.End - s.Start).TotalHours);
+            <div class="d-flex align-items-center border-top" style="height:38px">
+                <div style="width:160px" class="small"><b>@c.Code</b> @c.Name<div class="text-muted">@((c.HoursPerDay * c.Efficiency / 100).ToQty()) giờ/ngày</div></div>
+                <div class="position-relative flex-grow-1" style="height:30px">
+                    @foreach (var s in mine)
+                    {
+                        <a asp-controller="Production" asp-action="Details" asp-route-id="@s.Order.Id" title="@s.Order.Number · @s.Op.Name · @s.Start.ToString("dd/MM HH:mm") – @s.End.ToString("dd/MM HH:mm")@(s.Late ? " · TRỄ HẠN" : "")"
+                           style="position:absolute;top:2px;bottom:2px;left:@Pct(s.Start).ToString(System.Globalization.CultureInfo.InvariantCulture)%;width:@(Math.Max(0.4, Pct(s.End) - Pct(s.Start)).ToString(System.Globalization.CultureInfo.InvariantCulture))%;background:@orderColor[s.Order.Id];@(s.Late ? "outline:2px solid #dc3545;" : "")color:#fff;font-size:.7rem;overflow:hidden;white-space:nowrap;border-radius:3px;padding:2px;text-decoration:none">@s.Order.Number</a>
+                    }
+                </div>
+            </div>
+        }
+        @if (!centers.Any()) { <div class="text-muted text-center py-4">Không có công đoạn cần làm (lệnh sản xuất đang mở có công đoạn gắn trung tâm sản xuất).</div> }
+    </div>
+</div></div>
+<div class="card"><div class="card-body p-0"><table class="table table-sm mb-0">
+    <thead><tr><th>Lệnh</th><th>Sản phẩm</th><th>Công đoạn</th><th>Trung tâm</th><th>Bắt đầu</th><th>Kết thúc</th><th>Hạn lệnh</th></tr></thead><tbody>
+    @foreach (var s in Model.OrderBy(s => s.Start))
+    {
+        <tr class="@(s.Late ? "table-danger" : "")"><td><a asp-controller="Production" asp-action="Details" asp-route-id="@s.Order.Id">@s.Order.Number</a></td><td class="small">@s.Order.Item?.Name</td><td>@s.Op.Seq. @s.Op.Name</td><td class="small">@s.Center.Code</td>
+            <td class="small">@s.Start.ToString("dd/MM HH:mm")</td><td class="small">@s.End.ToString("dd/MM HH:mm")</td><td class="small">@s.Order.DueDate.ToString("dd/MM/yyyy")</td></tr>
+    }
+</tbody></table></div>
+<div class="card-footer small text-muted">Xếp lệnh theo hạn hoàn thành; mỗi trung tâm làm một công đoạn một lúc, năng lực ngày = số giờ làm × hiệu suất, bắt đầu 8h, nghỉ Chủ nhật; công đoạn sau bắt đầu khi công đoạn trước của lệnh xong; thời lượng = phút kế hoạch − phút đã làm.</div></div>

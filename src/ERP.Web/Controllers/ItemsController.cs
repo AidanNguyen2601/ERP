@@ -106,6 +106,7 @@ public class ItemsController : ErpControllerBase
             existing.Code = model.Code; existing.Name = model.Name; existing.Unit = model.Unit; existing.Type = model.Type; existing.SalePrice = model.SalePrice;
             existing.VatRate = model.VatRate; existing.MinStock = model.MinStock; existing.IsActive = model.IsActive;
             existing.GroupId = model.GroupId; existing.MaxStock = model.MaxStock; existing.TrackMode = model.TrackMode; existing.TrackExpiry = model.TrackExpiry; existing.ExpiryAlertDays = model.ExpiryAlertDays;
+            existing.WarrantyMonths = model.WarrantyMonths;
             existing.CostMethod = model.CostMethod; existing.Barcode = string.IsNullOrWhiteSpace(model.Barcode) ? null : model.Barcode.Trim();
         }
         await Db.SaveChangesAsync();

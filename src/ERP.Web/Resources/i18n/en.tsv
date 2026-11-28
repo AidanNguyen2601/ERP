@@ -5897,3 +5897,271 @@ thiếu	missing
 Ước tính theo Luật BHXH: ốm đau hưởng 75% mức lương đóng BHXH của tháng liền kề trước khi nghỉ, chia 24 ngày, nhân số ngày nghỉ làm việc; thai sản (sinh con) hưởng 100% mức bình quân lương đóng (dùng mức hiện hành) cho thời gian nghỉ và trợ cấp một lần bằng 2 lần mức lương cơ sở (cài đặt Payroll.BaseSalaryGov). Ngày nghỉ hưởng chế độ BHXH doanh nghiệp không trả lương. Cơ quan BHXH xét duyệt và chi trả số tiền chính thức.	Estimated per the Social Insurance Law: sickness pays 75% of the insurance salary of the month before leave, divided by 24 days, times working days off; maternity (childbirth) pays 100% of the average insurance salary (current level used) for the leave plus a lump sum of 2× the statutory base salary (setting Payroll.BaseSalaryGov). The company does not pay salary for days covered by social insurance. The social insurance agency approves and pays the official amounts.
 Ốm đau (BHXH chi trả)	Sickness (paid by social insurance)
 Ốm đau – thai sản	Sickness – maternity
+-- Công cụ dụng cụ --	-- Tool / equipment --
+-- Hoặc tài sản cố định --	-- Or fixed asset --
+-- Không gắn --	-- Not linked --
+-- Phụ trách --	-- Assignee --
+-- Sản phẩm --	-- Product --
+; {0} lệnh dự kiến trễ hạn.	; {0} orders expected to be late.
+BIÊN BẢN BÀN GIAO TÀI SẢN, CÔNG CỤ DỤNG CỤ	ASSET AND TOOL HANDOVER RECORD
+Biên bản bàn giao	Handover record
+Biên bản bàn giao – {0}	Handover record – {0}
+Bàn giao tài sản	Hand over asset
+Báo lỗi / khiếu nại	Defect / complaint
+Bên giao	Handed over by
+Bên nhận	Received by
+Bên nhận có trách nhiệm bảo quản, sử dụng đúng mục đích và hoàn trả khi nghỉ việc hoặc khi công ty yêu cầu.	The recipient must keep the items safe, use them properly and return them on leaving or when the company requests.
+Bảo hành (tháng)	Warranty (months)
+Bắt buộc (an toàn lao động, nghiệp vụ...)	Mandatory (safety, compliance...)
+Bổ sung tồn kho theo điểm đặt hàng	Replenish stock per reorder point
+Chi phí / KH	Cost / lead
+Chi phí thực tế	Actual cost
+Chi thực tế	Actual spend
+Chiến dịch	Campaigns
+Chiến dịch marketing	Marketing campaigns
+Chuyển thưởng & khóa kỳ	Transfer bonuses & close cycle
+Chuyển thưởng hiệu suất của các phiếu đã chốt vào lương và khóa kỳ đánh giá?	Transfer performance bonuses of approved appraisals to payroll and close the cycle?
+Chuyển thưởng vào lương tháng	Transfer bonuses to payroll month
+Chuyển đổi	Converted
+Chưa chọn sản phẩm.	No product selected.
+Chưa có chiến dịch.	No campaigns yet.
+Chưa có khóa đào tạo.	No training courses yet.
+Chưa có kỳ đánh giá.	No appraisal cycles yet.
+Chưa có mã.	No code entered.
+Chưa có phiếu lương.	No payslips yet.
+Chưa có vị trí tuyển dụng.	No job openings yet.
+Chưa có đơn nghỉ.	No leave requests yet.
+Chấm điểm	Score
+Chỉ hàng cần đặt	Only items to order
+Chỉ hủy được đơn đang chờ duyệt.	Only pending requests can be cancelled.
+Chọn công cụ / tài sản hoặc nhập tên.	Select a tool / asset or enter a name.
+Chốt kết quả	Finalize
+Chờ khách phản hồi	Waiting for customer
+Chứng chỉ	Certificate
+Chứng chỉ bắt buộc sắp / đã hết hạn:	Mandatory certificates expiring / expired:
+Còn bảo hành đến {0} (hóa đơn {1}).	Under warranty until {0} (invoice {1}).
+Cơ hội thắng	Won opportunities
+Cấp phát tài sản	Asset issuance
+Cấp phát tài sản cho nhân viên	Assets issued to employees
+Cổng nhân viên	Employee portal
+Doanh số thắng	Won revenue
+Dùng nút "Nhận việc" để tạo hồ sơ nhân viên.	Use the "Hire" button to create the employee profile.
+Dự kiến trễ hạn:	Expected late:
+Ghi lịch dự kiến vào công đoạn	Save planned schedule to operations
+Ghi nhận bàn giao	Record handover
+Ghi điểm đặt hàng / mức tối đa vào danh mục (dòng chọn)	Save reorder point / max level to items (selected rows)
+Ghi đè (không cộng dồn)	Overwrite (do not add up)
+Giao hàng (ngày)	Lead time (days)
+Gần đây	Recent
+Gọi điện / telesales	Phone / telesales
+Gửi tự đánh giá	Submit self-review
+Gửi đơn nghỉ	Submit leave request
+Hiển thị	Show
+Hiện có	On hand
+Hiệu lực chứng chỉ (tháng)	Certificate validity (months)
+Hiệu lực chứng chỉ (tháng, 0 = không hết hạn)	Certificate validity (months, 0 = no expiry)
+Hoàn thành khóa học được ghi vào quá trình công tác của nhân viên.	Course completion is recorded in the employee's work history.
+Hoặc tên tài sản (laptop, đồng phục, thẻ từ...)	Or asset name (laptop, uniform, access card...)
+Hạn SLA	SLA due
+Hạn lệnh	Order due
+Hạn nhận hồ sơ	Application deadline
+Hết bảo hành từ {0} (hóa đơn {1}).	Warranty expired on {0} (invoice {1}).
+Học viên	Attendees
+Học viên – {0}	Attendees – {0}
+Hỏi đáp	Question
+Hồ sơ nhân viên	Employee profile
+Hồ sơ nhân viên (cổng tự phục vụ)	Employee profile (self-service portal)
+Hỗ trợ & bảo hành	Support & warranty
+Hỗ trợ khách hàng & bảo hành	Customer support & warranty
+Hội chợ / sự kiện	Trade fair / event
+Hợp đồng {0} ({1}) {2}	Contract {0} ({1}) {2}
+KH tiềm năng	Leads
+Khi nhân viên nghỉ việc, kiểm tra danh sách “Đang giao” để thu hồi trước khi thanh toán lương cuối.	When an employee leaves, check the “Issued” list and collect items before the final salary payment.
+Khách hàng tiềm năng gắn chiến dịch khi nhập (ô “Chiến dịch”). Doanh số thắng = tổng giá trị cơ hội thắng từ các khách hàng tiềm năng đó; ROI = (doanh số thắng − chi phí thực tế) / chi phí thực tế.	Leads are tied to a campaign when entered (the “Campaign” field). Won revenue = total value of won opportunities from those leads; ROI = (won revenue − actual cost) / actual cost.
+Khóa đào tạo	Training courses
+Không có công đoạn cần làm (lệnh sản xuất đang mở có công đoạn gắn trung tâm sản xuất).	No operations to schedule (open production orders with operations assigned to work centers).
+Không có mặt hàng nào dưới điểm đặt hàng.	No items are below the reorder point.
+Không có mặt hàng phát sinh xuất kho trong kỳ.	No items were issued in the period.
+Không có.	None.
+Không mở được camera:	Could not open the camera:
+Không tìm thấy hàng có mã "{0}".	No item found with code "{0}".
+Không tìm thấy hóa đơn bán sản phẩm này cho khách hàng.	No sales invoice of this product to the customer was found.
+Không tìm thấy kỳ.	Cycle not found.
+Không tìm thấy sản phẩm.	Product not found.
+Không tìm thấy vị trí tuyển dụng.	Job opening not found.
+Không tìm thấy ứng viên.	Candidate not found.
+Không tìm thấy.	Not found.
+Kiểm kê bằng điện thoại –	Mobile stocktake –
+Kênh	Channel
+Kênh tiếp nhận	Received via
+Kết quả công việc, khó khăn, đề xuất...	Results, difficulties, suggestions...
+Kết quả xử lý	Resolution
+Kỳ đánh giá đã chốt.	The appraisal cycle is closed.
+Loại “Bảo hành” tự tra hóa đơn bán sản phẩm cho khách và thời hạn bảo hành khai báo ở danh mục hàng.	The “Warranty” type looks up the customer's sales invoice for the product and the warranty period set on the item.
+Loại yêu cầu	Request type
+Loại {0}:	Grade {0}:
+Lương mong muốn	Expected salary
+Lương từ	Salary from
+Lương đến	Salary to
+Lập lịch	Schedule
+Lập lịch sản xuất theo năng lực	Finite-capacity production scheduling
+Lập lịch theo năng lực	Capacity scheduling
+Lập đề nghị mua hàng cho dòng chọn cần đặt	Create purchase requisition for selected rows to order
+Lắp đặt / bảo trì	Installation / maintenance
+Lịch phỏng vấn	Interview time
+Lịch sử xuất kho	Issue history
+Mã vạch / mã hàng (máy quét hoặc gõ)	Barcode / item code (scanner or typing)
+Mô tả công việc / yêu cầu	Job description / requirements
+Mất kết nối – thử lại.	Connection lost – try again.
+Mở vị trí mới	Open new position
+Mở vị trí tuyển dụng	Open a job position
+Mục tiêu số KH tiềm năng	Target number of leads
+Mục tiêu số khách hàng tiềm năng	Target number of leads
+Mức tối đa	Max level
+Nguồn (TopCV, giới thiệu...)	Source (job board, referral...)
+Nguồn: {0}	Source: {0}
+Ngày kết thúc trước ngày bắt đầu.	The end date is before the start date.
+Ngày thu hồi	Return date
+Ngày {0}. Bên giao: {1}. Bên nhận:	Date {0}. Handed over by: {1}. Received by:
+Ngân sách / chi thực tế	Budget / actual spend
+Người xử lý	Assignee
+Nhu cầu / ngày	Demand / day
+Nhu cầu và độ lệch tính từ phiếu xuất kho đã ghi sổ; thời gian giao hàng = trung bình từ ngày đơn mua đến ngày nhập kho (không có thì dùng Stock.DefaultLeadDays, mặc định 7). Tồn an toàn = z × độ lệch ngày × √thời gian giao; điểm đặt hàng = nhu cầu × thời gian giao + tồn an toàn; mức tối đa = điểm đặt hàng + nhu cầu × chu kỳ đặt hàng. {0} mặt hàng đang dưới điểm đặt hàng (tính cả hàng đang về).	Demand and deviation come from posted issue documents; lead time = average from purchase order date to receipt date (otherwise Stock.DefaultLeadDays, default 7). Safety stock = z × daily deviation × √lead time; reorder point = demand × lead time + safety stock; max level = reorder point + demand × review period. {0} items are below the reorder point (including incoming stock).
+Nhận việc	Hire
+Nhận xét của quản lý	Manager comments
+Nhập họ tên ứng viên.	Enter the candidate's name.
+Nhập kết quả xử lý trước khi đóng phiếu.	Enter the resolution before closing the ticket.
+Nhập mức lương cơ bản.	Enter the base salary.
+Nhập tiêu đề	Enter a subject
+Nhập tiêu đề.	Enter a subject.
+Nhập tên chiến dịch	Enter campaign name
+Nhập tên chiến dịch.	Enter the campaign name.
+Nhập tên khóa học	Enter course name
+Nhập tên khóa đào tạo.	Enter the training course name.
+Nhập tên kỳ đánh giá	Enter cycle name
+Nhập tên kỳ đánh giá.	Enter the appraisal cycle name.
+Nhập tên tài sản	Enter asset name
+Nhập vị trí tuyển dụng	Enter job title
+Nhập vị trí tuyển dụng.	Enter the job title.
+Nhập ít nhất một tiêu chí (mỗi dòng: Tên | trọng số | chỉ tiêu).	Enter at least one criterion (one per line: Name | weight | target).
+Phiếu đánh giá đã chốt.	The appraisal is finalized.
+Phỏng vấn	Interview
+Phỏng vấn: {0}	Interview: {0}
+Quay lại	Back
+Quá hạn SLA	SLA overdue
+Quét bằng camera	Scan with camera
+Quản trị hệ thống gắn hồ sơ tại Người dùng &amp; phân quyền → Sửa → “Hồ sơ nhân viên”, hoặc nhập email trùng với email trong hồ sơ nhân viên.	The administrator links the profile in Users &amp; permissions → Edit → “Employee profile”, or uses the same email as in the employee profile.
+Sàng lọc hồ sơ	Screening
+Sản phẩm không khai báo thời hạn bảo hành (mua theo hóa đơn {0} ngày {1}).	The product has no warranty period set (bought on invoice {0} dated {1}).
+Sản phẩm: {0} {1} {2}	Product: {0} {1} {2}
+Số chứng chỉ	Certificate no.
+Số giờ	Hours
+Số lượng cần tuyển	Positions to fill
+Số serial / lô	Serial / lot no.
+TSCĐ	Fixed asset
+Thêm / sửa vị trí	Add / edit position
+Thêm học viên	Add attendee
+Thêm ứng viên	Add candidate
+Thông tin sai? Liên hệ phòng nhân sự để cập nhật.	Wrong information? Contact HR to update it.
+Thưởng hiệu suất {0}	Performance bonus {0}
+Thưởng theo xếp loại (% lương cơ bản)	Bonus by grade (% of base salary)
+Thời gian xử lý bình quân	Average resolution time
+Tiêu chí / KPI	Criterion / KPI
+Tiêu chí – mỗi dòng: Tên | trọng số (%) | chỉ tiêu	Criteria – one per line: Name | weight (%) | target
+Tiếp nhận	Log request
+Tiếp nhận yêu cầu	Log a request
+Trong hạn SLA	Within SLA
+Trình duyệt không hỗ trợ quét camera – dùng máy quét hoặc gõ mã	The browser cannot scan with the camera – use a scanner or type the code
+Trọng số	Weight
+Trọng số (%)	Weight (%)
+Tuyển dụng qua {0} {1}	Hired via {0} {1}
+Tuyển dụng, KPI, đào tạo, tài sản	Recruitment, KPI, training, assets
+Tài khoản chưa gắn hồ sơ nhân viên.	The account is not linked to an employee profile.
+Tài khoản của bạn chưa gắn với hồ sơ nhân viên	Your account is not linked to an employee profile
+Tài sản / thiết bị	Asset / equipment
+Tài sản đang giao cho người khác – thu hồi trước.	The asset is issued to someone else – return it first.
+Tài sản đang giữ	Assets held
+Tên chiến dịch	Campaign name
+Tên khóa (VD: An toàn vận hành máy cưa)	Course name (e.g. Saw machine safety)
+Tên tài sản / thiết bị	Asset / equipment name
+Tình trạng khi thu hồi	Condition on return
+Tạo chiến dịch	Create campaign
+Tạo khóa đào tạo	Create training course
+Tạo kỳ cho toàn bộ nhân viên	Create cycle for all employees
+Tạo kỳ đánh giá	Create appraisal cycle
+Tối thiểu hiện tại	Current min / max
+Tồn an toàn	Safety stock
+Tồn kho an toàn & điểm đặt hàng	Safety stock & reorder point
+Tồn kho an toàn & đặt hàng	Safety stock & reordering
+Tự đánh giá của nhân viên	Employee self-review
+Tự đánh giá – {0}	Self-review – {0}
+Vào làm {0} · thâm niên {1} năm	Joined {0} · {1} years of service
+Vắng / không đạt	Absent / failed
+Vị trí (VD: Thợ mộc bậc 3)	Position (e.g. Carpenter grade 3)
+Vị trí tuyển dụng	Job openings
+Xem hóa đơn	View invoice
+Xếp loại: A ≥ 90 điểm, B ≥ 75, C ≥ 50, D dưới 50. Điểm tổng = Σ điểm tiêu chí × trọng số.	Grades: A ≥ 90 points, B ≥ 75, C ≥ 50, D below 50. Total = Σ criterion score × weight.
+Xếp lệnh theo hạn hoàn thành; mỗi trung tâm làm một công đoạn một lúc, năng lực ngày = số giờ làm × hiệu suất, bắt đầu 8h, nghỉ Chủ nhật; công đoạn sau bắt đầu khi công đoạn trước của lệnh xong; thời lượng = phút kế hoạch − phút đã làm.	Orders are sequenced by due date; each work center runs one operation at a time, daily capacity = working hours × efficiency, starting at 8:00, Sundays off; an operation starts when the order's previous operation ends; duration = planned minutes − minutes already worked.
+Xử lý đúng hạn (90 ngày)	Resolved on time (90 days)
+Yêu cầu trước của khách	Customer's previous requests
+dòng	rows
+dự báo {0}	forecast {0}
+ngày · mức phục vụ	days · service level
+{0} (hạn {1})	{0} (due {1})
+{0} ({1} giờ)	{0} ({1} h)
+{0} [Bảo hành] {1}	{0} [Warranty] {1}
+{0} giờ	{0} h
+{0} giờ/ngày	{0} h/day
+{0} người	{0} people
+{0} {1}: đếm {2} / sổ {3}	{0} {1}: counted {2} / book {3}
+{0} · cần {1} · hạn {2}	{0} · need {1} · due {2}
+{0} · {1} – {2} · thưởng theo xếp loại: {3} (% lương cơ bản)	{0} · {1} – {2} · bonus by grade: {3} (% of base salary)
+{0} · {1} – {2} đ	{0} · {1} – {2} VND
+{0} điểm – loại {1}	{0} points – grade {1}
+{0} ứng viên	{0} candidates
+{0} – {1} · {2} giờ · {3}	{0} – {1} · {2} h · {3}
+{0}/{1} dòng	{0}/{1} rows
+· chu kỳ đặt hàng	· review period
+· chứng chỉ {0}	· certificate {0}
+· phản hồi đầu {0}	· first response {0}
+Đang chấm	Scoring
+Đang giao	Issued
+Đang tuyển	Open
+Điểm	Score
+Điểm (0–100)	Score (0–100)
+Điểm đánh giá	Rating score
+Điểm đặt hàng	Reorder point
+Điện thoại {0} · Email {1}	Phone {0} · Email {1}
+Đánh giá KPI	KPI appraisal
+Đã chuyển {0} khoản thưởng hiệu suất vào lương tháng {1}/{2} và khóa kỳ đánh giá.	Transferred {0} performance bonuses to payroll {1}/{2} and closed the appraisal cycle.
+Đã chốt	Finalized
+Đã cập nhật phiếu	Ticket updated
+Đã cập nhật tồn tối thiểu / tối đa cho {0} mặt hàng.	Updated min / max stock for {0} items.
+Đã ghi lịch dự kiến cho {0} công đoạn	Saved the planned schedule for {0} operations
+Đã ghi nhận bàn giao.	Handover recorded.
+Đã giải quyết	Resolved
+Đã gửi tự đánh giá.	Self-review submitted.
+Đã gửi đơn nghỉ – chờ quản lý duyệt.	Leave request submitted – awaiting manager approval.
+Đã lưu chiến dịch {0}.	Campaign {0} saved.
+Đã lưu: {0} điểm – xếp loại {1}.	Saved: {0} points – grade {1}.
+Đã lập đề nghị mua hàng {0} ({1} mặt hàng).	Created purchase requisition {0} ({1} items).
+Đã thêm ứng viên.	Candidate added.
+Đã tiếp nhận phiếu {0} – hạn xử lý {1}.	Ticket {0} logged – due {1}.
+Đã tuyển	Hired
+Đã tạo hồ sơ nhân viên {0} – {1}. Lập hợp đồng lao động và bổ sung thông tin cá nhân.	Created employee profile {0} – {1}. Create the labor contract and complete the personal details.
+Đã tạo khóa {0} với {1} học viên.	Created course {0} with {1} attendees.
+Đã tạo kỳ đánh giá "{0}" cho {1} nhân viên.	Created appraisal cycle "{0}" for {1} employees.
+Đã đăng ký	Registered
+Đơn nghỉ của tôi	My leave requests
+Đơn vị đào tạo	Training provider
+Đếm bằng điện thoại / máy quét	Count by phone / scanner
+Đề nghị nhận việc	Offer
+Đề xuất đặt	Suggested order
+Đổi trạng thái {0}	Change status {0}
+Độ lệch / ngày	Deviation / day
+Đợt kiểm kê không còn ở trạng thái đang đếm.	The stocktake is no longer in counting status.
+Đợt kiểm kê đã {0} – không đếm thêm được.	The stocktake is {0} – no more counting.
+Ứng tuyển	Applied
+Ứng viên đã được tuyển.	The candidate is already hired.
+– hết hạn	– expires
+‹ Bảng kiểm kê đầy đủ	‹ Full stocktake sheet
