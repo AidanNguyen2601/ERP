@@ -86,6 +86,14 @@ public class ErpFixture : IAsyncLifetime
 
     public static string Token(string html) => Regex.Match(html, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
 
+    /// <summary>Rút nội dung lỗi từ trang lỗi dành cho nhà phát triển (để thông báo kiểm thử thất bại có nguyên nhân)</summary>
+    public static string ErrorText(string html)
+    {
+        var text = System.Net.WebUtility.HtmlDecode(Regex.Replace(Regex.Replace(html, "<(script|style)[^>]*>.*?</\\1>", " ", RegexOptions.Singleline), "<[^>]+>", " "));
+        text = Regex.Replace(text, "\\s+", " ").Trim();
+        return text.Length > 1500 ? text[..1500] : text;
+    }
+
     public async Task<HttpResponseMessage> PostAsync(HttpClient c, string formPage, string url, params (string, string)[] data)
     {
         var tok = Token(await c.GetStringAsync(formPage));
@@ -340,7 +348,9 @@ public class PlatformTests
         var denied = await other.GetAsync("/Backup");
         Assert.True(denied.StatusCode is HttpStatusCode.Redirect or HttpStatusCode.Forbidden);
         var c = await _f.LoginAsync("admin");
-        Assert.Equal(HttpStatusCode.OK, (await c.GetAsync("/Backup")).StatusCode);
+        var bk = await c.GetAsync("/Backup");
+        var bkBody = await bk.Content.ReadAsStringAsync();
+        Assert.True(bk.StatusCode == HttpStatusCode.OK, "/Backup lỗi: " + ErpFixture.ErrorText(bkBody));
         await _f.PostAsync(c, "/Backup", "/Backup/Run");
         var rec = await _f.WithDbAsync(db => db.BackupRecords.OrderByDescending(b => b.Id).FirstOrDefaultAsync());
         Assert.NotNull(rec);
