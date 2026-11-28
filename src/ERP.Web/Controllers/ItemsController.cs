@@ -15,12 +15,14 @@ public class ItemsController : ErpControllerBase
     public ItemsController(ErpDbContext db, CodeService codes) : base(db) => _codes = codes;
     private bool CanEdit => User.InAny(AppRoles.Accounting + "," + AppRoles.Warehouse + "," + AppRoles.Purchasing + "," + AppRoles.Production);
 
-    public async Task<IActionResult> Index(ItemType? type, string? q)
+    public async Task<IActionResult> Index(ItemType? type, string? q, int page = 1)
     {
-        var items = await Db.Items.OrderBy(i => i.Type).ThenBy(i => i.Code).ToListAsync();
-        if (type.HasValue) items = items.Where(i => i.Type == type).ToList();
-        if (!string.IsNullOrWhiteSpace(q)) items = items.Where(i => i.Code.Contains(q, StringComparison.OrdinalIgnoreCase) || i.Name.Contains(q, StringComparison.OrdinalIgnoreCase)).ToList();
-        ViewBag.Stock = (await Db.StockLevels.ToListAsync()).GroupBy(s => s.ItemId).ToDictionary(g => g.Key, g => g.Sum(s => s.Quantity));
+        var iq = Db.Items.AsQueryable();
+        if (type.HasValue) iq = iq.Where(i => i.Type == type);
+        if (!string.IsNullOrWhiteSpace(q)) iq = iq.Where(i => i.Code.Contains(q) || i.Name.Contains(q));
+        var items = await iq.OrderBy(i => i.Type).ThenBy(i => i.Code).PageAsync(this, page);
+        var ids = items.Select(i => i.Id).ToList();
+        ViewBag.Stock = await Db.StockLevels.Where(s => ids.Contains(s.ItemId)).GroupBy(s => s.ItemId).Select(g => new { g.Key, Q = g.Sum(s => s.Quantity) }).ToDictionaryAsync(x => x.Key, x => x.Q);
         ViewBag.Type = type; ViewBag.Q = q; ViewBag.CanEdit = CanEdit;
         return View(items);
     }

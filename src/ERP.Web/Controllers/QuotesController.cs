@@ -18,12 +18,12 @@ public class QuotesController : ErpControllerBase
     public QuotesController(ErpDbContext db, QuoteService svc, PricingService pricing) : base(db) { _svc = svc; _pricing = pricing; }
     private bool CanEdit => User.InAny(AppRoles.SalesTeam);
 
-    public async Task<IActionResult> Index(QuoteStatus? status)
+    public async Task<IActionResult> Index(QuoteStatus? status, int page = 1)
     {
         var q = Db.SalesQuotes.Include(x => x.Customer).Include(x => x.Salesperson).AsQueryable();
         if (status != null) q = q.Where(x => x.Status == status);
         ViewBag.Status = status; ViewBag.CanEdit = CanEdit; ViewBag.Min = await _svc.MinMarginAsync();
-        return View(await q.OrderByDescending(x => x.Date).ThenByDescending(x => x.Id).Take(300).ToListAsync());
+        return View(await q.OrderByDescending(x => x.Date).ThenByDescending(x => x.Id).PageAsync(this, page));
     }
 
     public async Task<IActionResult> Details(int id)

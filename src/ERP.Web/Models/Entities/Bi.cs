@@ -66,6 +66,8 @@ public class EmailOutbox
     public MailStatus Status { get; set; } = MailStatus.Pending;
     [StringLength(500)] public string? Error { get; set; }
     [StringLength(60)] public string? Source { get; set; }
+    /// <summary>Kênh gửi: null = email, "teams", "zalo"</summary>
+    [StringLength(10)] public string? Channel { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime? SentAt { get; set; }
 }
@@ -84,4 +86,20 @@ public class AlertRule
     [StringLength(500)] public string? EmailTo { get; set; }
     public DateTime? LastEmailedOn { get; set; }
     public int SortOrder { get; set; }
+}
+
+/// <summary>Thông báo trong ứng dụng gửi tới từng người dùng (chờ duyệt, kết quả duyệt, cảnh báo, giao việc...)</summary>
+public class Notification
+{
+    public long Id { get; set; }
+    public int UserId { get; set; }
+    public AppUser? User { get; set; }
+    [Required, StringLength(200)] public string Title { get; set; } = string.Empty;
+    [StringLength(600)] public string? Body { get; set; }
+    [StringLength(300)] public string? Url { get; set; }
+    /// <summary>info, warning, danger, success</summary>
+    [StringLength(10)] public string Level { get; set; } = "info";
+    [StringLength(40)] public string? Source { get; set; }
+    public bool IsRead { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 }

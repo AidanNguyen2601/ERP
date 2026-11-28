@@ -26,14 +26,14 @@ public class SalesOrdersController : ErpControllerBase
     private Task<SalesOrder?> LoadAsync(int id) => Db.SalesOrders.Include(p => p.Customer).Include(p => p.Warehouse).Include(p => p.CreatedBy).Include(p => p.CreditApprovedBy)
         .Include(p => p.Lines).ThenInclude(l => l.Item).FirstOrDefaultAsync(p => p.Id == id);
 
-    public async Task<IActionResult> Index(SoStatus? status, string? q)
+    public async Task<IActionResult> Index(SoStatus? status, string? q, int page = 1)
     {
         var query = Db.SalesOrders.Include(p => p.Customer).AsQueryable();
         if (status.HasValue) query = query.Where(p => p.Status == status);
         if (!string.IsNullOrWhiteSpace(q)) query = query.Where(p => p.Number.Contains(q) || p.Customer!.Name.Contains(q));
         ViewBag.Status = status; ViewBag.Q = q; ViewBag.CanEdit = CanEdit;
-        ViewBag.Counts = (await Db.SalesOrders.Select(p => p.Status).ToListAsync()).GroupBy(s => s).ToDictionary(g => g.Key, g => g.Count());
-        return View(await query.OrderByDescending(p => p.Date).ThenByDescending(p => p.Id).ToListAsync());
+        ViewBag.Counts = await Db.SalesOrders.GroupBy(p => p.Status).Select(g => new { g.Key, N = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.N);
+        return View(await query.OrderByDescending(p => p.Date).ThenByDescending(p => p.Id).PageAsync(this, page));
     }
 
     public async Task<IActionResult> Details(int id)

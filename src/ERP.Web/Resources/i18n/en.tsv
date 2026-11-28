@@ -5605,3 +5605,122 @@ mới chưa liên hệ	new, not yet contacted
 . VD thưởng chuyên cần:	. E.g. attendance bonus:
 Sốt, có giấy khám	Fever, with medical certificate
 Du lịch gia đình	Family trip
+(không phải máy người dùng) và được kiểm tra lại bằng RESTORE VERIFYONLY.	(not the user's computer) and is re-checked with RESTORE VERIFYONLY.
+(đã kiểm tra tệp)	(file verified)
+Chưa có lần sao lưu nào.	No backups yet.
+Chưa đọc	Unread
+Chờ bạn duyệt: {0} {1}	Awaiting your approval: {0} {1}
+Cấu hình	Configuration
+Gửi thêm email khi có thông báo (chờ duyệt, kết quả duyệt...)	Also send an email for notifications (approval requests, results...)
+Không có thông báo.	No notifications.
+Lịch sử sao lưu	Backup history
+Phê duyệt	Approval
+Phục hồi: dùng RESTORE DATABASE từ tệp .bak trên máy chủ SQL. Việc xóa tệp cũ cần làm ở máy chủ SQL.	Restore: use RESTORE DATABASE from the .bak file on the SQL server. Old files must be deleted on the SQL server.
+Sao lưu cơ sở dữ liệu	Back up database
+Sao lưu dữ liệu	Data backup
+Sao lưu ngay	Back up now
+Sao lưu thất bại:	Backup failed:
+Thành công	Success
+Thông báo	Notifications
+Thư mục không hợp lệ.	Invalid folder.
+Thư mục trên máy chủ SQL	Folder on the SQL server
+Thời gian chạy	Duration
+Tên cơ sở dữ liệu hoặc đường dẫn không hợp lệ.	Invalid database name or path.
+Tệp .bak được ghi trên	The .bak file is written on the
+Tự động	Automatic
+Tự động sao lưu hằng ngày lúc (giờ, -1 = tắt)	Automatic daily backup at (hour, -1 = off)
+máy chủ SQL Server	SQL Server machine
+{0} · {1} đ	{0} · {1} VND
+Đánh dấu tất cả đã đọc	Mark all as read
+Đã kiểm tra	Verified
+Đã lưu cấu hình sao lưu.	Backup configuration saved.
+Đã sao lưu nhưng kiểm tra tệp thất bại:	Backed up, but file verification failed:
+Đã sao lưu: {0}	Backed up: {0}
+Khoản lương của nhân viên	Employee salary component
+Thưởng	Bonus
+(Teams: vào kênh; Zalo: tới Zalo ID của bạn)	(Teams: to the channel; Zalo: to your Zalo ID)
+(chưa có)	(none)
+(mở được nhưng không thêm, sửa, xóa, duyệt). Ghi đè theo người dùng được ưu tiên hơn theo vai trò. Không áp dụng cho Quản trị hệ thống.	(can open but not add, edit, delete or approve). User overrides take precedence over role overrides. Does not apply to System administrators.
+(đã lưu – để trống nếu không đổi)	(saved – leave blank to keep)
+(ẩn khỏi menu, chặn mở) hoặc	(hidden from the menu, blocked) or
+-- Chức năng --	-- Function --
+-- Vai trò / người dùng --	-- Role / user --
+Access token của OA {0}	OA access token {0}
+Bạn chỉ được	You may only
+Bảng và cột mới trong mô hình dữ liệu được tạo tự động khi khởi động; các thay đổi khác (chỉ mục, dữ liệu, ràng buộc) đi qua migration ở đây, mỗi bước chạy một lần trong transaction. Nên sao lưu trước khi hoàn tác.	New tables and columns in the data model are created automatically at startup; other changes (indexes, data, constraints) go through the migrations here, each step running once in a transaction. Back up before rolling back.
+Chưa có ghi đè – quyền theo vai trò như bảng trên.	No overrides – permissions follow the roles in the table above.
+Chưa cấu hình Teams webhook.	Teams webhook is not configured.
+Chưa cấu hình access token Zalo OA.	Zalo OA access token is not configured.
+Chưa cấu hình kênh nào (hoặc bạn chưa có Zalo ID).	No channel is configured (or you have no Zalo ID).
+Chưa áp dụng	Not applied
+Chỉ mục cho phân trang danh sách: đơn bán, đơn mua, phiếu thu chi, đối tác, hàng hóa	Indexes for list paging: sales orders, purchase orders, cash vouchers, partners, items
+Chỉ mục hiệu năng: sổ cái theo tài khoản, hóa đơn theo hạn thanh toán, yêu cầu duyệt, nhật ký thao tác	Performance indexes: ledger by account, invoices by due date, approval requests, audit log
+Chỉ mức Khẩn	Urgent only
+Chỉ xem	Read only
+Chỉ xem (không thêm / sửa / xóa / duyệt)	Read only (no add / edit / delete / approve)
+Chọn chức năng.	Select a function.
+Chọn vai trò hoặc người dùng.	Select a role or a user.
+Chức năng	Function
+Có trong cơ sở dữ liệu nhưng không có trong phiên bản phần mềm này (phần mềm cũ hơn dữ liệu?)	Present in the database but not in this software version (software older than the data?)
+Cộng toàn bộ kết quả lọc (không gồm HĐ hủy)	Total of all filtered results (excluding cancelled invoices)
+Dùng API tin nhắn tư vấn của Zalo OA: chỉ gửi được cho người đã quan tâm OA, theo Zalo user ID (nhập ở bảng bên phải). Access token OA hết hạn định kỳ – cần cập nhật khi Zalo báo lỗi token.	Uses the Zalo OA consultation message API: messages can only be sent to people who follow the OA, by Zalo user ID (enter them in the table on the right). The OA access token expires periodically – update it when Zalo reports a token error.
+Ghi đè phân quyền	Permission override
+Ghi đè quyền theo vai trò / người dùng	Permission overrides by role / user
+Giữ tệp sao lưu (ngày, 0 = giữ tất cả)	Keep backup files (days, 0 = keep all)
+Gửi	Send
+Gửi bởi {0} lúc {1}	Sent by {0} at {1}
+Gửi thử	Test send
+Gửi thử tới các kênh	Send a test to the channels
+Hoàn tác bước mới nhất	Roll back latest step
+Hoàn tác {0} lỗi: {1}	Rollback of {0} failed: {1}
+Hoàn tác:	Rollback:
+Hộp thư đi (30 bản gần nhất: email, Teams, Zalo)	Outbox (latest 30: email, Teams, Zalo)
+Incoming Webhook URL của kênh Teams	Incoming Webhook URL of the Teams channel
+Không có migration nào cần áp dụng.	No migrations need to be applied.
+Không có migration nào để hoàn tác.	No migrations to roll back.
+Không có tệp nào quá hạn. Luôn giữ bản sao lưu thành công mới nhất.	No expired files. The latest successful backup is always kept.
+Không ghi đè quyền của Quản trị hệ thống.	System administrator permissions cannot be overridden.
+Không truy cập	No access
+Kênh thông báo	Notification channels
+Kênh thông báo (Teams, Zalo)	Notification channels (Teams, Zalo)
+Lần gửi gần đây	Recent sends
+Lần xóa gần nhất không thành công: {0}	Last deletion failed: {0}
+Migration lỗi:	Migration failed:
+Migration {0} không có lệnh hoàn tác.	Migration {0} has no rollback commands.
+Mức	Level
+Phiên bản cơ sở dữ liệu	Database version
+Phiên bản hiện tại:	Current version:
+Phục hồi: dùng RESTORE DATABASE từ tệp .bak trên máy chủ SQL. Tệp cũ được xóa theo số ngày giữ (cần quyền sysadmin; nếu không có, dùng kịch bản hiện ra bên dưới).	Restore: use RESTORE DATABASE from the .bak file on the SQL server. Old files are deleted per the retention days (requires sysadmin; otherwise use the script shown below).
+Số dòng / trang:	Rows / page:
+Teams trả về {0}: {1}	Teams returned {0}: {1}
+Teams webhook phải là địa chỉ https hợp lệ.	The Teams webhook must be a valid https address.
+Thu hẹp quyền gốc của vai trò trên từng chức năng:	Narrow a role's base permissions on each function:
+Thông báo thử từ ERP	Test notification from ERP
+Tất cả thông báo	All notifications
+Tệp quá hạn giữ ({0})	Files past retention ({0})
+Từ mức Lưu ý trở lên	Notice level and above
+Xóa token (tắt Zalo)	Clear token (disable Zalo)
+Xóa tệp quá hạn	Delete expired files
+Zalo trả về {0} / mã {1}: {2}	Zalo returned {0} / code {1}: {2}
+Zalo user ID của người dùng	Users' Zalo user IDs
+[Mở trong ERP]({0})	[Open in ERP]({0})
+chức năng này – không được thêm, sửa, xóa hoặc duyệt.	this function – you cannot add, edit, delete or approve.
+có hoàn tác	reversible
+không hoàn tác	not reversible
+{0} / {1} dòng	{0} / {1} rows
+Áp dụng {0} bước còn thiếu	Apply {0} pending steps
+Đã hoàn tác	Rolled back
+Đã hoàn tác migration {0}. Bấm "Áp dụng" để chạy lại.	Migration {0} rolled back. Click "Apply" to run it again.
+Đã lưu cấu hình kênh thông báo.	Notification channel settings saved.
+Đã lưu ghi đè quyền.	Permission override saved.
+Đã xóa thủ công	Deleted manually
+Đã xóa tệp	File deleted
+Đã xóa {0} tệp sao lưu quá hạn.	Deleted {0} expired backup files.
+Đã xóa {0} tệp; không xóa tiếp được (cần quyền sysadmin trên SQL Server): {1}	Deleted {0} files; could not delete more (requires sysadmin on SQL Server): {1}
+Đã áp dụng	Applied
+Đã áp dụng:	Applied:
+Đã đánh dấu {0} tệp là đã xóa.	Marked {0} files as deleted.
+Địa chỉ API	API address
+Địa chỉ ứng dụng (để chèn đường dẫn vào tin nhắn)	Application address (to insert links into messages)
+Nếu tài khoản ứng dụng không có quyền sysadmin, quản trị SQL chạy kịch bản sau rồi bấm nút Đã xóa thủ công:	If the application account has no sysadmin rights, the SQL administrator runs the script below and then clicks "Deleted manually":
+Trong Teams: kênh → Connectors / Workflows → Incoming Webhook → sao chép URL. Tin gửi vào kênh chung, không theo từng người.	In Teams: channel → Connectors / Workflows → Incoming Webhook → copy the URL. Messages go to a shared channel, not to individuals.

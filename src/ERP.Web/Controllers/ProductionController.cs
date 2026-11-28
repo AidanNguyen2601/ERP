@@ -22,15 +22,15 @@ public class ProductionController : ErpControllerBase
         .Include(p => p.CreatedBy).Include(p => p.SalesOrder).Include(p => p.Lines).ThenInclude(l => l.Item).Include(p => p.Operations).ThenInclude(o => o.WorkCenter).Include(p => p.Outputs)
         .AsSplitQuery().FirstOrDefaultAsync(p => p.Id == id);
 
-    public async Task<IActionResult> Index(ProductionStatus? status, ProductionType? type)
+    public async Task<IActionResult> Index(ProductionStatus? status, ProductionType? type, int page = 1)
     {
         var q = Db.ProductionOrders.Include(p => p.Item).Include(p => p.Lines).Include(p => p.Operations).Include(p => p.Outputs).AsQueryable();
         if (status.HasValue) q = q.Where(p => p.Status == status);
         if (type.HasValue) q = q.Where(p => p.OrderType == type);
         ViewBag.Status = status; ViewBag.Type = type; ViewBag.CanEdit = CanEdit;
-        ViewBag.Counts = (await Db.ProductionOrders.Select(p => p.Status).ToListAsync()).GroupBy(s => s).ToDictionary(g => g.Key, g => g.Count());
-        ViewBag.TypeCounts = (await Db.ProductionOrders.Where(p => p.Status != ProductionStatus.Cancelled).Select(p => p.OrderType).ToListAsync()).GroupBy(s => s).ToDictionary(g => g.Key, g => g.Count());
-        return View(await q.OrderByDescending(p => p.StartDate).ThenByDescending(p => p.Id).AsSplitQuery().ToListAsync());
+        ViewBag.Counts = await Db.ProductionOrders.GroupBy(p => p.Status).Select(g => new { g.Key, N = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.N);
+        ViewBag.TypeCounts = await Db.ProductionOrders.Where(p => p.Status != ProductionStatus.Cancelled).GroupBy(p => p.OrderType).Select(g => new { g.Key, N = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.N);
+        return View(await q.OrderByDescending(p => p.StartDate).ThenByDescending(p => p.Id).AsSplitQuery().PageAsync(this, page));
     }
 
     public async Task<IActionResult> Details(int id)

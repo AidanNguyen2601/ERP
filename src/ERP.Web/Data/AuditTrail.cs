@@ -13,6 +13,9 @@ public static class AuditTrail
     /// <summary>Kiểu được ghi vết → tên hiển thị</summary>
     private static readonly Dictionary<Type, string> Tracked = new()
     {
+        [typeof(PermissionOverride)] = "Ghi đè phân quyền", [typeof(LaborContract)] = "Hợp đồng lao động", [typeof(Lead)] = "Khách hàng tiềm năng", [typeof(Opportunity)] = "Cơ hội bán hàng", [typeof(SalaryComponent)] = "Thành phần lương",
+        [typeof(EmployeeSalaryComponent)] = "Khoản lương của nhân viên", [typeof(PayrollBonus)] = "Thưởng", [typeof(LeaveRequest)] = "Đơn nghỉ phép", [typeof(Shift)] = "Ca làm việc",
+        [typeof(AlertRule)] = "Quy tắc cảnh báo", [typeof(ReportSchedule)] = "Lịch gửi báo cáo", [typeof(MaintenancePlan)] = "Kế hoạch bảo dưỡng", [typeof(Equipment)] = "Thiết bị",
         [typeof(PurchaseRequisition)] = "Đề nghị mua", [typeof(Rfq)] = "Yêu cầu báo giá", [typeof(SupplierEvaluation)] = "Đánh giá NCC", [typeof(LandedCost)] = "Chi phí mua hàng", [typeof(PriceList)] = "Bảng giá", [typeof(Promotion)] = "Khuyến mại",
         [typeof(SalesQuote)] = "Báo giá bán", [typeof(Shipment)] = "Vận chuyển", [typeof(Stocktake)] = "Đợt kiểm kê", [typeof(ItemGroup)] = "Nhóm hàng", [typeof(Pallet)] = "Pallet", [typeof(BinLocation)] = "Vị trí kho", [typeof(CommissionTier)] = "Bậc hoa hồng", [typeof(ContractMilestone)] = "Đợt hợp đồng",
         [typeof(AppUser)] = "Người dùng", [typeof(Partner)] = "Đối tác", [typeof(Item)] = "Hàng hóa", [typeof(Account)] = "Tài khoản", [typeof(Warehouse)] = "Kho",
@@ -45,7 +48,7 @@ public static class AuditTrail
                     foreach (var p in e.Properties.Where(p => p.IsModified && !Secret.Contains(p.Metadata.Name)))
                         if (!Equals(p.OriginalValue, p.CurrentValue)) ch[p.Metadata.Name] = new[] { Plain(p.OriginalValue), Plain(p.CurrentValue) };
                     if (e.Properties.Any(p => p.IsModified && p.Metadata.Name == "PasswordHash")) ch["Mật khẩu"] = new object?[] { "***", "*** (đổi mới)" };
-                    if (e.Entity is SystemSetting ss && (ss.Key.Contains("Key", StringComparison.OrdinalIgnoreCase) || ss.Key.Contains("Password", StringComparison.OrdinalIgnoreCase)) && ch.ContainsKey("Value"))
+                    if (e.Entity is SystemSetting ss && (ss.Key.Contains("Key", StringComparison.OrdinalIgnoreCase) || ss.Key.Contains("Password", StringComparison.OrdinalIgnoreCase) || ss.Key.Contains("Token", StringComparison.OrdinalIgnoreCase) || ss.Key.Contains("Webhook", StringComparison.OrdinalIgnoreCase)) && ch.ContainsKey("Value"))
                         ch["Value"] = new object?[] { "***", "*** (đổi mới)" };
                     if (ch.Count == 0) continue;
                     var action = ch.ContainsKey("Status") ? "Đổi trạng thái" : "Sửa";

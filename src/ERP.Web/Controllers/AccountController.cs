@@ -105,5 +105,5 @@ public class AccountController : Controller
     }
 
     [AllowAnonymous]
-    public IActionResult AccessDenied() => View();
+    public IActionResult AccessDenied(string? reason) { ViewBag.Reason = reason; return View(); }
 }

@@ -1,0 +1,16 @@
+@model List<Notification>
+@{ ViewData["Title"] = "Thông báo"; var unread = (bool)ViewBag.Unread; }
+<div class="toolbar">
+    <a class="btn btn-sm @(!unread ? "btn-secondary" : "btn-light border")" asp-action="Index">Tất cả</a>
+    <a class="btn btn-sm @(unread ? "btn-secondary" : "btn-light border")" asp-action="Index" asp-route-unread="true">Chưa đọc</a>
+    <form asp-action="MarkAll" method="post" class="ms-auto"><button class="btn btn-sm btn-light border">Đánh dấu tất cả đã đọc</button></form>
+</div>
+<div class="card"><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+@foreach (var n in Model)
+{
+    <tr class="@(n.IsRead ? "text-muted" : "fw-semibold")"><td style="width:24px"><i class="bi @(n.Level == "danger" ? "bi-exclamation-octagon text-danger" : n.Level == "warning" ? "bi-exclamation-triangle text-warning" : n.Level == "success" ? "bi-check-circle text-success" : "bi-info-circle text-primary")"></i></td>
+        <td><a asp-action="Open" asp-route-id="@n.Id" class="text-decoration-none">@n.Title</a>@if (!string.IsNullOrEmpty(n.Body)) { <div class="small fw-normal text-muted">@n.Body</div> }</td>
+        <td class="small text-nowrap text-muted">@n.Source</td><td class="small text-nowrap text-muted">@n.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td></tr>
+}
+@if (!Model.Any()) { <tr><td class="text-center text-muted py-4">Không có thông báo.</td></tr> }
+</tbody></table></div></div>

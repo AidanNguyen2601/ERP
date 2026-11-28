@@ -20,7 +20,7 @@ public class InvoicesController : ErpControllerBase
     private readonly FxService _fx;
     public InvoicesController(ErpDbContext db, InvoiceService svc, IOptions<ErpSettings> cfg, FxService fx) : base(db) { _svc = svc; _cfg = cfg.Value; _fx = fx; }
 
-    public async Task<IActionResult> Index(InvoiceDirection direction = InvoiceDirection.Sales, InvoiceStatus? status = null, string? q = null, DateTime? from = null, DateTime? to = null, bool unpaid = false)
+    public async Task<IActionResult> Index(InvoiceDirection direction = InvoiceDirection.Sales, InvoiceStatus? status = null, string? q = null, DateTime? from = null, DateTime? to = null, bool unpaid = false, int page = 1)
     {
         var t = (to ?? DateTime.Today).Date; var f = (from ?? t.AddMonths(-3)).Date;
         var query = Db.Invoices.Include(i => i.Partner).Where(i => i.Direction == direction && i.Date >= f && i.Date <= t);
@@ -28,7 +28,9 @@ public class InvoicesController : ErpControllerBase
         if (unpaid) query = query.Where(i => i.Status == InvoiceStatus.Issued && i.PaidAmount < i.Total);
         if (!string.IsNullOrWhiteSpace(q)) query = query.Where(i => i.Number.Contains(q) || (i.InvoiceNo != null && i.InvoiceNo.Contains(q)) || i.Partner!.Name.Contains(q));
         ViewBag.Direction = direction; ViewBag.Status = status; ViewBag.Q = q; ViewBag.From = f; ViewBag.To = t; ViewBag.Unpaid = unpaid;
-        return View(await query.OrderByDescending(i => i.Date).ThenByDescending(i => i.Id).ToListAsync());
+        var valid = query.Where(i => i.Status != InvoiceStatus.Cancelled);
+        ViewBag.Sum = await valid.GroupBy(_ => 1).Select(g => new decimal[] { g.Sum(i => i.Subtotal), g.Sum(i => i.VatAmount), g.Sum(i => i.Total), g.Sum(i => i.Status == InvoiceStatus.Issued ? i.Total - i.PaidAmount : 0) }).FirstOrDefaultAsync() ?? new decimal[4];
+        return View(await query.OrderByDescending(i => i.Date).ThenByDescending(i => i.Id).PageAsync(this, page));
     }
 
     /// <summary>Tải XML hóa đơn điện tử đã gửi nhà cung cấp / cơ quan thuế</summary>

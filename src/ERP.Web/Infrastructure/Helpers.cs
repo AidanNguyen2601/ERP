@@ -79,6 +79,10 @@ public class BusinessExceptionFilter : Microsoft.AspNetCore.Mvc.Filters.IExcepti
 /// Mỗi request ghi dữ liệu (POST) chạy trong một transaction: nghiệp vụ nhiều bước (phiếu kho + bút toán + cập nhật đơn hàng)
 /// hoặc thành công trọn vẹn, hoặc rollback toàn bộ khi có lỗi.
 /// </summary>
+/// <summary>Bỏ qua transaction bao quanh request (dùng cho lệnh không chạy được trong transaction như BACKUP DATABASE)</summary>
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+public sealed class NoTransactionAttribute : Attribute { }
+
 public class TransactionFilter : Microsoft.AspNetCore.Mvc.Filters.IAsyncActionFilter
 {
     private readonly ERP.Web.Data.ErpDbContext _db;
@@ -86,7 +90,7 @@ public class TransactionFilter : Microsoft.AspNetCore.Mvc.Filters.IAsyncActionFi
 
     public async Task OnActionExecutionAsync(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext context, Microsoft.AspNetCore.Mvc.Filters.ActionExecutionDelegate next)
     {
-        if (HttpMethods.IsGet(context.HttpContext.Request.Method)) { await next(); return; }
+        if (HttpMethods.IsGet(context.HttpContext.Request.Method) || context.ActionDescriptor.EndpointMetadata.OfType<NoTransactionAttribute>().Any()) { await next(); return; }
         await using var tx = await _db.Database.BeginTransactionAsync();
         var executed = await next();
         if (executed.Exception == null || executed.ExceptionHandled) await tx.CommitAsync();

@@ -1,6 +1,7 @@
 @{ ViewData["Title"] = "Không có quyền truy cập"; }
 <div class="card"><div class="card-body text-center py-5">
     <h4>Bạn không có quyền truy cập chức năng này</h4>
+    @if (ViewBag.Reason == "readonly") { <p>Bạn chỉ được <b>xem</b> chức năng này – không được thêm, sửa, xóa hoặc duyệt.</p> }
     <p class="text-muted">Liên hệ quản trị hệ thống nếu bạn cần được cấp quyền.</p>
     <a class="btn btn-primary" asp-controller="Home" asp-action="Index">Về Dashboard</a>
 </div></div>

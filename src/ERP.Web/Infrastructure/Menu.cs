@@ -198,6 +198,9 @@ public static class Menu
             new() { Key = "permissions", Title = "Ma trận phân quyền", Icon = "bi-grid-3x3-gap", Controller = "Org", Action = "Permissions", Visible = u => u.InAny(AppRoles.Admin + "," + AppRoles.Director), Active = m => m.Is("Org", "Permissions") },
             new() { Key = "org", Title = "Công ty & chi nhánh", Icon = "bi-buildings", Controller = "Org", Visible = Fin, Active = m => m.Is("Org", "Index") },
             new() { Key = "audit", Title = "Nhật ký thao tác", Icon = "bi-clock-history", Controller = "Audit", Visible = u => u.InAny(AppRoles.Admin + "," + AppRoles.Director + "," + AppRoles.Accountant), Active = m => m.Is("Audit") },
+            new() { Key = "backup", Title = "Sao lưu dữ liệu", Icon = "bi-database-down", Controller = "Backup", Visible = u => u.IsAdmin(), Active = m => m.Is("Backup") },
+            new() { Key = "channels", Title = "Kênh thông báo (Teams, Zalo)", Icon = "bi-send", Controller = "Notifications", Action = "Channels", Visible = u => u.IsAdmin(), Active = m => m.Is("Notifications", "Channels") },
+            new() { Key = "schema", Title = "Phiên bản cơ sở dữ liệu", Icon = "bi-layers", Controller = "Schema", Visible = u => u.IsAdmin(), Active = m => m.Is("Schema") },
             new() { Key = "settings", Title = "Tham số hệ thống", Icon = "bi-gear", Controller = "Settings", Visible = Fin, Active = m => m.Is("Settings", "Index") },
             new() { Key = "api", Title = "Kết nối API & thiết bị", Icon = "bi-plug", Controller = "Settings", Action = "Api", Visible = Admin, Active = m => m.Is("Settings", "Api") },
             new() { Key = "scenarios", Title = "Kịch bản nghiệp vụ", Icon = "bi-signpost-split", Controller = "Scenarios", Active = m => m.Is("Scenarios") },
@@ -205,10 +208,11 @@ public static class Menu
         }},
     };
 
-    public static IEnumerable<MenuItem> VisibleItems(MenuGroup g, ClaimsPrincipal u) => g.Items.Where(i => i.Visible == null || i.Visible(u));
+    /// <param name="hidden">Mục bị cấm theo ghi đè quyền (PermissionService.DeniedKeysAsync)</param>
+    public static IEnumerable<MenuItem> VisibleItems(MenuGroup g, ClaimsPrincipal u, ISet<string>? hidden = null) => g.Items.Where(i => (i.Visible == null || i.Visible(u)) && (hidden == null || !hidden.Contains(i.Key)));
 
-    public static IEnumerable<(MenuGroup Group, MenuItem[] Items)> VisibleGroups(ClaimsPrincipal u) =>
-        Groups.Select(g => (g, VisibleItems(g, u).ToArray())).Where(x => x.Item2.Length > 0);
+    public static IEnumerable<(MenuGroup Group, MenuItem[] Items)> VisibleGroups(ClaimsPrincipal u, ISet<string>? hidden = null) =>
+        Groups.Select(g => (g, VisibleItems(g, u, hidden).ToArray())).Where(x => x.Item2.Length > 0);
 
     public static MenuItem? FindActive(MenuContext ctx) =>
         Home.Active(ctx) ? Home : Groups.SelectMany(g => g.Items).FirstOrDefault(i => i.Active(ctx));

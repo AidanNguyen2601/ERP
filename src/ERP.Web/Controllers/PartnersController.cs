@@ -16,11 +16,12 @@ public class PartnersController : ErpControllerBase
 
     private bool CanEdit(bool customer) => User.InAny(AppRoles.Accounting) || (customer ? User.IsInRole(AppRoles.Sales) : User.IsInRole(AppRoles.Purchasing));
 
-    public async Task<IActionResult> Index(string type = "customer", string? q = null)
+    public async Task<IActionResult> Index(string type = "customer", string? q = null, int page = 1)
     {
         var customer = type != "vendor";
-        var list = await Db.Partners.Where(p => customer ? p.IsCustomer : p.IsVendor).OrderBy(p => p.Code).ToListAsync();
-        if (!string.IsNullOrWhiteSpace(q)) list = list.Where(p => p.Code.Contains(q, StringComparison.OrdinalIgnoreCase) || p.Name.Contains(q, StringComparison.OrdinalIgnoreCase) || (p.TaxCode ?? "").Contains(q)).ToList();
+        var pq = Db.Partners.Where(p => customer ? p.IsCustomer : p.IsVendor);
+        if (!string.IsNullOrWhiteSpace(q)) pq = pq.Where(p => p.Code.Contains(q) || p.Name.Contains(q) || (p.TaxCode ?? "").Contains(q));
+        var list = await pq.OrderBy(p => p.Code).PageAsync(this, page);
         ViewBag.Balances = await _acc.PartnerBalancesAsync(customer ? "131" : "331");
         ViewBag.Customer = customer; ViewBag.Q = q; ViewBag.CanEdit = CanEdit(customer);
         return View(list);

@@ -30,7 +30,8 @@
     }
     @if (!Model.Any()) { <tr><td colspan="10" class="text-center text-muted py-4">Không có hóa đơn.</td></tr> }
     </tbody>
-    <tfoot><tr class="fw-bold"><td colspan="4" class="text-end">Cộng (không gồm HĐ hủy)</td>
-        @{ var v = Model.Where(i => i.Status != InvoiceStatus.Cancelled).ToList(); }
-        <td class="num">@v.Sum(i => i.Subtotal).ToMoney()</td><td class="num">@v.Sum(i => i.VatAmount).ToMoney()</td><td class="num">@v.Sum(i => i.Total).ToMoney()</td><td class="num">@v.Sum(i => i.Outstanding).ToMoney()</td><td colspan="2"></td></tr></tfoot>
+    <tfoot><tr class="fw-bold"><td colspan="4" class="text-end">Cộng toàn bộ kết quả lọc (không gồm HĐ hủy)</td>
+        @{ var sum = (decimal[])ViewBag.Sum; }
+        <td class="num">@sum[0].ToMoney()</td><td class="num">@sum[1].ToMoney()</td><td class="num">@sum[2].ToMoney()</td><td class="num">@sum[3].ToMoney()</td><td colspan="2"></td></tr></tfoot>
 </table></div></div></div>
+<partial name="_PagerBag" />

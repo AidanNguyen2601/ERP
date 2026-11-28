@@ -1,0 +1,26 @@
+@* Phân trang dùng thông tin trong ViewBag (Paging.PageAsync); giữ nguyên các tham số lọc trên URL *@
+@{
+    int page = ViewBag.PageNo ?? 1, pages = ViewBag.PageCount ?? 1, total = ViewBag.PageTotal ?? 0, size = ViewBag.PageSize ?? 50;
+    string Url(int p, int? s = null)
+    {
+        var qs = Context.Request.Query.Where(k => k.Key != "page" && k.Key != "size").Select(k => $"{k.Key}={Uri.EscapeDataString(k.Value.ToString())}")
+            .Append($"page={p}").Append($"size={s ?? size}");
+        return Context.Request.Path + "?" + string.Join("&", qs);
+    }
+    var from = Math.Max(1, page - 3); var to = Math.Min(pages, page + 3);
+}
+<div class="d-flex flex-wrap align-items-center gap-2 mt-2 small">
+    <span class="text-muted">@(total == 0 ? "0" : $"{(page - 1) * size + 1}–{Math.Min(page * size, total)}") / @total.ToString("N0") dòng</span>
+    @if (pages > 1)
+    {
+        <ul class="pagination pagination-sm mb-0">
+            <li class="page-item @(page <= 1 ? "disabled" : "")"><a class="page-link" href="@Url(page - 1)">&laquo;</a></li>
+            @if (from > 1) { <li class="page-item"><a class="page-link" href="@Url(1)">1</a></li> if (from > 2) { <li class="page-item disabled"><span class="page-link">…</span></li> } }
+            @for (var i = from; i <= to; i++) { <li class="page-item @(i == page ? "active" : "")"><a class="page-link" href="@Url(i)">@i</a></li> }
+            @if (to < pages) { if (to < pages - 1) { <li class="page-item disabled"><span class="page-link">…</span></li> } <li class="page-item"><a class="page-link" href="@Url(pages)">@pages</a></li> }
+            <li class="page-item @(page >= pages ? "disabled" : "")"><a class="page-link" href="@Url(page + 1)">&raquo;</a></li>
+        </ul>
+    }
+    <span class="ms-auto text-muted">Số dòng / trang:</span>
+    @foreach (var s in ERP.Web.Infrastructure.Paging.Sizes) { <a class="@(s == size ? "fw-bold" : "")" href="@Url(1, s)">@s</a> }
+</div>

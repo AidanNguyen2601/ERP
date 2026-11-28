@@ -128,6 +128,10 @@ public class ErpDbContext : DbContext
     public DbSet<ReportSchedule> ReportSchedules => Set<ReportSchedule>();
     public DbSet<EmailOutbox> EmailOutbox => Set<EmailOutbox>();
     public DbSet<AlertRule> AlertRules => Set<AlertRule>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<SchemaMigration> SchemaMigrations => Set<SchemaMigration>();
+    public DbSet<PermissionOverride> PermissionOverrides => Set<PermissionOverride>();
+    public DbSet<ERP.Web.Services.BackupRecord> BackupRecords => Set<ERP.Web.Services.BackupRecord>();
     public DbSet<Lead> Leads => Set<Lead>();
     public DbSet<Opportunity> Opportunities => Set<Opportunity>();
     public DbSet<CrmActivity> CrmActivities => Set<CrmActivity>();
@@ -275,6 +279,7 @@ public class ErpDbContext : DbContext
         modelBuilder.Entity<ProductionOrder>().HasIndex(x => x.Number).IsUnique();
         modelBuilder.Entity<WorkCenter>().HasIndex(x => x.Code).IsUnique();
         modelBuilder.Entity<AlertRule>().HasIndex(x => x.Key).IsUnique();
+        modelBuilder.Entity<Notification>().HasIndex(x => new { x.UserId, x.IsRead, x.CreatedAt });
         modelBuilder.Entity<ReportSchedule>().HasIndex(x => new { x.IsActive, x.NextRunAt });
         modelBuilder.Entity<EmailOutbox>().HasIndex(x => x.CreatedAt);
         modelBuilder.Entity<Lead>().HasIndex(x => x.Code);

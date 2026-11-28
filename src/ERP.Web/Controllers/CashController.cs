@@ -18,7 +18,7 @@ public class CashController : ErpControllerBase
     private readonly ReportService _rpt;
     public CashController(ErpDbContext db, CashService cash, AccountingService acc, ReportService rpt) : base(db) { _cash = cash; _acc = acc; _rpt = rpt; }
 
-    public async Task<IActionResult> Index(DateTime? from, DateTime? to, CashVoucherType? type, int? cashAccountId, string? q)
+    public async Task<IActionResult> Index(DateTime? from, DateTime? to, CashVoucherType? type, int? cashAccountId, string? q, int page = 1)
     {
         var (f, t) = Range(from, to);
         var accounts = await Db.CashAccounts.Include(c => c.Account).OrderBy(c => c.Code).ToListAsync();
@@ -30,7 +30,9 @@ public class CashController : ErpControllerBase
         if (!string.IsNullOrWhiteSpace(q)) vq = vq.Where(v => v.Number.Contains(q) || v.Description.Contains(q));
         ViewBag.Accounts = accounts; ViewBag.Balances = balances; ViewBag.From = f; ViewBag.To = t; ViewBag.Type = type; ViewBag.CashAccountId = cashAccountId; ViewBag.Q = q;
         ViewBag.CashSelect = await CashAccountsAsync(cashAccountId);
-        return View(await vq.OrderByDescending(v => v.Date).ThenByDescending(v => v.Id).Take(200).ToListAsync());
+        ViewBag.SumIn = await vq.Where(v => v.Status == DocStatus.Posted && v.Type == CashVoucherType.Receipt).SumAsync(v => (decimal?)v.Amount) ?? 0;
+        ViewBag.SumOut = await vq.Where(v => v.Status == DocStatus.Posted && v.Type == CashVoucherType.Payment).SumAsync(v => (decimal?)v.Amount) ?? 0;
+        return View(await vq.OrderByDescending(v => v.Date).ThenByDescending(v => v.Id).PageAsync(this, page));
     }
 
     [Authorize(Roles = AppRoles.Accounting)]

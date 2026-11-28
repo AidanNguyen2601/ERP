@@ -20,6 +20,7 @@ public static class DbSeeder
         var db = sp.GetRequiredService<ErpDbContext>();
         await db.Database.EnsureCreatedAsync();
         await EnsureNewTablesAsync(db);
+        await SchemaMigrations.ApplyPendingAsync(db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("SchemaMigrations"));
         if (await db.Users.AnyAsync())
         {
             await SeedCatalogsAsync(db);
@@ -33,18 +34,7 @@ public static class DbSeeder
             await TradeDemoSeeder.SeedAsync(db);
             await ProcessDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("ProcessDemoSeeder"));
             await ManufacturingDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("ManufacturingDemoSeeder"));
-        await QcAdvancedDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("QcAdvancedDemoSeeder"));
-
-        await MaintenanceDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("MaintenanceDemoSeeder"));
-
-
-        await HrDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("HrDemoSeeder"));
-        await CrmDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("CrmDemoSeeder"));
-            await QcAdvancedDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("QcAdvancedDemoSeeder"));
-            await MaintenanceDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("MaintenanceDemoSeeder"));
-
-            await HrDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("HrDemoSeeder"));
-            await CrmDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("CrmDemoSeeder"));
+            await SeedDemoModulesAsync(sp, db);
             await BackfillPurchaseReturnsAsync(sp, db);
             return;
         }
@@ -60,7 +50,18 @@ public static class DbSeeder
         await TradeDemoSeeder.SeedAsync(db);
         await ProcessDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("ProcessDemoSeeder"));
         await ManufacturingDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("ManufacturingDemoSeeder"));
+        await SeedDemoModulesAsync(sp, db);
         await BackfillPurchaseReturnsAsync(sp, db);
+    }
+
+    /// <summary>Dữ liệu mẫu các phân hệ bổ sung (chạy cho cả DB mới và DB đã có; mỗi bộ tự bỏ qua nếu đã nạp)</summary>
+    private static async Task SeedDemoModulesAsync(IServiceProvider sp, ErpDbContext db)
+    {
+        var lf = sp.GetRequiredService<ILoggerFactory>();
+        await QcAdvancedDemoSeeder.SeedAsync(sp, db, lf.CreateLogger("QcAdvancedDemoSeeder"));
+        await MaintenanceDemoSeeder.SeedAsync(sp, db, lf.CreateLogger("MaintenanceDemoSeeder"));
+        await HrDemoSeeder.SeedAsync(sp, db, lf.CreateLogger("HrDemoSeeder"));
+        await CrmDemoSeeder.SeedAsync(sp, db, lf.CreateLogger("CrmDemoSeeder"));
     }
 
     /// <summary>Giữ chỗ: TT99 không quy định TK cấp 2 cho 521 (giảm trừ doanh thu ghi trực tiếp TK 521) – xem Tt99Migration</summary>

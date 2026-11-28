@@ -1,0 +1,17 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      # Kiểm thử tích hợp tự chạy SQL Server tạm qua Docker (Testcontainers); ERP_TEST_REQUIRE_DB=1 để báo lỗi nếu không dựng được
+      - run: dotnet test src/ERP.Tests/ERP.Tests.csproj -c Release
+        env:
+          ERP_TEST_REQUIRE_DB: "1"

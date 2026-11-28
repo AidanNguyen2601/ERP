@@ -1,0 +1,22 @@
+@model List<ERP.Web.Controllers.SchemaController.Row>
+@{ ViewData["Title"] = "Phiên bản cơ sở dữ liệu"; var unknown = (List<ERP.Web.Data.SchemaMigration>)ViewBag.Unknown; var pending = Model.Count(r => r.Rec?.IsApplied != true); }
+<div class="toolbar">
+    <span>Phiên bản hiện tại: <b>@ViewBag.Version</b> · @Model.Count(r => r.Rec?.IsApplied == true)/@Model.Count đã áp dụng</span>
+    <form asp-action="Apply" method="post" class="ms-auto d-inline"><button class="btn btn-sm btn-primary" disabled="@(pending == 0)">Áp dụng @pending bước còn thiếu</button></form>
+    <form asp-action="Rollback" method="post" class="d-inline" onsubmit="return confirm('Hoàn tác migration mới nhất? Nên sao lưu dữ liệu trước.')"><button class="btn btn-sm btn-outline-danger">Hoàn tác bước mới nhất</button></form>
+</div>
+<div class="card"><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off">
+    <thead><tr><th>Mã</th><th>Nội dung</th><th>Trạng thái</th><th>Áp dụng</th><th>Lệnh</th></tr></thead><tbody>
+    @foreach (var r in Model)
+    {
+        <tr><td class="small text-nowrap">@r.Def.Id</td><td class="small">@r.Def.Description</td>
+            <td>@if (r.Rec == null) { <span class="badge bg-warning text-dark">Chưa áp dụng</span> }
+                else if (r.Rec.Error != null) { <span class="badge bg-danger">Lỗi</span><div class="small text-muted">@r.Rec.Error</div> }
+                else if (r.Rec.RolledBackAt != null) { <span class="badge bg-secondary">Đã hoàn tác</span><div class="small text-muted">@r.Rec.RolledBackAt?.ToString("dd/MM/yyyy HH:mm") · @r.Rec.RolledBackBy</div> }
+                else { <span class="badge bg-success">Đã áp dụng</span> }</td>
+            <td class="small text-nowrap">@r.Rec?.AppliedAt.ToString("dd/MM/yyyy HH:mm") <div class="text-muted">@r.Rec?.AppliedBy @(r.Rec != null ? $"· {r.Rec.DurationMs} ms" : "")</div></td>
+            <td class="small"><details><summary>@r.Def.Up.Length lệnh · @(r.Def.Down.Length > 0 ? "có hoàn tác" : "không hoàn tác")</summary><pre class="small mb-1" style="white-space:pre-wrap">@string.Join("\n", r.Def.Up)</pre>@if (r.Def.Down.Length > 0) { <div class="text-muted">Hoàn tác:</div><pre class="small" style="white-space:pre-wrap">@string.Join("\n", r.Def.Down)</pre> }</details></td></tr>
+    }
+    @foreach (var u in unknown) { <tr><td class="small">@u.Id</td><td class="small text-muted" colspan="4">Có trong cơ sở dữ liệu nhưng không có trong phiên bản phần mềm này (phần mềm cũ hơn dữ liệu?)</td></tr> }
+</tbody></table></div>
+<div class="card-footer small text-muted">Bảng và cột mới trong mô hình dữ liệu được tạo tự động khi khởi động; các thay đổi khác (chỉ mục, dữ liệu, ràng buộc) đi qua migration ở đây, mỗi bước chạy một lần trong transaction. Nên sao lưu trước khi hoàn tác.</div></div>
