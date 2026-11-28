@@ -1,0 +1,43 @@
+@model List<ERP.Web.Services.BackupRecord>
+@{ ViewData["Title"] = "Sao lưu dữ liệu"; var hour = (int)ViewBag.AutoHour; var keep = (int)ViewBag.KeepDays; var expired = (List<ERP.Web.Services.BackupRecord>)ViewBag.Expired; var pruneErr = (string)ViewBag.PruneError; }
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="card mb-3"><div class="card-header">Sao lưu cơ sở dữ liệu <b>@ViewBag.Db</b></div><div class="card-body">
+            <form asp-action="Run" method="post" onsubmit="this.querySelector('button').disabled=true"><button class="btn btn-primary"><i class="bi bi-database-down"></i> Sao lưu ngay</button></form>
+            <div class="small text-muted mt-2">Tệp .bak được ghi trên <b>máy chủ SQL Server</b> (không phải máy người dùng) và được kiểm tra lại bằng RESTORE VERIFYONLY.</div>
+        </div></div>
+        <div class="card"><div class="card-header">Cấu hình</div><div class="card-body">
+            <form asp-action="Settings" method="post" class="row g-2">
+                <div class="col-12"><label class="form-label small">Thư mục trên máy chủ SQL</label><input name="folder" value="@ViewBag.Folder" class="form-control form-control-sm" /></div>
+                <div class="col-12"><label class="form-label small">Tự động sao lưu hằng ngày lúc (giờ, -1 = tắt)</label><input name="autoHour" type="number" min="-1" max="23" value="@hour" class="form-control form-control-sm" /></div>
+                <div class="col-12"><label class="form-label small">Giữ tệp sao lưu (ngày, 0 = giữ tất cả)</label><input name="keepDays" type="number" min="0" max="3650" value="@keep" class="form-control form-control-sm" /></div>
+                <div class="col-12"><button class="btn btn-sm btn-primary">Lưu</button></div>
+            </form>
+            <div class="small text-muted mt-2">Phục hồi: dùng RESTORE DATABASE từ tệp .bak trên máy chủ SQL. Tệp cũ được xóa theo số ngày giữ (cần quyền sysadmin; nếu không có, dùng kịch bản hiện ra bên dưới).</div>
+        </div></div>
+        @if (keep > 0)
+        {
+            <div class="card mt-3"><div class="card-header">Tệp quá hạn giữ (@expired.Count)</div><div class="card-body small">
+                @if (!string.IsNullOrEmpty(pruneErr)) { <div class="alert alert-warning py-1 px-2 small">Lần xóa gần nhất không thành công: @pruneErr</div> }
+                @if (expired.Any())
+                {
+                    <form asp-action="Prune" method="post" class="d-inline"><button class="btn btn-sm btn-outline-danger">Xóa tệp quá hạn</button></form>
+                    <div class="text-muted mt-2">Nếu tài khoản ứng dụng không có quyền sysadmin, quản trị SQL chạy kịch bản sau rồi bấm nút Đã xóa thủ công:</div>
+                    <pre class="small bg-light p-2 mb-1" style="white-space:pre-wrap">@ERP.Web.Services.BackupService.ManualScript(expired)</pre>
+                    <form asp-action="MarkDeleted" method="post" class="d-inline"><button class="btn btn-sm btn-light border">Đã xóa thủ công</button></form>
+                }
+                else { <span class="text-muted">Không có tệp nào quá hạn. Luôn giữ bản sao lưu thành công mới nhất.</span> }
+            </div></div>
+        }
+    </div>
+    <div class="col-lg-8"><div class="card"><div class="card-header">Lịch sử sao lưu</div><div class="card-body p-0"><table class="table table-sm mb-0">
+        <thead><tr><th>Thời gian</th><th>Tệp</th><th>Kiểu</th><th>Kết quả</th><th class="num">Thời gian chạy</th></tr></thead><tbody>
+        @foreach (var b in Model)
+        {
+            <tr><td class="small text-nowrap">@b.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td><td class="small">@b.FilePath</td><td class="small">@(b.Automatic ? "Tự động" : b.CreatedBy)</td>
+                <td>@if (b.DeletedAt != null) { <span class="badge bg-secondary">Đã xóa tệp</span> } else if (b.Success) { <span class="badge bg-success">Thành công</span> @if (b.Verified) { <span class="badge bg-light text-dark border">Đã kiểm tra</span> } } else { <span class="badge bg-danger">Lỗi</span> }@if (b.Error != null) { <div class="small text-muted">@b.Error</div> }</td>
+                <td class="num small">@((b.DurationMs / 1000.0).ToString("0.0")) s</td></tr>
+        }
+        @if (!Model.Any()) { <tr><td colspan="5" class="text-center text-muted py-3">Chưa có lần sao lưu nào.</td></tr> }
+    </tbody></table></div></div></div>
+</div>
