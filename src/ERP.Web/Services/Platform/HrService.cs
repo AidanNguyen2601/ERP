@@ -296,7 +296,7 @@ public class HrService
     }
 
     // ------------------------------------------------------------------ Thành phần lương
-    public record Extras(decimal Taxable, decimal NonTax, decimal Bonus, decimal Piece, decimal Deduction, string Note);
+    public record Extras(decimal Taxable, decimal NonTax, decimal Bonus, decimal Piece, decimal Deduction, string Note, decimal Advance = 0);
 
     /// <summary>Phụ cấp / thưởng / lương sản phẩm / khấu trừ của một nhân viên trong tháng (thành phần theo công thức tính từ dữ liệu nhân viên và chấm công)</summary>
     public static Extras ExtrasFor(Employee e, decimal workDays, decimal otHours, decimal stdDays, decimal salaryByDays, int year, int month,

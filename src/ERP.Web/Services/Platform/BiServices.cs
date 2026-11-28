@@ -228,6 +228,8 @@ public class BiBackgroundService : BackgroundService
         using var scope = _sf.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var now = DateTime.Now;
+        await DailyDigestAsync(scope.ServiceProvider, db, now, ct);
+        await AutoBackupAsync(scope.ServiceProvider, now);
         var due = await db.ReportSchedules.Include(s => s.SavedReport).Where(s => s.IsActive && s.NextRunAt <= now).ToListAsync(ct);
         var svc = scope.ServiceProvider.GetRequiredService<ReportScheduleService>();
         foreach (var s in due) await svc.RunAsync(s);
@@ -250,5 +252,30 @@ public class BiBackgroundService : BackgroundService
                 await db.SaveChangesAsync(ct);
             }
         }
+    }
+
+    private static async Task AutoBackupAsync(IServiceProvider sp, DateTime now)
+    {
+        var set = sp.GetRequiredService<SettingsService>();
+        var hour = (int)await set.DecAsync("Backup.AutoHour", -1);
+        if (hour < 0 || now.Hour < hour || await set.GetAsync("Backup.LastAuto") == now.ToString("yyyy-MM-dd")) return;
+        await set.SetAsync("Backup.LastAuto", now.ToString("yyyy-MM-dd"));
+        await sp.GetRequiredService<BackupService>().RunAsync("Hệ thống", true);
+    }
+
+    /// <summary>Mỗi ngày một lần (sau 7h): thông báo trong ứng dụng số cảnh báo đang hiệu lực cho người quản lý</summary>
+    private static async Task DailyDigestAsync(IServiceProvider sp, ErpDbContext db, DateTime now, CancellationToken ct)
+    {
+        if (now.Hour < 7) return;
+        var set = sp.GetRequiredService<SettingsService>();
+        if (await set.GetAsync("Notify.LastDigest") == now.ToString("yyyy-MM-dd")) return;
+        await set.SetAsync("Notify.LastDigest", now.ToString("yyyy-MM-dd"));
+        var alerts = sp.GetRequiredService<AlertService>();
+        await alerts.EnsureRulesAsync();
+        var items = await alerts.ComputeAsync(now);
+        if (items.Count == 0) return;
+        var danger = items.Count(i => i.Level == "danger");
+        var users = await db.Users.Where(u => u.IsActive && (u.Role == AppRoles.Admin || u.Role == AppRoles.Director || u.Role == AppRoles.Accountant)).ToListAsync(ct);
+        await sp.GetRequiredService<NotificationService>().SendAsync(users, $"{items.Count} cảnh báo cần xử lý ({danger} khẩn)", string.Join("; ", items.Take(3).Select(i => i.Title)), "/Alerts", danger > 0 ? "danger" : "warning", "Cảnh báo");
     }
 }

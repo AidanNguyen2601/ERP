@@ -10,6 +10,7 @@
     @if (doc != null) { <a class="btn btn-sm btn-light" asp-controller="Inventory" asp-action="Details" asp-route-id="@doc.Id">Phiếu điều chỉnh @doc.Number</a> }
     <span class="ms-auto"></span>
     <button type="button" class="btn btn-sm btn-light" onclick="window.print()"><i class="bi bi-printer"></i> In phiếu kiểm đếm</button>
+    @if (counting) { <a class="btn btn-sm btn-outline-primary" asp-controller="Planning" asp-action="Scan" asp-route-id="@Model.Id"><i class="bi bi-phone"></i> Đếm bằng điện thoại / máy quét</a> }
     @if (can && counting) { <form asp-action="CancelStocktake" asp-route-id="@Model.Id" method="post" class="d-inline" data-confirm="Hủy đợt kiểm kê?"><button class="btn btn-sm btn-outline-danger">Hủy</button></form> }
 </div>
 <form asp-action="SaveCounts" asp-route-id="@Model.Id" method="post">

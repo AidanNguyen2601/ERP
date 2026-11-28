@@ -1,4 +1,5 @@
 @model string
+@inject ERP.Web.Services.PermissionService Perm
 @*
     Menu chính, dựng từ Infrastructure/Menu.cs.
     Model: "vertical" (sidebar trái / phải) | "top" | "bottom" (thanh ngang).
@@ -6,7 +7,7 @@
 *@
 @{
     var ctx = Menu.Context(ViewContext);
-    var groups = Menu.VisibleGroups(User).ToList();
+    var groups = Menu.VisibleGroups(User, await Perm.DeniedKeysAsync(User)).ToList();
     var homeUrl = Menu.Home.Url(Url);
 }
 @if (Model == "vertical")

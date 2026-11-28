@@ -1,0 +1,28 @@
+@model List<ERP.Web.Controllers.FinancialNotesController.NoteSection>
+@{ ViewData["Title"] = "Thuyết minh báo cáo tài chính (B09-DN)"; DateTime f = ViewBag.From, t = ViewBag.To; string M(decimal? v) => v == null ? "" : v.Value.ToMoney(); }
+<partial name="_GlNav" />
+<form method="get" class="toolbar">
+    <input name="from" type="date" value="@f.Iso()" class="form-control form-control-sm" style="width:auto" /> – <input name="to" type="date" value="@t.Iso()" class="form-control form-control-sm" style="width:auto" />
+    <button class="btn btn-sm btn-light border">Xem</button>
+    <a class="btn btn-sm btn-success ms-auto" asp-action="Index" asp-route-from="@f.Iso()" asp-route-to="@t.Iso()" asp-route-excel="true"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+    <button type="button" class="btn btn-sm btn-light border" onclick="window.print()"><i class="bi bi-printer"></i> In / PDF</button>
+</form>
+@foreach (var s in Model)
+{
+    <div class="card mb-2"><div class="card-header py-1 fw-semibold">@s.No. @s.Title</div>
+    @if (s.Text != null) { <div class="card-body py-2 small">@s.Text</div> }
+    @if (s.Lines.Any())
+    {
+        <div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><thead><tr><th></th>@foreach (var h in s.Headers) { <th class="num">@h</th> }</tr></thead><tbody>
+        @foreach (var l in s.Lines)
+        {
+            <tr class="@(l.Bold ? "fw-bold" : "")"><td>@l.Label</td>
+                @if (s.Headers.Length == 4) { <td class="num">@M(l.Opening)</td><td class="num">@M(l.Increase)</td><td class="num">@M(l.Decrease)</td><td class="num">@M(l.Closing)</td> }
+                else if (s.Headers.Length == 2) { <td class="num">@M(l.Opening)</td><td class="num">@M(l.Closing)</td> }
+                else { <td class="num">@M(l.Closing)</td> }</tr>
+        }
+        </tbody></table></div>
+    }
+    </div>
+}
+<div class="small text-muted">Số liệu lập từ sổ cái (bút toán đã ghi sổ, không gồm bút toán kết chuyển với các chỉ tiêu phát sinh). Phần thuyết minh bằng lời (đặc điểm hoạt động, chính sách) cần kế toán trưởng rà soát, bổ sung trước khi ký.</div>

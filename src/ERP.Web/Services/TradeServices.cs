@@ -56,6 +56,20 @@ public class InvoiceService
         if (inv.Lines.Any(l => l.Quantity <= 0 || l.UnitPrice < 0)) throw new BusinessException("Số lượng phải > 0 và đơn giá không âm.");
         Recalc(inv);
         if (inv.Total <= 0) throw new BusinessException("Tổng tiền hóa đơn phải lớn hơn 0.");
+        Invoice? replaced = null;
+        if (inv.ReplacesInvoiceId != null)
+        {
+            // Hóa đơn thay thế: hủy hóa đơn gốc (đảo bút toán, trả lại số lượng đơn hàng) trong cùng giao dịch, rồi phát hành hóa đơn mới tham chiếu hóa đơn gốc
+            replaced = await _db.Invoices.Include(i => i.Lines).FirstOrDefaultAsync(i => i.Id == inv.ReplacesInvoiceId) ?? throw new BusinessException("Không tìm thấy hóa đơn bị thay thế.");
+            ValidateReplaceable(replaced);
+            if (await _db.SalesCreditNotes.AnyAsync(n => n.InvoiceId == replaced.Id && n.Status == DocStatus.Posted)) throw new BusinessException("Hóa đơn gốc đã có hóa đơn điều chỉnh – không thay thế được.");
+            await _acc.ReverseAsync(replaced.JournalEntryId, inv.Date, $"Bị thay thế bởi hóa đơn {inv.Number}");
+            await ReleaseOrderQtyAsync(replaced);
+            replaced.Status = InvoiceStatus.Cancelled;
+            replaced.Note = $"{replaced.Note} [Bị thay thế bởi {inv.Number}]".Trim();
+            await _db.SaveChangesAsync();
+            inv.ReplacesInvoice = replaced;
+        }
         var partner = await _db.Partners.FindAsync(inv.PartnerId) ?? throw new BusinessException("Không tìm thấy đối tượng.");
         var itemIds = inv.Lines.Where(l => l.ItemId != null).Select(l => l.ItemId!.Value).ToList();
         var items = (await _db.Items.Where(i => itemIds.Contains(i.Id)).ToListAsync()).ToDictionary(i => i.Id);
@@ -109,9 +123,19 @@ public class InvoiceService
             inv.JournalEntryId = je.Id;
         }
         await _einv.IssueAsync(inv);   // hóa đơn điện tử: lỗi thì hủy toàn bộ việc phát hành
+        if (replaced != null) _einv.MarkReplaced(replaced, inv);
         inv.Status = InvoiceStatus.Issued;
         await _db.SaveChangesAsync();
         await RefreshOrderStatusAsync(inv);
+        if (replaced != null) await RefreshOrderStatusAsync(replaced);
+    }
+
+    /// <summary>Điều kiện lập hóa đơn thay thế: hóa đơn bán đã phát hành, chưa thu tiền</summary>
+    public static void ValidateReplaceable(Invoice original)
+    {
+        if (original.Direction != InvoiceDirection.Sales) throw new BusinessException("Chỉ lập hóa đơn thay thế cho hóa đơn bán ra.");
+        if (original.Status != InvoiceStatus.Issued) throw new BusinessException("Chỉ thay thế hóa đơn đã phát hành.");
+        if (original.PaidAmount > 0) throw new BusinessException("Hóa đơn đã thu tiền một phần – hãy hủy phiếu thu trước hoặc dùng hóa đơn điều chỉnh.");
     }
 
     /// <summary>Hủy hóa đơn: đảo bút toán, trả lại số lượng chưa xuất hóa đơn cho đơn hàng</summary>

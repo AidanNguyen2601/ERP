@@ -29,6 +29,7 @@ builder.Services.AddControllersWithViews(o =>
 {
     var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
     o.Filters.Add(new AuthorizeFilter(policy));
+    o.Filters.Add<ERP.Web.Services.PermissionFilter>();
     o.Filters.Add<ERP.Web.Infrastructure.BusinessExceptionFilter>();
     o.Filters.Add<ERP.Web.Infrastructure.TransactionFilter>();
     o.Filters.Add<ERP.Web.Services.NoticeFilter>();
@@ -63,6 +64,18 @@ builder.Services.AddScoped<ERP.Web.Services.MaintenanceService>();
 builder.Services.AddScoped<ERP.Web.Services.HrService>();
 builder.Services.AddScoped<ERP.Web.Services.AlertService>();
 builder.Services.AddScoped<ERP.Web.Services.MailService>();
+builder.Services.AddScoped<ERP.Web.Services.BackupService>();
+builder.Services.AddScoped<ERP.Web.Services.NotificationService>();
+builder.Services.AddScoped<ERP.Web.Services.ChannelService>();
+builder.Services.AddScoped<ERP.Web.Services.ComplianceService>();
+builder.Services.AddScoped<ERP.Web.Services.TalentService>();
+builder.Services.AddScoped<ERP.Web.Services.StockPlanningService>();
+builder.Services.AddScoped<ERP.Web.Services.CapacityScheduler>();
+builder.Services.AddScoped<ERP.Web.Services.ServiceDesk>();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ERP.Web.Services.PermissionService>();
+builder.Services.AddHttpClient("channels");
+builder.Services.AddHttpClient("einvoice");
 builder.Services.AddScoped<ERP.Web.Services.ReportScheduleService>();
 builder.Services.AddHostedService<ERP.Web.Services.BiBackgroundService>();
 builder.Services.AddScoped<ERP.Web.Services.PeriodService>();
@@ -156,3 +169,5 @@ if (app.Configuration.GetValue("Database:SeedOnStartup", true))
 }
 
 app.Run();
+
+public partial class Program { }

@@ -572,6 +572,7 @@ public enum EInvoiceStatus
     [Display(Name = "Đã cấp mã CQT")] Issued = 1,
     [Display(Name = "Đã thông báo sai sót / hủy")] Cancelled = 2,
     [Display(Name = "Có hóa đơn điều chỉnh")] Adjusted = 3,
+    [Display(Name = "Đã bị thay thế")] Replaced = 4,
     [Display(Name = "Lỗi gửi")] Error = 9
 }
 

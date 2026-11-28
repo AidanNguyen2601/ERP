@@ -40,11 +40,11 @@ public class HomeController : ErpControllerBase
             vm.ReceivableOverdue = open.Sum(i => i.Outstanding);
             vm.DraftInvoices = await Db.Invoices.CountAsync(i => i.Status == InvoiceStatus.Draft);
         }
-        vm.InventoryValue = (await Db.Items.Where(i => i.Type != ItemType.Service).ToListAsync())
-            .Join(await Db.StockLevels.ToListAsync(), i => i.Id, s => s.ItemId, (i, s) => s.Quantity * i.AvgCost).Sum();
-        var stock = (await Db.StockLevels.ToListAsync()).GroupBy(s => s.ItemId).ToDictionary(g => g.Key, g => g.Sum(s => s.Quantity));
-        vm.LowStock = (await Db.Items.Where(i => i.IsActive && i.MinStock > 0).ToListAsync())
-            .Select(i => (i, stock.GetValueOrDefault(i.Id))).Where(x => x.Item2 < x.i.MinStock).OrderBy(x => x.Item2 / x.i.MinStock).ToList();
+        vm.InventoryValue = await Db.StockLevels.Where(s => s.Item!.Type != ItemType.Service).SumAsync(s => (decimal?)(s.Quantity * s.Item!.AvgCost)) ?? 0;
+        var low = await Db.Items.Where(i => i.IsActive && i.MinStock > 0)
+            .Select(i => new { Item = i, OnHand = Db.StockLevels.Where(s => s.ItemId == i.Id).Sum(s => (decimal?)s.Quantity) ?? 0 })
+            .Where(x => x.OnHand < x.Item.MinStock).ToListAsync();
+        vm.LowStock = low.Select(x => (x.Item, x.OnHand)).OrderBy(x => x.OnHand / x.Item.MinStock).ToList();
         vm.PoPendingApproval = await Db.PurchaseOrders.CountAsync(p => p.Status == PoStatus.PendingApproval);
         vm.SoToDeliver = await Db.SalesOrders.CountAsync(s => s.Status == SoStatus.Confirmed || s.Status == SoStatus.PartiallyDelivered);
         vm.ProductionOpen = await Db.ProductionOrders.CountAsync(p => p.Status == ProductionStatus.Released || p.Status == ProductionStatus.InProgress || p.Status == ProductionStatus.Draft);

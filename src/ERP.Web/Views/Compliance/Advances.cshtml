@@ -1,0 +1,40 @@
+@model List<SalaryAdvance>
+@{ ViewData["Title"] = "Tạm ứng lương"; int y = ViewBag.Year; int m = ViewBag.Month; var can = (bool)ViewBag.CanEdit; }
+<partial name="_HrNav" model="@("adv")" />
+<form method="get" class="toolbar">
+    <span class="small">Kỳ trừ lương:</span>
+    <select name="month" class="form-select form-select-sm" style="width:auto">@for (var i = 1; i <= 12; i++) { <option value="@i" selected="@(i == m)">Tháng @i</option> }</select>
+    <input name="year" type="number" value="@y" class="form-control form-control-sm" style="width:90px" /><button class="btn btn-sm btn-light border">Xem</button>
+</form>
+<div class="row g-3">
+    <div class="col-lg-8"><div class="card"><div class="card-body p-0"><table class="table table-sm mb-0">
+        <thead><tr><th>Số</th><th>Ngày</th><th>Nhân viên</th><th class="num">Số tiền</th><th>Chi từ</th><th>Trạng thái</th><th>Lý do</th><th></th></tr></thead><tbody>
+        @foreach (var a in Model)
+        {
+            <tr class="@(a.Status == AdvanceStatus.Cancelled ? "text-muted text-decoration-line-through" : "")"><td>@a.Number</td><td>@a.Date.ToDate()</td><td>@a.Employee?.Code <span class="small text-muted">@a.Employee?.FullName</span></td>
+                <td class="num">@a.Amount.ToMoney()</td><td class="small">@a.CashAccount?.Name</td>
+                <td><span class="badge @(a.Status == AdvanceStatus.Paid ? "bg-success" : a.Status == AdvanceStatus.Draft ? "bg-warning text-dark" : "bg-secondary")">@a.Status.GetDisplayName()</span></td><td class="small">@a.Note</td>
+                <td class="text-nowrap">@if (can && a.Status == AdvanceStatus.Draft) { <form asp-action="PayAdvance" asp-route-id="@a.Id" method="post" class="d-inline"><button class="btn btn-sm btn-success py-0">Chi</button></form> }
+                    @if (can && a.Status != AdvanceStatus.Cancelled) { <form asp-action="CancelAdvance" asp-route-id="@a.Id" method="post" class="d-inline-flex gap-1"><input name="reason" class="form-control form-control-sm py-0" placeholder="Lý do hủy" style="width:110px" /><button class="btn btn-sm btn-outline-danger py-0">Hủy</button></form> }</td></tr>
+        }
+        @if (!Model.Any()) { <tr><td colspan="8" class="text-center text-muted py-3">Chưa có tạm ứng cho kỳ này.</td></tr> }
+        </tbody>
+        <tfoot><tr class="fw-bold"><td colspan="3" class="text-end">Đã chi (trừ vào lương tháng @m/@y)</td><td class="num">@Model.Where(a => a.Status == AdvanceStatus.Paid).Sum(a => a.Amount).ToMoney()</td><td colspan="4"></td></tr></tfoot>
+    </table></div></div></div>
+    @if (can)
+    {
+        <div class="col-lg-4"><div class="card"><div class="card-header">Lập phiếu tạm ứng</div><div class="card-body">
+            <form asp-action="SaveAdvance" method="post" class="row g-2">
+                <div class="col-12"><select name="EmployeeId" asp-items="ViewBag.Emps" class="form-select form-select-sm"></select></div>
+                <div class="col-6"><input name="Date" type="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+                <div class="col-6"><input name="Amount" type="number" min="1" step="1000" class="form-control form-control-sm" placeholder="Số tiền" required /></div>
+                <div class="col-6"><select name="Month" class="form-select form-select-sm">@for (var i = 1; i <= 12; i++) { <option value="@i" selected="@(i == m)">Trừ lương T@(i)</option> }</select></div>
+                <div class="col-6"><input name="Year" type="number" value="@y" class="form-control form-control-sm" /></div>
+                <div class="col-12"><select name="CashAccountId" asp-items="ViewBag.Cash" class="form-select form-select-sm"></select></div>
+                <div class="col-12"><input name="Note" class="form-control form-control-sm" placeholder="Lý do" /></div>
+                <div class="col-12 d-flex gap-1"><button name="pay" value="true" class="btn btn-sm btn-primary">Lập và chi</button><button name="pay" value="false" class="btn btn-sm btn-light border">Chỉ lập phiếu</button></div>
+            </form>
+            <div class="small text-muted mt-2">Khi chi: Nợ 3341 / Có TK tiền của quỹ. Bảng lương kỳ đã chọn tự trừ khoản tạm ứng vào thực lĩnh (không hạch toán lại). Tổng tạm ứng mỗi kỳ tối đa theo cài đặt Payroll.AdvanceMaxPct (mặc định 50% lương cơ bản).</div>
+        </div></div></div>
+    }
+</div>

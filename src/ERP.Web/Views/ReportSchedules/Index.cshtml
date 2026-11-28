@@ -17,11 +17,11 @@
             }
             @if (!schedules.Any()) { <tr><td colspan="6" class="text-center text-muted py-3">Chưa có lịch nào.</td></tr> }
         </tbody></table></div></div>
-        <div class="card"><div class="card-header">Hộp thư đi (30 email gần nhất)</div><div class="card-body p-0"><table class="table table-sm mb-0">
+        <div class="card"><div class="card-header">Hộp thư đi (30 bản gần nhất: email, Teams, Zalo)</div><div class="card-body p-0"><table class="table table-sm mb-0">
             <thead><tr><th>Thời gian</th><th>Tới</th><th>Tiêu đề</th><th>Trạng thái</th><th></th></tr></thead><tbody>
             @foreach (var m in outbox)
             {
-                <tr><td class="small text-nowrap">@m.CreatedAt.ToString("dd/MM HH:mm")</td><td class="small">@m.ToAddresses</td><td class="small">@m.Subject @if (m.AttachmentName != null) { <a asp-action="Attachment" asp-route-id="@m.Id"><i class="bi bi-paperclip"></i>@m.AttachmentName</a> }</td>
+                <tr><td class="small text-nowrap">@m.CreatedAt.ToString("dd/MM HH:mm")</td><td class="small">@if (m.Channel != null) { <span class="badge bg-info text-dark">@(m.Channel == "teams" ? "Teams" : "Zalo")</span> } @m.ToAddresses</td><td class="small">@m.Subject @if (m.AttachmentName != null) { <a asp-action="Attachment" asp-route-id="@m.Id"><i class="bi bi-paperclip"></i>@m.AttachmentName</a> }</td>
                     <td><span class="badge @(m.Status == MailStatus.Sent ? "bg-success" : m.Status == MailStatus.Failed ? "bg-danger" : "bg-warning text-dark")">@m.Status.GetDisplayName()</span> @if (m.Error != null) { <div class="small text-muted">@m.Error</div> }</td>
                     <td>@if (m.Status != MailStatus.Sent) { <form asp-action="Resend" asp-route-id="@m.Id" method="post"><button class="btn btn-sm btn-light border py-0">Gửi lại</button></form> }</td></tr>
             }
@@ -48,6 +48,7 @@
                     <div class="col-12"><input name="password" type="password" class="form-control form-control-sm" placeholder="Mật khẩu (để trống nếu không đổi)" autocomplete="new-password" /></div>
                     <div class="col-12"><input name="from" value="@ViewBag.SmtpFrom" class="form-control form-control-sm" placeholder="Email người gửi" /></div>
                     <div class="col-12"><div class="form-check"><input class="form-check-input" type="checkbox" name="ssl" value="true" checked="@((bool)ViewBag.SmtpSsl)" /><input type="hidden" name="ssl" value="false" /><label class="form-check-label small">Dùng SSL/TLS</label></div></div>
+                    <div class="col-12"><div class="form-check"><input class="form-check-input" type="checkbox" name="notifyEmail" value="true" checked="@((bool)ViewBag.NotifyEmail)" /><input type="hidden" name="notifyEmail" value="false" /><label class="form-check-label small">Gửi thêm email khi có thông báo (chờ duyệt, kết quả duyệt...)</label></div></div>
                     <div class="col-12"><button class="btn btn-sm btn-primary">Lưu</button></div>
                 </form></div></div>
         }

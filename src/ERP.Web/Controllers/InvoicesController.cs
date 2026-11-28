@@ -20,7 +20,7 @@ public class InvoicesController : ErpControllerBase
     private readonly FxService _fx;
     public InvoicesController(ErpDbContext db, InvoiceService svc, IOptions<ErpSettings> cfg, FxService fx) : base(db) { _svc = svc; _cfg = cfg.Value; _fx = fx; }
 
-    public async Task<IActionResult> Index(InvoiceDirection direction = InvoiceDirection.Sales, InvoiceStatus? status = null, string? q = null, DateTime? from = null, DateTime? to = null, bool unpaid = false)
+    public async Task<IActionResult> Index(InvoiceDirection direction = InvoiceDirection.Sales, InvoiceStatus? status = null, string? q = null, DateTime? from = null, DateTime? to = null, bool unpaid = false, int page = 1)
     {
         var t = (to ?? DateTime.Today).Date; var f = (from ?? t.AddMonths(-3)).Date;
         var query = Db.Invoices.Include(i => i.Partner).Where(i => i.Direction == direction && i.Date >= f && i.Date <= t);
@@ -28,7 +28,9 @@ public class InvoicesController : ErpControllerBase
         if (unpaid) query = query.Where(i => i.Status == InvoiceStatus.Issued && i.PaidAmount < i.Total);
         if (!string.IsNullOrWhiteSpace(q)) query = query.Where(i => i.Number.Contains(q) || (i.InvoiceNo != null && i.InvoiceNo.Contains(q)) || i.Partner!.Name.Contains(q));
         ViewBag.Direction = direction; ViewBag.Status = status; ViewBag.Q = q; ViewBag.From = f; ViewBag.To = t; ViewBag.Unpaid = unpaid;
-        return View(await query.OrderByDescending(i => i.Date).ThenByDescending(i => i.Id).ToListAsync());
+        var valid = query.Where(i => i.Status != InvoiceStatus.Cancelled);
+        ViewBag.Sum = await valid.GroupBy(_ => 1).Select(g => new decimal[] { g.Sum(i => i.Subtotal), g.Sum(i => i.VatAmount), g.Sum(i => i.Total), g.Sum(i => i.Status == InvoiceStatus.Issued ? i.Total - i.PaidAmount : 0) }).FirstOrDefaultAsync() ?? new decimal[4];
+        return View(await query.OrderByDescending(i => i.Date).ThenByDescending(i => i.Id).PageAsync(this, page));
     }
 
     /// <summary>Tải XML hóa đơn điện tử đã gửi nhà cung cấp / cơ quan thuế</summary>
@@ -144,6 +146,39 @@ public class InvoicesController : ErpControllerBase
         await _svc.IssueAsync(inv);
         Success(inv.Direction == InvoiceDirection.Sales ? $"Đã phát hành hóa đơn số {inv.InvoiceNo} và ghi nhận doanh thu, công nợ." : $"Đã ghi sổ hóa đơn mua {inv.InvoiceNo}.");
         return RedirectToAction(nameof(Details), new { id });
+    }
+
+    /// <summary>Lập hóa đơn thay thế (nháp) từ hóa đơn đã phát hành; khi phát hành hóa đơn thay thế, hóa đơn gốc tự hủy và đảo bút toán</summary>
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = AppRoles.Accounting)]
+    public async Task<IActionResult> Replace(int id)
+    {
+        var o = await Db.Invoices.Include(x => x.Lines).FirstOrDefaultAsync(x => x.Id == id);
+        if (o == null) return NotFound();
+        InvoiceService.ValidateReplaceable(o);
+        var exists = await Db.Invoices.FirstOrDefaultAsync(x => x.ReplacesInvoiceId == id && x.Status == InvoiceStatus.Draft);
+        if (exists != null) { Success($"Đã có hóa đơn thay thế nháp {exists.Number}."); return RedirectToAction(nameof(Details), new { id = exists.Id }); }
+        var copy = (Invoice)Db.Entry(o).CurrentValues.ToObject();
+        copy.Id = 0; copy.Number = await _svc.NextNumberAsync(o.Direction, DateTime.Today); copy.InvoiceNo = null; copy.Status = InvoiceStatus.Draft; copy.JournalEntryId = null; copy.PaidAmount = 0;
+        copy.Date = DateTime.Today; copy.CreatedById = Me; copy.CreatedAt = DateTime.Now; copy.ReplacesInvoiceId = o.Id; copy.ErrorNoticeXml = null;
+        copy.EInvoiceStatus = EInvoiceStatus.None; copy.EInvoiceLookupCode = null; copy.EInvoiceTaxCode = null; copy.EInvoiceMessage = null; copy.EInvoiceXml = null; copy.EInvoiceSentAt = null;
+        copy.Note = $"Thay thế hóa đơn {o.Series} số {o.InvoiceNo} ngày {o.Date:dd/MM/yyyy}";
+        copy.Lines = o.Lines.Select(l => { var n = (InvoiceLine)Db.Entry(l).CurrentValues.ToObject(); n.Id = 0; n.InvoiceId = 0; return n; }).ToList();
+        // như khi lập hóa đơn từ đơn hàng: dòng nháp đã tính vào số lượng đã lập hóa đơn (hóa đơn gốc trả lại khi bị hủy lúc phát hành bản thay thế)
+        var srcIds = copy.Lines.Where(l => l.SourceLineId != null).Select(l => l.SourceLineId!.Value).ToList();
+        if (o.SalesOrderId != null)
+            foreach (var sl in await Db.SalesOrderLines.Where(x => srcIds.Contains(x.Id)).ToListAsync())
+                sl.InvoicedQty += copy.Lines.Where(l => l.SourceLineId == sl.Id).Sum(l => l.Quantity);
+        Db.Invoices.Add(copy);
+        await Db.SaveChangesAsync();
+        Success($"Đã lập hóa đơn thay thế nháp {copy.Number}. Sửa nội dung sai rồi bấm Phát hành – hóa đơn {o.InvoiceNo} sẽ tự hủy và đảo bút toán.");
+        return RedirectToAction(nameof(Details), new { id = copy.Id });
+    }
+
+    public async Task<IActionResult> ErrorNoticeXml(int id)
+    {
+        var i = await Db.Invoices.FirstOrDefaultAsync(x => x.Id == id);
+        if (i?.ErrorNoticeXml == null) return NotFound();
+        return File(System.Text.Encoding.UTF8.GetBytes(i.ErrorNoticeXml), "application/xml", $"04SS_HDDT_{i.Series}_{i.InvoiceNo}.xml");
     }
 
     [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = AppRoles.Accounting)]

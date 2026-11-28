@@ -262,6 +262,8 @@ Generated_Code/
 # because we have git ;-)
 _UpgradeReport_Files/
 Backup*/
+# Thư mục giao diện chức năng Sao lưu dữ liệu (không phải bản sao lưu)
+!src/ERP.Web/Views/Backup/
 UpgradeLog*.XML
 UpgradeLog*.htm
 ServiceFabricBackup/

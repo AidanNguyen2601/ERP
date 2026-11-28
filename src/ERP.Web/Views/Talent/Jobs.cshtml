@@ -1,0 +1,90 @@
+@model List<JobOpening>
+@{ ViewData["Title"] = "Tuyển dụng"; var job = ViewBag.Job as JobOpening; var can = (bool)ViewBag.CanEdit; var stages = Enum.GetValues<CandidateStage>(); }
+<partial name="_HrNav" model="@("recruit")" />
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="card mb-3"><div class="card-header">Vị trí tuyển dụng</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+            @foreach (var j in Model)
+            {
+                <tr class="@(job?.Id == j.Id ? "table-active" : "")"><td><a asp-action="Jobs" asp-route-id="@j.Id">@j.Code – @j.Title</a><div class="small text-muted">@j.Department · cần @j.Quantity · hạn @j.Deadline.ToDate()</div></td>
+                    <td class="text-end"><span class="badge @(j.Status == JobStatus.Open ? "bg-success" : "bg-secondary")">@j.Status.GetDisplayName()</span><div class="small text-muted">@j.Candidates.Count ứng viên</div></td></tr>
+            }
+            @if (!Model.Any()) { <tr><td class="text-center text-muted py-3">Chưa có vị trí tuyển dụng.</td></tr> }
+        </tbody></table></div></div>
+        @if (can)
+        {
+            <div class="card"><div class="card-header">@(job == null ? "Mở vị trí tuyển dụng" : "Thêm / sửa vị trí")</div><div class="card-body">
+                <form asp-action="SaveJob" method="post" class="row g-2">
+                    <input type="hidden" name="Id" value="0" id="jobId" />
+                    <div class="col-12"><input name="Title" class="form-control form-control-sm" placeholder="Vị trí (VD: Thợ mộc bậc 3)" required /></div>
+                    <div class="col-8"><input name="Department" class="form-control form-control-sm" placeholder="Phòng ban" /></div>
+                    <div class="col-4"><input name="Quantity" type="number" min="1" value="1" class="form-control form-control-sm" title="Số lượng" /></div>
+                    <div class="col-6"><input name="SalaryFrom" type="number" step="100000" class="form-control form-control-sm" placeholder="Lương từ" /></div>
+                    <div class="col-6"><input name="SalaryTo" type="number" step="100000" class="form-control form-control-sm" placeholder="Lương đến" /></div>
+                    <div class="col-12"><input name="Deadline" type="date" value="@DateTime.Today.AddDays(30).Iso()" class="form-control form-control-sm" /></div>
+                    <div class="col-12"><textarea name="Description" rows="2" class="form-control form-control-sm" placeholder="Mô tả công việc / yêu cầu"></textarea></div>
+                    <div class="col-12"><button class="btn btn-sm btn-primary">Mở vị trí mới</button></div>
+                </form>
+                @if (job != null)
+                {
+                    <form asp-action="SaveJob" method="post" class="d-flex gap-1 mt-2">
+                        <input type="hidden" name="Id" value="@job.Id" /><input type="hidden" name="Title" value="@job.Title" /><input type="hidden" name="Department" value="@job.Department" /><input type="hidden" name="Quantity" value="@job.Quantity" />
+                        <input type="hidden" name="SalaryFrom" value="@job.SalaryFrom.Raw()" /><input type="hidden" name="SalaryTo" value="@job.SalaryTo.Raw()" /><input type="hidden" name="Deadline" value="@job.Deadline.Iso()" /><input type="hidden" name="Description" value="@job.Description" />
+                        <select name="Status" asp-items="Html.GetEnumSelectList<JobStatus>()" class="form-select form-select-sm"></select><button class="btn btn-sm btn-light border text-nowrap">Đổi trạng thái @job.Code</button>
+                    </form>
+                }
+            </div></div>
+        }
+    </div>
+    <div class="col-lg-8">
+        @if (job != null)
+        {
+            <div class="d-flex justify-content-between mb-2"><h6 class="mb-0">@job.Code – @job.Title <span class="text-muted small">@job.Department · @job.SalaryFrom.ToMoney() – @job.SalaryTo.ToMoney() đ</span></h6>
+                <span class="small">Đã tuyển @job.Candidates.Count(c => c.Stage == CandidateStage.Hired)/@job.Quantity</span></div>
+            <div class="d-flex gap-2 mb-3" style="overflow-x:auto">
+            @foreach (var s in stages)
+            {
+                var list = job.Candidates.Where(c => c.Stage == s).OrderByDescending(c => c.Score).ToList();
+                <div style="min-width:200px;flex:1"><div class="card"><div class="card-header py-1 small fw-bold">@s.GetDisplayName() (@list.Count)</div><div class="card-body p-1" style="min-height:80px">
+                @foreach (var c in list)
+                {
+                    <div class="border rounded p-2 mb-1 small bg-white">
+                        <div class="fw-semibold">@c.FullName @if (c.Score > 0) { <span class="badge bg-light text-dark border">@c.Score đ</span> }</div>
+                        <div class="text-muted">@c.Phone @c.Email</div>
+                        @if (c.Source != null) { <div class="text-muted">Nguồn: @c.Source</div> }
+                        @if (c.InterviewAt != null) { <div>Phỏng vấn: @c.InterviewAt.Value.ToString("dd/MM HH:mm")</div> }
+                        @if (c.Note != null) { <div class="text-muted">@c.Note</div> }
+                        @if (c.EmployeeId != null) { <a asp-controller="Hr" asp-action="Profile" asp-route-id="@c.EmployeeId">Hồ sơ nhân viên</a> }
+                        @if (can && c.Stage is not (CandidateStage.Hired or CandidateStage.Rejected))
+                        {
+                            <form asp-action="MoveCandidate" method="post" class="d-flex flex-wrap gap-1 mt-1"><input type="hidden" name="id" value="@c.Id" />
+                                <select name="stage" class="form-select form-select-sm py-0" style="width:auto">@foreach (var t in stages.Where(t => t != CandidateStage.Hired)) { <option value="@((int)t)" selected="@(t == c.Stage)">@t.GetDisplayName()</option> }</select>
+                                <input name="score" type="number" min="0" max="100" value="@c.Score" class="form-control form-control-sm py-0" style="width:60px" title="Điểm" />
+                                <input name="interviewAt" type="datetime-local" class="form-control form-control-sm py-0" title="Lịch phỏng vấn" />
+                                <input name="note" class="form-control form-control-sm py-0" placeholder="Nhận xét" />
+                                <button class="btn btn-sm btn-light border py-0">Lưu</button></form>
+                            @if (c.Stage == CandidateStage.Offer)
+                            {
+                                <form asp-action="Hire" method="post" class="d-flex gap-1 mt-1"><input type="hidden" name="id" value="@c.Id" />
+                                    <input name="baseSalary" type="number" step="100000" value="@(c.ExpectedSalary > 0 ? c.ExpectedSalary.Raw() : job.SalaryFrom.Raw())" class="form-control form-control-sm py-0" title="Lương cơ bản" />
+                                    <input name="startDate" type="date" value="@DateTime.Today.AddDays(7).Iso()" class="form-control form-control-sm py-0" /><button class="btn btn-sm btn-success py-0 text-nowrap">Nhận việc</button></form>
+                            }
+                        }
+                    </div>
+                }
+                </div></div></div>
+            }
+            </div>
+            @if (can)
+            {
+                <div class="card"><div class="card-header">Thêm ứng viên</div><div class="card-body"><form asp-action="AddCandidate" method="post" class="row g-2"><input type="hidden" name="JobOpeningId" value="@job.Id" />
+                    <div class="col-md-3"><input name="FullName" class="form-control form-control-sm" placeholder="Họ tên" required /></div>
+                    <div class="col-md-2"><input name="Phone" class="form-control form-control-sm" placeholder="Điện thoại" /></div>
+                    <div class="col-md-3"><input name="Email" class="form-control form-control-sm" placeholder="Email" /></div>
+                    <div class="col-md-2"><input name="Source" class="form-control form-control-sm" placeholder="Nguồn (TopCV, giới thiệu...)" /></div>
+                    <div class="col-md-2"><input name="ExpectedSalary" type="number" step="100000" class="form-control form-control-sm" placeholder="Lương mong muốn" /></div>
+                    <div class="col-12"><button class="btn btn-sm btn-primary">Thêm</button></div></form></div></div>
+            }
+        }
+    </div>
+</div>

@@ -1,0 +1,21 @@
+@model List<ERP.Web.Services.BenefitRow>
+@{ ViewData["Title"] = "Chế độ ốm đau, thai sản"; int y = ViewBag.Year; int m = ViewBag.Month; }
+<partial name="_HrNav" model="@("benefit")" />
+<form method="get" class="toolbar">
+    <select name="month" class="form-select form-select-sm" style="width:auto">@for (var i = 1; i <= 12; i++) { <option value="@i" selected="@(i == m)">Tháng @i</option> }</select>
+    <input name="year" type="number" value="@y" class="form-control form-control-sm" style="width:90px" /><button class="btn btn-sm btn-light border">Xem</button>
+    <a class="btn btn-sm btn-success ms-auto" asp-action="Benefits" asp-route-year="@y" asp-route-month="@m" asp-route-excel="true"><i class="bi bi-file-earmark-excel"></i> Xuất Excel 01B-HSB</a>
+</form>
+<div class="card"><div class="card-body p-0"><table class="table table-sm mb-0">
+    <thead><tr><th>Nhân viên</th><th>Chế độ</th><th>Thời gian nghỉ</th><th class="num">Ngày / tháng</th><th class="num">Mức lương đóng</th><th class="num">Tiền hưởng</th><th class="num">Trợ cấp một lần</th><th>Căn cứ</th></tr></thead><tbody>
+    @foreach (var r in Model)
+    {
+        <tr><td>@r.Request.Employee!.Code <span class="small text-muted">@r.Request.Employee.FullName</span></td><td><span class="badge @(r.Kind == BenefitKind.Sickness ? "bg-info text-dark" : "bg-warning text-dark")">@r.Kind.GetDisplayName()</span></td>
+            <td class="small">@r.Request.FromDate.ToDate() – @r.Request.ToDate.ToDate()</td><td class="num">@r.Days.ToQty()</td><td class="num">@r.BaseSalary.ToMoney()</td>
+            <td class="num fw-semibold">@r.Amount.ToMoney()</td><td class="num">@(r.LumpSum > 0 ? r.LumpSum.ToMoney() : "")</td><td class="small text-muted">@r.Basis</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="8" class="text-center text-muted py-3">Không có đơn nghỉ hưởng chế độ BHXH bắt đầu trong tháng.</td></tr> }
+    </tbody>
+    @if (Model.Any()) { <tfoot><tr class="fw-bold"><td colspan="5" class="text-end">Cộng</td><td class="num">@Model.Sum(r => r.Amount).ToMoney()</td><td class="num">@Model.Sum(r => r.LumpSum).ToMoney()</td><td></td></tr></tfoot> }
+</table></div>
+<div class="card-footer small text-muted">Ước tính theo Luật BHXH: ốm đau hưởng 75% mức lương đóng BHXH của tháng liền kề trước khi nghỉ, chia 24 ngày, nhân số ngày nghỉ làm việc; thai sản (sinh con) hưởng 100% mức bình quân lương đóng (dùng mức hiện hành) cho thời gian nghỉ và trợ cấp một lần bằng 2 lần mức lương cơ sở (cài đặt Payroll.BaseSalaryGov). Ngày nghỉ hưởng chế độ BHXH doanh nghiệp không trả lương. Cơ quan BHXH xét duyệt và chi trả số tiền chính thức.</div></div>

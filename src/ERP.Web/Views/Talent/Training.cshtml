@@ -1,0 +1,55 @@
+@model List<TrainingCourse>
+@{ ViewData["Title"] = "Đào tạo"; var course = ViewBag.Course as TrainingCourse; var can = (bool)ViewBag.CanEdit; var expiring = (List<TrainingAttendee>)ViewBag.Expiring; }
+<partial name="_HrNav" model="@("training")" />
+@if (expiring.Any())
+{
+    <div class="alert alert-warning py-2 small"><b>Chứng chỉ bắt buộc sắp / đã hết hạn:</b> @string.Join("; ", expiring.Select(a => $"{a.Employee?.FullName} – {a.Course?.Title} ({a.ExpiresOn:dd/MM/yyyy})"))</div>
+}
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card mb-3"><div class="card-header">Khóa đào tạo</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+            @foreach (var c in Model)
+            {
+                <tr class="@(course?.Id == c.Id ? "table-active" : "")"><td><a asp-action="Training" asp-route-id="@c.Id">@c.Code – @c.Title</a> @if (c.Mandatory) { <span class="badge bg-danger">Bắt buộc</span> }
+                    <div class="small text-muted">@c.FromDate.ToDate() – @c.ToDate.ToDate() · @c.Hours.ToQty() giờ · @c.Provider</div></td>
+                    <td class="num small">@c.Attendees.Count người<div>@c.Cost.ToMoney() đ</div></td></tr>
+            }
+            @if (!Model.Any()) { <tr><td class="text-center text-muted py-3">Chưa có khóa đào tạo.</td></tr> }
+        </tbody></table></div>
+        <div class="card-footer small text-muted">Năm @DateTime.Today.Year: @Model.Where(c => c.FromDate.Year == DateTime.Today.Year).Sum(c => c.Cost).ToMoney() đ · @Model.Where(c => c.FromDate.Year == DateTime.Today.Year).Sum(c => c.Hours * c.Attendees.Count(a => a.Status == TrainingStatus.Completed)).ToQty() giờ-người hoàn thành</div></div>
+        @if (can)
+        {
+            <div class="card"><div class="card-header">Tạo khóa đào tạo</div><div class="card-body">
+                <form asp-action="SaveCourse" method="post" class="row g-2">
+                    <div class="col-12"><input name="Title" class="form-control form-control-sm" placeholder="Tên khóa (VD: An toàn vận hành máy cưa)" required /></div>
+                    <div class="col-12"><input name="Provider" class="form-control form-control-sm" placeholder="Đơn vị đào tạo" /></div>
+                    <div class="col-6"><input name="FromDate" type="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+                    <div class="col-6"><input name="ToDate" type="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+                    <div class="col-4"><input name="Hours" type="number" step="0.5" value="8" class="form-control form-control-sm" title="Số giờ" /></div>
+                    <div class="col-4"><input name="Cost" type="number" step="100000" value="0" class="form-control form-control-sm" title="Chi phí" /></div>
+                    <div class="col-4"><input name="ValidMonths" type="number" min="0" value="0" class="form-control form-control-sm" title="Hiệu lực chứng chỉ (tháng)" /></div>
+                    <div class="col-12"><div class="form-check"><input class="form-check-input" type="checkbox" name="Mandatory" value="true" /><input type="hidden" name="Mandatory" value="false" /><label class="form-check-label small">Bắt buộc (an toàn lao động, nghiệp vụ...)</label></div></div>
+                    <div class="col-12"><select name="employeeIds" asp-items="ViewBag.Emps" multiple class="form-select form-select-sm" size="6" title="Học viên"></select></div>
+                    <div class="col-12"><button class="btn btn-sm btn-primary">Tạo khóa</button></div>
+                </form></div></div>
+        }
+    </div>
+    <div class="col-lg-7">
+        @if (course != null)
+        {
+            <div class="card"><div class="card-header">Học viên – @course.Title</div><div class="card-body p-0"><table class="table table-sm mb-0">
+                <thead><tr><th>Nhân viên</th><th>Kết quả</th><th>Điểm</th><th>Chứng chỉ</th><th>Hết hạn</th><th></th></tr></thead><tbody>
+                @foreach (var a in course.Attendees.OrderBy(a => a.Employee?.Code))
+                {
+                    <tr><td>@a.Employee?.Code <span class="small text-muted">@a.Employee?.FullName</span></td>
+                        <td><span class="badge @(a.Status == TrainingStatus.Completed ? "bg-success" : a.Status == TrainingStatus.Failed ? "bg-danger" : "bg-light text-dark border")">@a.Status.GetDisplayName()</span></td>
+                        <td>@a.Score</td><td class="small">@a.CertificateNo</td><td class="small">@a.ExpiresOn?.ToString("dd/MM/yyyy")</td>
+                        <td>@if (can) { <form asp-action="Result" asp-route-id="@a.Id" method="post" class="d-flex gap-1"><select name="status" asp-items="Html.GetEnumSelectList<TrainingStatus>()" class="form-select form-select-sm py-0"></select>
+                            <input name="score" type="number" min="0" max="100" value="@a.Score" class="form-control form-control-sm py-0" style="width:60px" /><input name="cert" value="@a.CertificateNo" class="form-control form-control-sm py-0" placeholder="Số chứng chỉ" style="width:110px" /><button class="btn btn-sm btn-light border py-0">Lưu</button></form> }</td></tr>
+                }
+            </tbody></table></div>
+            @if (can) { <div class="card-footer"><form asp-action="AddAttendee" asp-route-id="@course.Id" method="post" class="d-flex gap-1"><select name="employeeId" asp-items="ViewBag.Emps" class="form-select form-select-sm"></select><button class="btn btn-sm btn-light border text-nowrap">Thêm học viên</button></form></div> }</div>
+            <div class="small text-muted mt-2">Hoàn thành khóa học được ghi vào quá trình công tác của nhân viên.</div>
+        }
+    </div>
+</div>

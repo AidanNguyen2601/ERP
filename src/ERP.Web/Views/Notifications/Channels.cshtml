@@ -1,0 +1,38 @@
+@model List<AppUser>
+@{
+    ViewData["Title"] = "Kênh thông báo";
+    var log = (List<EmailOutbox>)ViewBag.Log;
+    (string V, string T)[] levels = { ("info", "Tất cả thông báo"), ("warning", "Từ mức Lưu ý trở lên"), ("danger", "Chỉ mức Khẩn") };
+}
+<form asp-action="SaveChannels" method="post">
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card mb-3"><div class="card-header"><i class="bi bi-microsoft-teams"></i> Microsoft Teams</div><div class="card-body row g-2">
+            <div class="col-12"><label class="form-label small">Incoming Webhook URL của kênh Teams</label><input name="teams" value="@ViewBag.Teams" class="form-control form-control-sm" placeholder="https://...webhook.office.com/..." autocomplete="off" /></div>
+            <div class="col-12"><label class="form-label small">Gửi</label><select name="teamsLevel" class="form-select form-select-sm">@foreach (var l in levels) { <option value="@l.V" selected="@(ViewBag.TeamsLevel == l.V)">@l.T</option> }</select></div>
+            <div class="col-12 small text-muted">Trong Teams: kênh → Connectors / Workflows → Incoming Webhook → sao chép URL. Tin gửi vào kênh chung, không theo từng người.</div>
+        </div></div>
+        <div class="card mb-3"><div class="card-header">Zalo Official Account</div><div class="card-body row g-2">
+            <div class="col-12"><label class="form-label small">Access token của OA @(ViewBag.ZaloSet ? "(đã lưu – để trống nếu không đổi)" : "")</label><input name="zaloToken" type="password" class="form-control form-control-sm" autocomplete="new-password" />
+                @if (ViewBag.ZaloSet) { <div class="form-check small"><input class="form-check-input" type="checkbox" name="clearZalo" value="true" /><input type="hidden" name="clearZalo" value="false" /><label class="form-check-label">Xóa token (tắt Zalo)</label></div> }</div>
+            <div class="col-12"><label class="form-label small">Gửi</label><select name="zaloLevel" class="form-select form-select-sm">@foreach (var l in levels) { <option value="@l.V" selected="@(ViewBag.ZaloLevel == l.V)">@l.T</option> }</select></div>
+            <div class="col-12"><label class="form-label small">Địa chỉ API</label><input name="zaloApi" value="@ViewBag.ZaloApi" class="form-control form-control-sm" /></div>
+            <div class="col-12 small text-muted">Dùng API tin nhắn tư vấn của Zalo OA: chỉ gửi được cho người đã quan tâm OA, theo Zalo user ID (nhập ở bảng bên phải). Access token OA hết hạn định kỳ – cần cập nhật khi Zalo báo lỗi token.</div>
+        </div></div>
+        <div class="card"><div class="card-body row g-2">
+            <div class="col-12"><label class="form-label small">Địa chỉ ứng dụng (để chèn đường dẫn vào tin nhắn)</label><input name="baseUrl" value="@ViewBag.BaseUrl" class="form-control form-control-sm" placeholder="https://erp.congty.vn" /></div>
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card mb-3"><div class="card-header">Zalo user ID của người dùng</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+            @foreach (var u in Model) { <tr><td class="small">@u.Username <span class="text-muted">@u.FullName</span></td><td><input name="zaloIds[@u.Id]" value="@u.ZaloUserId" class="form-control form-control-sm" /></td></tr> }
+        </tbody></table></div></div>
+        <button class="btn btn-primary">Lưu cấu hình</button>
+    </div>
+</div>
+</form>
+<form asp-action="TestChannels" method="post" class="mt-3"><button class="btn btn-sm btn-outline-primary">Gửi thử tới các kênh</button> <span class="small text-muted">(Teams: vào kênh; Zalo: tới Zalo ID của bạn)</span></form>
+<div class="card mt-3"><div class="card-header">Lần gửi gần đây</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+    @foreach (var m in log) { <tr><td class="small text-nowrap">@m.CreatedAt.ToString("dd/MM HH:mm")</td><td><span class="badge bg-info text-dark">@(m.Channel == "teams" ? "Teams" : "Zalo")</span> <span class="small">@m.ToAddresses</span></td><td class="small">@m.Subject</td><td><span class="badge @(m.Status == MailStatus.Sent ? "bg-success" : "bg-danger")">@m.Status.GetDisplayName()</span> <span class="small text-muted">@m.Error</span></td></tr> }
+    @if (!log.Any()) { <tr><td class="text-center text-muted py-3">Chưa có.</td></tr> }
+</tbody></table></div></div>

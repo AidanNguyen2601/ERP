@@ -1,8 +1,9 @@
 @model DashboardViewModel
+@inject ERP.Web.Services.PermissionService Perm
 @{
     ViewData["Title"] = "Trang chủ";
     var fin = User.SeesFinance();
-    var modules = Menu.VisibleGroups(User).ToList();
+    var modules = Menu.VisibleGroups(User, await Perm.DeniedKeysAsync(User)).ToList();
     var maxBar = Model.Monthly.Any() ? Math.Max(1, Model.Monthly.Max(m => Math.Max(m.Revenue, m.Cost))) : 1;
 }
 <div class="card mb-3"><div class="card-body">

@@ -14,6 +14,7 @@
         @if (Model.EInvoiceSentAt != null) { <span>Gửi lúc @Model.EInvoiceSentAt.Value.ToString("dd/MM/yyyy HH:mm")</span> }
         <span class="text-muted">@Model.EInvoiceMessage</span>
         @if (!string.IsNullOrEmpty(Model.EInvoiceXml)) { <a class="ms-auto" asp-action="EInvoiceXml" asp-route-id="@Model.Id"><i class="bi bi-filetype-xml"></i> Tải XML</a> }
+        @if (!string.IsNullOrEmpty(Model.ErrorNoticeXml)) { <a asp-action="ErrorNoticeXml" asp-route-id="@Model.Id"><i class="bi bi-filetype-xml"></i> Thông báo 04/SS-HĐĐT</a> }
     </div>
 }
 @if (Model.IsForeign) { <div class="alert alert-info py-2 small no-print">Hóa đơn ngoại tệ <b>@Model.CurrencyCode</b> – tỷ giá @Model.ExchangeRate.ToString("N2"): tổng @Model.FcTotal.ToString("N2") @Model.CurrencyCode, đã thanh toán @Model.FcPaid.ToString("N2"), còn @Model.FcOutstanding.ToString("N2") (giá trị ghi sổ VND @Model.Total.ToMoney())</div> }
@@ -40,6 +41,7 @@
     }
     @if (canAcc && Model.Status == InvoiceStatus.Issued && Model.PaidAmount == 0)
     {
+        @if (sales && Model.Status == InvoiceStatus.Issued && Model.PaidAmount == 0) { <form asp-action="Replace" asp-route-id="@Model.Id" method="post" class="d-inline" data-confirm="Lập hóa đơn thay thế cho hóa đơn này? Hóa đơn gốc sẽ bị hủy khi phát hành hóa đơn thay thế."><button class="btn btn-sm btn-outline-warning"><i class="bi bi-arrow-left-right"></i> Lập hóa đơn thay thế</button></form> }
         <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="d-flex gap-1" data-confirm="Hủy hóa đơn và đảo bút toán?"><input name="reason" class="form-control form-control-sm" placeholder="Lý do hủy" required /><button class="btn btn-sm btn-outline-danger text-nowrap">Hủy HĐ</button></form>
     }
 </div>

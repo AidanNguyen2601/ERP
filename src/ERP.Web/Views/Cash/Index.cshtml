@@ -48,6 +48,7 @@
     @if (!Model.Any()) { <tr><td colspan="10" class="text-center text-muted py-4">Không có phiếu trong kỳ.</td></tr> }
     </tbody>
     <tfoot><tr class="fw-bold"><td colspan="7" class="text-end">Cộng</td>
-        <td class="num">@Model.Where(v => v.Status == DocStatus.Posted && v.Type == CashVoucherType.Receipt).Sum(v => v.Amount).ToMoney()</td>
-        <td class="num">@Model.Where(v => v.Status == DocStatus.Posted && v.Type == CashVoucherType.Payment).Sum(v => v.Amount).ToMoney()</td><td></td></tr></tfoot>
+        <td class="num">@(((decimal)ViewBag.SumIn).ToMoney())</td>
+        <td class="num">@(((decimal)ViewBag.SumOut).ToMoney())</td><td></td></tr></tfoot>
 </table></div></div></div>
+<partial name="_PagerBag" />

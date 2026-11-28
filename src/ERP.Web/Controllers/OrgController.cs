@@ -88,7 +88,35 @@ public class OrgController : ErpControllerBase
     public async Task<IActionResult> Permissions()
     {
         ViewBag.Users = await Db.Users.Include(u => u.Branch).OrderBy(u => u.Role).ThenBy(u => u.Username).ToListAsync();
+        ViewBag.Overrides = await Db.PermissionOverrides.Include(o => o.User).OrderBy(o => o.MenuKey).ThenBy(o => o.Role).ToListAsync();
         return View();
+    }
+
+    /// <summary>Thêm ghi đè quyền: target = "role:Sales" hoặc "user:12"</summary>
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = AppRoles.Admin)]
+    public async Task<IActionResult> AddOverride(string target, string menuKey, PermissionMode mode, string? note, [FromServices] ERP.Web.Services.PermissionService perm)
+    {
+        if (Menu.Groups.SelectMany(g => g.Items).All(i => i.Key != menuKey)) throw new BusinessException("Chọn chức năng.");
+        string? role = null; int? userId = null;
+        if (target?.StartsWith("role:") == true && AppRoles.All.Contains(target[5..])) role = target[5..];
+        else if (target?.StartsWith("user:") == true && int.TryParse(target[5..], out var uid) && await Db.Users.AnyAsync(u => u.Id == uid)) userId = uid;
+        else throw new BusinessException("Chọn vai trò hoặc người dùng.");
+        if (role == AppRoles.Admin || (userId != null && await Db.Users.AnyAsync(u => u.Id == userId && u.Role == AppRoles.Admin))) throw new BusinessException("Không ghi đè quyền của Quản trị hệ thống.");
+        var o = await Db.PermissionOverrides.FirstOrDefaultAsync(x => x.MenuKey == menuKey && x.Role == role && x.UserId == userId);
+        if (o == null) Db.PermissionOverrides.Add(o = new PermissionOverride { MenuKey = menuKey, Role = role, UserId = userId });
+        o.Mode = mode; o.Note = note;
+        await Db.SaveChangesAsync();
+        perm.Invalidate();
+        Success("Đã lưu ghi đè quyền.");
+        return RedirectToAction(nameof(Permissions));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Roles = AppRoles.Admin)]
+    public async Task<IActionResult> DeleteOverride(int id, [FromServices] ERP.Web.Services.PermissionService perm)
+    {
+        var o = await Db.PermissionOverrides.FindAsync(id);
+        if (o != null) { Db.PermissionOverrides.Remove(o); await Db.SaveChangesAsync(); perm.Invalidate(); }
+        return RedirectToAction(nameof(Permissions));
     }
 }
 

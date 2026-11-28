@@ -13,7 +13,12 @@ public class WorkflowService
 {
     private readonly ErpDbContext _db;
     private readonly CurrentUser _user;
-    public WorkflowService(ErpDbContext db, CurrentUser user) { _db = db; _user = user; }
+    private readonly NotificationService _notify;
+    public WorkflowService(ErpDbContext db, CurrentUser user, NotificationService notify) { _db = db; _user = user; _notify = notify; }
+
+    private Task NotifyApproversAsync(ApprovalRequest req) =>
+        _notify.NotifyAsync(Current(req).Select(s => s.ApproverRole), Current(req).FirstOrDefault(s => s.ApproverUserId != null)?.ApproverUserId,
+            $"Chờ bạn duyệt: {req.DocType.GetDisplayName()} {req.DocNumber}", $"{req.Summary} · {req.Amount:N0} đ", "/Approvals", "warning", "Phê duyệt", req.RequestedById);
 
     public Task<bool> HasRulesAsync(ApprovalDocType type) => _db.ApprovalRules.AnyAsync(r => r.DocType == type && r.IsActive);
 
@@ -43,6 +48,7 @@ public class WorkflowService
         _db.ApprovalRequests.Add(req);
         await _db.SaveChangesAsync();
         await _db.LogAsync("Gửi duyệt", type.ToString(), type.GetDisplayName(), docId, number, $"{{\"Giá trị\":[null,{amount}],\"Số cấp\":[null,{req.Steps.Select(s => s.Level).Distinct().Count()}]}}");
+        await NotifyApproversAsync(req);
         return req;
     }
 
@@ -82,6 +88,9 @@ public class WorkflowService
         await _db.SaveChangesAsync();
         await _db.LogAsync(approve ? "Duyệt" : "Từ chối", req.DocType.ToString(), req.DocType.GetDisplayName(), req.DocId, req.DocNumber,
             comment == null ? null : System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object?[]> { ["Ý kiến"] = new object?[] { null, comment } }));
+        if (req.Status == ApprovalStatus.Pending) await NotifyApproversAsync(req);
+        else if (req.RequestedById != null)
+            await _notify.NotifyAsync(Array.Empty<string?>(), req.RequestedById, $"{req.DocType.GetDisplayName()} {req.DocNumber} {(req.Status == ApprovalStatus.Approved ? "đã được duyệt" : "bị từ chối")}", comment, null, req.Status == ApprovalStatus.Approved ? "success" : "danger", "Phê duyệt");
         return req.Status;
     }
 

@@ -1,0 +1,28 @@
+@model ServiceTicket
+@{ ViewData["Title"] = Model.Number + " – " + Model.Subject; var can = (bool)ViewBag.CanEdit; var w = ViewBag.Warranty as ERP.Web.Services.ServiceDesk.WarrantyInfo; var hist = (List<ServiceTicket>)ViewBag.History; }
+<partial name="_CrmNav" model="@("tickets")" />
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card mb-3"><div class="card-header d-flex justify-content-between"><span>@Model.Number · @Model.Category.GetDisplayName() · @Model.Channel</span><span class="badge @(Model.IsLate ? "bg-danger" : "bg-success")">@(Model.IsLate ? "Quá hạn SLA" : "Trong hạn SLA")</span></div><div class="card-body">
+            <h6>@Model.Subject</h6>
+            <div class="small mb-2"><a asp-controller="Crm" asp-action="Customer" asp-route-id="@Model.PartnerId">@Model.Partner?.Name</a> · @Model.Partner?.Phone · tạo @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm") · hạn @Model.DueAt.ToString("dd/MM HH:mm")
+                @if (Model.FirstResponseAt != null) { <span>· phản hồi đầu @Model.FirstResponseAt.Value.ToString("dd/MM HH:mm")</span> } @if (Model.ResolvedAt != null) { <span>· xong @Model.ResolvedAt.Value.ToString("dd/MM HH:mm")</span> }</div>
+            @if (Model.Item != null) { <div class="small">Sản phẩm: @Model.Item.Code @Model.Item.Name @Model.SerialNo</div> }
+            @if (w != null) { <div class="alert @(w.InWarranty ? "alert-success" : "alert-warning") py-1 px-2 small mt-2">@w.Message @if (w.Invoice != null) { <a asp-controller="Invoices" asp-action="Details" asp-route-id="@w.Invoice.Id">Xem hóa đơn</a> }</div> }
+            <div class="mt-2" style="white-space:pre-wrap">@Model.Description</div>
+            @if (Model.Resolution != null) { <hr /><div class="small text-muted">Kết quả xử lý</div><div style="white-space:pre-wrap">@Model.Resolution</div> }
+        </div></div>
+        @if (hist.Any()) { <div class="card"><div class="card-header">Yêu cầu trước của khách</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>@foreach (var h in hist) { <tr><td><a asp-action="Ticket" asp-route-id="@h.Id">@h.Number</a></td><td>@h.Subject</td><td class="small">@h.Status.GetDisplayName()</td><td class="small">@h.CreatedAt.ToDate()</td></tr> }</tbody></table></div></div> }
+    </div>
+    @if (can)
+    {
+        <div class="col-lg-5"><div class="card"><div class="card-header">Xử lý</div><div class="card-body"><form asp-action="UpdateTicket" asp-route-id="@Model.Id" method="post" class="row g-2">
+            <div class="col-6"><label class="form-label small">Trạng thái</label><select name="status" asp-items="Html.GetEnumSelectList<TicketStatus>()" class="form-select form-select-sm"></select></div>
+            <div class="col-6"><label class="form-label small">Ưu tiên</label><select name="priority" asp-items="Html.GetEnumSelectList<TicketPriority>()" class="form-select form-select-sm"></select></div>
+            <div class="col-12"><label class="form-label small">Người xử lý</label><select name="assigneeId" asp-items="ViewBag.Users" class="form-select form-select-sm"><option value="">--</option></select></div>
+            <div class="col-12"><label class="form-label small">Kết quả xử lý</label><textarea name="resolution" rows="4" class="form-control form-control-sm">@Model.Resolution</textarea></div>
+            <div class="col-12"><button class="btn btn-sm btn-primary">Cập nhật</button></div></form>
+            <script>document.querySelector('[name=status]').value='@((int)Model.Status)';document.querySelector('[name=priority]').value='@((int)Model.Priority)';document.querySelector('[name=assigneeId]').value='@Model.AssigneeId';</script>
+        </div></div></div>
+    }
+</div>

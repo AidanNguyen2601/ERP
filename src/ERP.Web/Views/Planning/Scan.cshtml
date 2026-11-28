@@ -1,0 +1,54 @@
+@model Stocktake
+@{ ViewData["Title"] = "Kiểm kê bằng điện thoại – " + Model.Number; var done = Model.Lines.Count(l => l.CountedQty != null); }
+<div class="card" style="max-width:560px;margin:auto"><div class="card-body">
+    <div class="d-flex justify-content-between"><b>@Model.Number · @Model.Warehouse?.Name</b><span id="prog">@done/@Model.Lines.Count dòng</span></div>
+    @if (Model.Status != StocktakeStatus.Counting) { <div class="alert alert-warning mt-2">Đợt kiểm kê đã @Model.Status.GetDisplayName().ToLower() – không đếm thêm được.</div> }
+    else
+    {
+        <div class="mt-2"><video id="cam" playsinline muted style="width:100%;max-height:240px;background:#000;display:none;border-radius:6px"></video>
+            <button type="button" id="camBtn" class="btn btn-outline-secondary w-100 mb-2"><i class="bi bi-upc-scan"></i> Quét bằng camera</button></div>
+        <form id="f" autocomplete="off">
+            @Html.AntiForgeryToken()
+            <input id="code" class="form-control form-control-lg mb-2" placeholder="Mã vạch / mã hàng (máy quét hoặc gõ)" autofocus inputmode="text" />
+            <div class="d-flex gap-2 mb-2"><input id="qty" type="number" step="0.001" min="0" value="1" class="form-control form-control-lg" style="max-width:130px" />
+                <div class="form-check align-self-center"><input class="form-check-input" type="checkbox" id="replace" /><label class="form-check-label" for="replace">Ghi đè (không cộng dồn)</label></div></div>
+            <button class="btn btn-primary btn-lg w-100">Ghi nhận</button>
+        </form>
+        <div id="msg" class="alert mt-2 d-none"></div>
+    }
+    <a class="btn btn-link px-0" asp-controller="Stock" asp-action="Stocktake" asp-route-id="@Model.Id">‹ Bảng kiểm kê đầy đủ</a>
+</div></div>
+<div class="card mt-3" style="max-width:560px;margin:auto"><div class="card-header">Gần đây</div><ul class="list-group list-group-flush small" id="log"></ul></div>
+@section Scripts {
+<script>
+(function () {
+  var f = document.getElementById('f'); if (!f) return;
+  var code = document.getElementById('code'), qty = document.getElementById('qty'), rep = document.getElementById('replace'), msg = document.getElementById('msg'), log = document.getElementById('log');
+  var tok = f.querySelector('input[name=__RequestVerificationToken]').value;
+  function send(c) {
+    var body = new URLSearchParams({ __RequestVerificationToken: tok, code: c, qty: qty.value || '1', replace: rep.checked });
+    fetch('@Url.Action("ScanCount", new { id = Model.Id })', { method: 'POST', body: body, credentials: 'same-origin' }).then(r => r.json()).then(function (d) {
+      msg.className = 'alert mt-2 ' + (d.ok ? 'alert-success' : 'alert-danger'); msg.textContent = d.message;
+      if (d.ok) { document.getElementById('prog').textContent = d.done + '/' + d.total + ' dòng'; var li = document.createElement('li'); li.className = 'list-group-item'; li.textContent = new Date().toLocaleTimeString() + ' – ' + d.message; log.prepend(li); if (navigator.vibrate) navigator.vibrate(60); }
+      else if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+      code.value = ''; qty.value = 1; code.focus();
+    }).catch(function () { msg.className = 'alert mt-2 alert-danger'; msg.textContent = 'Mất kết nối – thử lại.'; });
+  }
+  f.addEventListener('submit', function (e) { e.preventDefault(); if (code.value.trim()) send(code.value.trim()); });
+  // Camera: dùng BarcodeDetector của trình duyệt (Chrome / Edge Android); không hỗ trợ thì dùng máy quét hoặc gõ tay
+  var btn = document.getElementById('camBtn'), video = document.getElementById('cam');
+  if (!('BarcodeDetector' in window)) { btn.disabled = true; btn.textContent = 'Trình duyệt không hỗ trợ quét camera – dùng máy quét hoặc gõ mã'; return; }
+  var det = new BarcodeDetector(), last = '', lastAt = 0;
+  btn.addEventListener('click', async function () {
+    try {
+      var s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      video.srcObject = s; video.style.display = 'block'; await video.play(); btn.style.display = 'none';
+      (async function loop() {
+        try { var r = await det.detect(video); if (r.length) { var v = r[0].rawValue, now = Date.now(); if (v !== last || now - lastAt > 2500) { last = v; lastAt = now; send(v); } } } catch (e) { }
+        requestAnimationFrame(loop);
+      })();
+    } catch (e) { msg.className = 'alert mt-2 alert-danger'; msg.textContent = 'Không mở được camera: ' + e.message; }
+  });
+})();
+</script>
+}

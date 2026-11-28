@@ -67,6 +67,7 @@ public class CrmController : ErpControllerBase
         var l = id == null ? new Lead { OwnerId = Me } : await Db.Leads.FindAsync(id);
         if (l == null) return NotFound();
         ViewBag.Owners = await OwnersAsync(l.OwnerId);
+        ViewBag.Campaigns = new SelectList(await Db.Campaigns.OrderByDescending(x => x.FromDate).Select(x => new { x.Id, Name = x.Code + " – " + x.Name }).ToListAsync(), "Id", "Name", l.CampaignId);
         return View(l);
     }
 
@@ -75,10 +76,11 @@ public class CrmController : ErpControllerBase
     {
         if (!CanEdit) return Denied();
         ModelState.Remove(nameof(model.Code));
-        if (!ModelState.IsValid) { ViewBag.Owners = await OwnersAsync(model.OwnerId); return View("LeadForm", model); }
+        if (!ModelState.IsValid) { ViewBag.Owners = await OwnersAsync(model.OwnerId); ViewBag.Campaigns = new SelectList(await Db.Campaigns.Select(x => new { x.Id, Name = x.Code + " – " + x.Name }).ToListAsync(), "Id", "Name", model.CampaignId); return View("LeadForm", model); }
         var l = model.Id == 0 ? new Lead() : await Db.Leads.FindAsync(model.Id) ?? new Lead();
         if (l.Id == 0) { Db.Leads.Add(l); l.Code = await DocNumbers.NextAsync(Db.Leads.Select(x => x.Code), "KHTN", DateTime.Today); }
         l.Name = model.Name.Trim(); l.ContactName = model.ContactName; l.ContactTitle = model.ContactTitle; l.Phone = model.Phone; l.Email = model.Email; l.Address = model.Address;
+        l.CampaignId = model.CampaignId;
         l.Source = model.Source; l.OwnerId = model.OwnerId; l.EstimatedValue = model.EstimatedValue; l.Note = model.Note;
         if (l.Id != 0 && l.Stage != LeadStage.Converted) l.Stage = model.Stage;
         await Db.SaveChangesAsync();

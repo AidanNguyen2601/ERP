@@ -25,6 +25,7 @@
     <tr><td>Thu nhập tính thuế</td><td class="n">@Model.TaxableIncome.ToMoney()</td></tr>
     <tr><td>Thuế TNCN</td><td class="n">-@Model.Pit.ToMoney()</td></tr>
     @if (Model.OtherDeduction > 0) { <tr><td>Khấu trừ khác</td><td class="n">-@Model.OtherDeduction.ToMoney()</td></tr> }
+    @if (Model.Advance > 0) { <tr><td>Tạm ứng đã nhận trong kỳ</td><td class="n">-@Model.Advance.ToMoney()</td></tr> }
     <tr class="b"><td>THỰC LĨNH</td><td class="n">@Model.Net.ToMoney()</td></tr>
 </table>
 <p style="margin-top:24px"><button onclick="window.print()">In phiếu lương</button></p>

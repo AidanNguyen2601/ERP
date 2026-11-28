@@ -424,6 +424,7 @@ public partial class Item
     [Display(Name = "Số ngày cảnh báo trước khi hết hạn")] public int ExpiryAlertDays { get; set; } = 30;
     [Display(Name = "Tính giá xuất kho")] public CostMethod CostMethod { get; set; }
     [StringLength(50)][Display(Name = "Mã vạch")] public string? Barcode { get; set; }
+    [Range(0, 120)][Display(Name = "Bảo hành (tháng)")] public int WarrantyMonths { get; set; }
 }
 
 public class StockLot

@@ -1,0 +1,49 @@
+@model List<Appraisal>
+@{ ViewData["Title"] = "Đánh giá KPI"; var cycles = (List<AppraisalCycle>)ViewBag.Cycles; var cycle = ViewBag.Cycle as AppraisalCycle; var can = (bool)ViewBag.CanEdit; }
+<partial name="_HrNav" model="@("kpi")" />
+<div class="toolbar">
+    @foreach (var c in cycles) { <a class="btn btn-sm @(cycle?.Id == c.Id ? "btn-secondary" : "btn-light border")" asp-action="Appraisals" asp-route-cycleId="@c.Id">@c.Name @(c.IsClosed ? "🔒" : "")</a> }
+</div>
+<div class="row g-3">
+    <div class="col-lg-8">
+        @if (cycle != null)
+        {
+            <div class="card mb-3"><div class="card-header">@cycle.Name · @cycle.FromDate.ToDate() – @cycle.ToDate.ToDate() · thưởng theo xếp loại: @cycle.BonusPct (% lương cơ bản)</div><div class="card-body p-0"><table class="table table-sm mb-0">
+                <thead><tr><th>Nhân viên</th><th>Phòng ban</th><th class="num">Điểm</th><th>Xếp loại</th><th>Trạng thái</th><th>Người đánh giá</th><th></th></tr></thead><tbody>
+                @foreach (var a in Model)
+                {
+                    <tr><td>@a.Employee?.Code <span class="small text-muted">@a.Employee?.FullName</span></td><td class="small">@a.Employee?.Department</td><td class="num">@(a.Total > 0 ? a.Total.ToString("0.#") : "")</td>
+                        <td>@if (a.Rating != null) { <span class="badge @(a.Rating == "A" ? "bg-success" : a.Rating == "B" ? "bg-info text-dark" : a.Rating == "C" ? "bg-warning text-dark" : "bg-danger")">@a.Rating</span> }</td>
+                        <td class="small">@a.Status.GetDisplayName()</td><td class="small">@a.Reviewer</td><td><a asp-action="Appraisal" asp-route-id="@a.Id">@(can && a.Status != AppraisalStatus.Approved && !cycle.IsClosed ? "Chấm điểm" : "Xem")</a></td></tr>
+                }
+            </tbody></table></div>
+            <div class="card-footer small d-flex flex-wrap gap-3">@foreach (var g in Model.Where(a => a.Rating != null).GroupBy(a => a.Rating).OrderBy(g => g.Key)) { <span>Loại @g.Key: <b>@g.Count()</b></span> } <span class="text-muted">Đã chốt @Model.Count(a => a.Status == AppraisalStatus.Approved)/@Model.Count</span></div></div>
+            @if (can && !cycle.IsClosed)
+            {
+                <form asp-action="PushBonus" method="post" class="d-flex gap-1 align-items-center" data-confirm="Chuyển thưởng hiệu suất của các phiếu đã chốt vào lương và khóa kỳ đánh giá?">
+                    <input type="hidden" name="cycleId" value="@cycle.Id" /><span class="small">Chuyển thưởng vào lương tháng</span>
+                    <input name="month" type="number" min="1" max="12" value="@DateTime.Today.Month" class="form-control form-control-sm" style="width:70px" />
+                    <input name="year" type="number" value="@DateTime.Today.Year" class="form-control form-control-sm" style="width:90px" /><button class="btn btn-sm btn-success">Chuyển thưởng & khóa kỳ</button></form>
+            }
+        }
+        else { <div class="alert alert-light border">Chưa có kỳ đánh giá.</div> }
+    </div>
+    @if (can)
+    {
+        <div class="col-lg-4"><div class="card"><div class="card-header">Tạo kỳ đánh giá</div><div class="card-body">
+            <form asp-action="SaveCycle" method="post" class="row g-2">
+                <div class="col-12"><input name="name" class="form-control form-control-sm" placeholder="VD: Đánh giá năm @DateTime.Today.Year" required /></div>
+                <div class="col-6"><input name="fromDate" type="date" value="@(new DateTime(DateTime.Today.Year, 1, 1).Iso())" class="form-control form-control-sm" /></div>
+                <div class="col-6"><input name="toDate" type="date" value="@(new DateTime(DateTime.Today.Year, 12, 31).Iso())" class="form-control form-control-sm" /></div>
+                <div class="col-12"><label class="form-label small">Tiêu chí – mỗi dòng: Tên | trọng số (%) | chỉ tiêu</label>
+                    <textarea name="criteria" rows="5" class="form-control form-control-sm">Hoàn thành khối lượng công việc | 40 | Đạt 100% kế hoạch
+Chất lượng công việc | 30 | Tỷ lệ lỗi dưới 2%
+Chấp hành nội quy, an toàn | 15 | Không vi phạm
+Tinh thần hợp tác, cải tiến | 15 | Có đề xuất cải tiến</textarea></div>
+                <div class="col-12"><input name="bonusPct" value="A:100;B:50;C:0;D:0" class="form-control form-control-sm" title="Thưởng theo xếp loại (% lương cơ bản)" /></div>
+                <div class="col-12"><button class="btn btn-sm btn-primary">Tạo kỳ cho toàn bộ nhân viên</button></div>
+            </form>
+            <div class="small text-muted mt-2">Xếp loại: A ≥ 90 điểm, B ≥ 75, C ≥ 50, D dưới 50. Điểm tổng = Σ điểm tiêu chí × trọng số.</div>
+        </div></div></div>
+    }
+</div>

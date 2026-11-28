@@ -5605,3 +5605,563 @@ mới chưa liên hệ	new, not yet contacted
 . VD thưởng chuyên cần:	. E.g. attendance bonus:
 Sốt, có giấy khám	Fever, with medical certificate
 Du lịch gia đình	Family trip
+(không phải máy người dùng) và được kiểm tra lại bằng RESTORE VERIFYONLY.	(not the user's computer) and is re-checked with RESTORE VERIFYONLY.
+(đã kiểm tra tệp)	(file verified)
+Chưa có lần sao lưu nào.	No backups yet.
+Chưa đọc	Unread
+Chờ bạn duyệt: {0} {1}	Awaiting your approval: {0} {1}
+Cấu hình	Configuration
+Gửi thêm email khi có thông báo (chờ duyệt, kết quả duyệt...)	Also send an email for notifications (approval requests, results...)
+Không có thông báo.	No notifications.
+Lịch sử sao lưu	Backup history
+Phê duyệt	Approval
+Phục hồi: dùng RESTORE DATABASE từ tệp .bak trên máy chủ SQL. Việc xóa tệp cũ cần làm ở máy chủ SQL.	Restore: use RESTORE DATABASE from the .bak file on the SQL server. Old files must be deleted on the SQL server.
+Sao lưu cơ sở dữ liệu	Back up database
+Sao lưu dữ liệu	Data backup
+Sao lưu ngay	Back up now
+Sao lưu thất bại:	Backup failed:
+Thành công	Success
+Thông báo	Notifications
+Thư mục không hợp lệ.	Invalid folder.
+Thư mục trên máy chủ SQL	Folder on the SQL server
+Thời gian chạy	Duration
+Tên cơ sở dữ liệu hoặc đường dẫn không hợp lệ.	Invalid database name or path.
+Tệp .bak được ghi trên	The .bak file is written on the
+Tự động	Automatic
+Tự động sao lưu hằng ngày lúc (giờ, -1 = tắt)	Automatic daily backup at (hour, -1 = off)
+máy chủ SQL Server	SQL Server machine
+{0} · {1} đ	{0} · {1} VND
+Đánh dấu tất cả đã đọc	Mark all as read
+Đã kiểm tra	Verified
+Đã lưu cấu hình sao lưu.	Backup configuration saved.
+Đã sao lưu nhưng kiểm tra tệp thất bại:	Backed up, but file verification failed:
+Đã sao lưu: {0}	Backed up: {0}
+Khoản lương của nhân viên	Employee salary component
+Thưởng	Bonus
+(Teams: vào kênh; Zalo: tới Zalo ID của bạn)	(Teams: to the channel; Zalo: to your Zalo ID)
+(chưa có)	(none)
+(mở được nhưng không thêm, sửa, xóa, duyệt). Ghi đè theo người dùng được ưu tiên hơn theo vai trò. Không áp dụng cho Quản trị hệ thống.	(can open but not add, edit, delete or approve). User overrides take precedence over role overrides. Does not apply to System administrators.
+(đã lưu – để trống nếu không đổi)	(saved – leave blank to keep)
+(ẩn khỏi menu, chặn mở) hoặc	(hidden from the menu, blocked) or
+-- Chức năng --	-- Function --
+-- Vai trò / người dùng --	-- Role / user --
+Access token của OA {0}	OA access token {0}
+Bạn chỉ được	You may only
+Bảng và cột mới trong mô hình dữ liệu được tạo tự động khi khởi động; các thay đổi khác (chỉ mục, dữ liệu, ràng buộc) đi qua migration ở đây, mỗi bước chạy một lần trong transaction. Nên sao lưu trước khi hoàn tác.	New tables and columns in the data model are created automatically at startup; other changes (indexes, data, constraints) go through the migrations here, each step running once in a transaction. Back up before rolling back.
+Chưa có ghi đè – quyền theo vai trò như bảng trên.	No overrides – permissions follow the roles in the table above.
+Chưa cấu hình Teams webhook.	Teams webhook is not configured.
+Chưa cấu hình access token Zalo OA.	Zalo OA access token is not configured.
+Chưa cấu hình kênh nào (hoặc bạn chưa có Zalo ID).	No channel is configured (or you have no Zalo ID).
+Chưa áp dụng	Not applied
+Chỉ mục cho phân trang danh sách: đơn bán, đơn mua, phiếu thu chi, đối tác, hàng hóa	Indexes for list paging: sales orders, purchase orders, cash vouchers, partners, items
+Chỉ mục hiệu năng: sổ cái theo tài khoản, hóa đơn theo hạn thanh toán, yêu cầu duyệt, nhật ký thao tác	Performance indexes: ledger by account, invoices by due date, approval requests, audit log
+Chỉ mức Khẩn	Urgent only
+Chỉ xem	Read only
+Chỉ xem (không thêm / sửa / xóa / duyệt)	Read only (no add / edit / delete / approve)
+Chọn chức năng.	Select a function.
+Chọn vai trò hoặc người dùng.	Select a role or a user.
+Chức năng	Function
+Có trong cơ sở dữ liệu nhưng không có trong phiên bản phần mềm này (phần mềm cũ hơn dữ liệu?)	Present in the database but not in this software version (software older than the data?)
+Cộng toàn bộ kết quả lọc (không gồm HĐ hủy)	Total of all filtered results (excluding cancelled invoices)
+Dùng API tin nhắn tư vấn của Zalo OA: chỉ gửi được cho người đã quan tâm OA, theo Zalo user ID (nhập ở bảng bên phải). Access token OA hết hạn định kỳ – cần cập nhật khi Zalo báo lỗi token.	Uses the Zalo OA consultation message API: messages can only be sent to people who follow the OA, by Zalo user ID (enter them in the table on the right). The OA access token expires periodically – update it when Zalo reports a token error.
+Ghi đè phân quyền	Permission override
+Ghi đè quyền theo vai trò / người dùng	Permission overrides by role / user
+Giữ tệp sao lưu (ngày, 0 = giữ tất cả)	Keep backup files (days, 0 = keep all)
+Gửi	Send
+Gửi bởi {0} lúc {1}	Sent by {0} at {1}
+Gửi thử	Test send
+Gửi thử tới các kênh	Send a test to the channels
+Hoàn tác bước mới nhất	Roll back latest step
+Hoàn tác {0} lỗi: {1}	Rollback of {0} failed: {1}
+Hoàn tác:	Rollback:
+Hộp thư đi (30 bản gần nhất: email, Teams, Zalo)	Outbox (latest 30: email, Teams, Zalo)
+Incoming Webhook URL của kênh Teams	Incoming Webhook URL of the Teams channel
+Không có migration nào cần áp dụng.	No migrations need to be applied.
+Không có migration nào để hoàn tác.	No migrations to roll back.
+Không có tệp nào quá hạn. Luôn giữ bản sao lưu thành công mới nhất.	No expired files. The latest successful backup is always kept.
+Không ghi đè quyền của Quản trị hệ thống.	System administrator permissions cannot be overridden.
+Không truy cập	No access
+Kênh thông báo	Notification channels
+Kênh thông báo (Teams, Zalo)	Notification channels (Teams, Zalo)
+Lần gửi gần đây	Recent sends
+Lần xóa gần nhất không thành công: {0}	Last deletion failed: {0}
+Migration lỗi:	Migration failed:
+Migration {0} không có lệnh hoàn tác.	Migration {0} has no rollback commands.
+Mức	Level
+Phiên bản cơ sở dữ liệu	Database version
+Phiên bản hiện tại:	Current version:
+Phục hồi: dùng RESTORE DATABASE từ tệp .bak trên máy chủ SQL. Tệp cũ được xóa theo số ngày giữ (cần quyền sysadmin; nếu không có, dùng kịch bản hiện ra bên dưới).	Restore: use RESTORE DATABASE from the .bak file on the SQL server. Old files are deleted per the retention days (requires sysadmin; otherwise use the script shown below).
+Số dòng / trang:	Rows / page:
+Teams trả về {0}: {1}	Teams returned {0}: {1}
+Teams webhook phải là địa chỉ https hợp lệ.	The Teams webhook must be a valid https address.
+Thu hẹp quyền gốc của vai trò trên từng chức năng:	Narrow a role's base permissions on each function:
+Thông báo thử từ ERP	Test notification from ERP
+Tất cả thông báo	All notifications
+Tệp quá hạn giữ ({0})	Files past retention ({0})
+Từ mức Lưu ý trở lên	Notice level and above
+Xóa token (tắt Zalo)	Clear token (disable Zalo)
+Xóa tệp quá hạn	Delete expired files
+Zalo trả về {0} / mã {1}: {2}	Zalo returned {0} / code {1}: {2}
+Zalo user ID của người dùng	Users' Zalo user IDs
+[Mở trong ERP]({0})	[Open in ERP]({0})
+chức năng này – không được thêm, sửa, xóa hoặc duyệt.	this function – you cannot add, edit, delete or approve.
+có hoàn tác	reversible
+không hoàn tác	not reversible
+{0} / {1} dòng	{0} / {1} rows
+Áp dụng {0} bước còn thiếu	Apply {0} pending steps
+Đã hoàn tác	Rolled back
+Đã hoàn tác migration {0}. Bấm "Áp dụng" để chạy lại.	Migration {0} rolled back. Click "Apply" to run it again.
+Đã lưu cấu hình kênh thông báo.	Notification channel settings saved.
+Đã lưu ghi đè quyền.	Permission override saved.
+Đã xóa thủ công	Deleted manually
+Đã xóa tệp	File deleted
+Đã xóa {0} tệp sao lưu quá hạn.	Deleted {0} expired backup files.
+Đã xóa {0} tệp; không xóa tiếp được (cần quyền sysadmin trên SQL Server): {1}	Deleted {0} files; could not delete more (requires sysadmin on SQL Server): {1}
+Đã áp dụng	Applied
+Đã áp dụng:	Applied:
+Đã đánh dấu {0} tệp là đã xóa.	Marked {0} files as deleted.
+Địa chỉ API	API address
+Địa chỉ ứng dụng (để chèn đường dẫn vào tin nhắn)	Application address (to insert links into messages)
+Nếu tài khoản ứng dụng không có quyền sysadmin, quản trị SQL chạy kịch bản sau rồi bấm nút Đã xóa thủ công:	If the application account has no sysadmin rights, the SQL administrator runs the script below and then clicks "Deleted manually":
+Trong Teams: kênh → Connectors / Workflows → Incoming Webhook → sao chép URL. Tin gửi vào kênh chung, không theo từng người.	In Teams: channel → Connectors / Workflows → Incoming Webhook → copy the URL. Messages go to a shared channel, not to individuals.
+(dải hóa đơn hết số)	(invoice number range exhausted)
+(dữ liệu XML không đúng quy định)	(XML data does not follow the specification)
+(hóa đơn cần thao tác không tồn tại)	(the invoice to process does not exist)
+(không phát hành được hóa đơn)	(the invoice could not be issued)
+(lô vượt số lượng cho phép)	(batch exceeds the allowed size)
+(mẫu số, ký hiệu không hợp lệ)	(invalid form / series)
+(trạng thái hóa đơn không cho phép thao tác)	(the invoice status does not allow this action)
+(tài khoản đăng nhập sai hoặc không có quyền)	(wrong login or no permission)
+(tên đăng nhập không đúng)	(wrong username)
+100% × {0} × {1} tháng + trợ cấp một lần 2 × {2}	100% × {0} × {1} months + lump-sum allowance 2 × {2}
+BHXH, thuế TNCN & tạm ứng	Social insurance, PIT & advances
+Báo tăng / giảm lao động BHXH (D02-LT)	Social insurance labor increase / decrease (D02-LT)
+Báo tăng giảm D02-LT	D02-LT increase / decrease
+BẢN THUYẾT MINH BÁO CÁO TÀI CHÍNH (B09-DN)	NOTES TO THE FINANCIAL STATEMENTS (B09-DN)
+Bảng lương tháng {0}/{1} đã hạch toán – chọn kỳ trừ lương sau.	Payroll {0}/{1} is already posted – choose a later deduction period.
+Bị thay thế bởi hóa đơn {0}	Replaced by invoice {0}
+Chi phí bán hàng và chi phí quản lý doanh nghiệp	Selling and general administrative expenses
+Chi phí khấu hao TSCĐ (quản lý)	Depreciation of fixed assets (administration)
+Chi phí thuế thu nhập doanh nghiệp hiện hành	Current corporate income tax expense
+Chi tiết theo cá nhân	Details by individual
+Chi tạm ứng lương	Salary advance payment
+Chi từ	Paid from
+Chi từ quỹ / tài khoản	Paid from cash / account
+Chuẩn mực và chế độ kế toán áp dụng	Accounting standards and regime applied
+Chưa có bảng lương đã hạch toán trong kỳ {0} – {1}.	No posted payroll in the period {0} – {1}.
+Chưa có tạm ứng cho kỳ này.	No advances for this period.
+Chưa nhập địa chỉ API nhà cung cấp hóa đơn điện tử (Cài đặt → EInvoice.Url).	The e-invoice provider API address is not set (Settings → EInvoice.Url).
+Chế độ BHXH cho loại nghỉ: nghỉ ốm do BHXH chi trả (doanh nghiệp không trả lương), thêm loại nghỉ thai sản	Social insurance benefit for leave types: sick leave paid by social insurance (not by the company), add maternity leave type
+Chế độ kế toán doanh nghiệp nhỏ và vừa theo Thông tư 133/2016/TT-BTC.	SME accounting regime under Circular 133/2016/TT-BTC.
+Chế độ kế toán doanh nghiệp theo Thông tư 99/2025/TT-BTC (thay thế Thông tư 200/2014/TT-BTC), áp dụng chuẩn mực kế toán Việt Nam.	Enterprise accounting regime under Circular 99/2025/TT-BTC (replacing Circular 200/2014/TT-BTC), applying Vietnamese Accounting Standards.
+Chế độ ốm đau, thai sản	Sickness and maternity benefits
+Chỉ dùng cho VNPT	VNPT only
+Chỉ lập hóa đơn thay thế cho hóa đơn bán ra.	Replacement invoices are only for sales invoices.
+Chỉ lập phiếu	Create only
+Chỉ thay thế hóa đơn đã phát hành.	Only issued invoices can be replaced.
+Chỉ tiêu tờ khai – kỳ {0} – {1}	Declaration indicators – period {0} – {1}
+Chọn nhân viên	Select an employee
+Chọn quỹ / tài khoản chi.	Select the paying cash / bank account.
+Chức vụ / chức danh	Position / title
+Cuối kỳ	Closing
+Cuối kỳ / kỳ này	Closing / this period
+Cá nhân cư trú	Resident individuals
+Cá nhân không cư trú	Non-resident individuals
+Các chính sách kế toán áp dụng	Accounting policies applied
+Các khoản giảm trừ doanh thu (hàng bán trả lại, giảm giá)	Revenue deductions (sales returns, allowances)
+Các loại thuế khác	Other taxes
+Các đối tượng khác ({0})	Other parties ({0})
+Căn cứ	Basis
+Cộng vốn chủ sở hữu	Total owners' equity
+DANH SÁCH CHI LƯƠNG THÁNG {0}/{1}	SALARY PAYMENT LIST {0}/{1}
+DANH SÁCH LAO ĐỘNG THAM GIA BHXH, BHYT, BHTN (D02-LT)	LIST OF EMPLOYEES PARTICIPATING IN SOCIAL, HEALTH, UNEMPLOYMENT INSURANCE (D02-LT)
+DANH SÁCH ĐỀ NGHỊ GIẢI QUYẾT HƯỞNG CHẾ ĐỘ ỐM ĐAU, THAI SẢN (01B-HSB)	LIST OF SICKNESS AND MATERNITY BENEFIT CLAIMS (01B-HSB)
+Doanh thu ghi nhận khi chuyển giao phần lớn rủi ro và lợi ích cho người mua (khi xuất hóa đơn). Giao dịch ngoại tệ quy đổi theo tỷ giá thực tế, đánh giá lại số dư cuối kỳ.	Revenue is recognized when most risks and rewards pass to the buyer (on invoicing). Foreign currency transactions are translated at actual rates and balances are revalued at period end.
+Doanh thu khác	Other revenue
+Doanh thu và chi phí hoạt động tài chính	Financial income and expenses
+Giảm hẳn – nghỉ việc	Permanent decrease – resigned
+Giảm trong kỳ	Decrease in period
+Hàng gửi bán	Goods on consignment
+Hàng tồn kho (giá gốc)	Inventories (at cost)
+Hàng tồn kho ghi nhận theo giá gốc, giá xuất kho theo phương pháp bình quân gia quyền (hoặc FIFO với mặt hàng khai báo), hạch toán theo phương pháp kê khai thường xuyên.	Inventories are stated at cost; issues are valued at weighted average cost (or FIFO for designated items) under the perpetual method.
+Hóa đơn gốc đã có hóa đơn điều chỉnh – không thay thế được.	The original invoice already has an adjustment invoice – it cannot be replaced.
+Hóa đơn đã thu tiền một phần – hãy hủy phiếu thu trước hoặc dùng hóa đơn điều chỉnh.	The invoice is partly collected – cancel the receipt first or use an adjustment invoice.
+I. Tăng	I. Increase
+II. Giảm	II. Decrease
+Khi chi: Nợ 3341 / Có TK tiền của quỹ. Bảng lương kỳ đã chọn tự trừ khoản tạm ứng vào thực lĩnh (không hạch toán lại). Tổng tạm ứng mỗi kỳ tối đa theo cài đặt Payroll.AdvanceMaxPct (mặc định 50% lương cơ bản).	On payment: Dr 3341 / Cr the cash account. The selected period's payroll deducts the advance from net pay automatically (no second entry). Total advances per period are capped by the Payroll.AdvanceMaxPct setting (default 50% of base salary).
+Không có biến động lao động trong tháng.	No labor changes this month.
+Không có đơn nghỉ hưởng chế độ BHXH bắt đầu trong tháng.	No social-insurance-paid leave starts this month.
+Không kết nối được VNPT Invoice:	Could not connect to VNPT Invoice:
+Không kết nối được Viettel S-Invoice:	Could not connect to Viettel S-Invoice:
+Không tìm thấy hóa đơn bị thay thế.	The replaced invoice was not found.
+Khấu trừ khác	Other deductions
+Kết nối HTTP chung (cổng tích hợp riêng)	Generic HTTP connection (custom integration gateway)
+Kỳ kế toán năm bắt đầu từ 01/01 và kết thúc 31/12. Kỳ lập thuyết minh: {0} – {1}. Đơn vị tiền tệ: đồng Việt Nam (VND).	The fiscal year runs from 01/01 to 31/12. Period of these notes: {0} – {1}. Currency: Vietnamese dong (VND).
+Kỳ kế toán, đơn vị tiền tệ sử dụng trong kế toán	Fiscal period and accounting currency
+Kỳ trừ lương:	Deduction period:
+Lương đóng BHXH	Social insurance salary
+Lập hóa đơn thay thế	Create replacement invoice
+Lập hóa đơn thay thế cho hóa đơn này? Hóa đơn gốc sẽ bị hủy khi phát hành hóa đơn thay thế.	Create a replacement for this invoice? The original is cancelled when the replacement is issued.
+Lập phiếu tạm ứng	Create salary advance
+Lập và chi	Create and pay
+MST {0} · Kỳ {1}	Tax code {0} · Period {1}
+Mã số BHXH	Social insurance no.
+Mật khẩu dịch vụ (VNPT: ACpass)	Service password (VNPT: ACpass)
+Mức lương đóng	Contribution salary
+Nghỉ không lương {0} ngày trong tháng	Unpaid leave {0} days in the month
+Nghỉ thai sản (hưởng BHXH)	Maternity leave (social insurance)
+Nghỉ thai sản từ	Maternity leave from
+Ngày / tháng	Days / months
+Ngày chi	Payment date
+Phiếu tạm ứng đã chi hoặc đã hủy.	The advance is already paid or cancelled.
+Phương án	Plan
+Phương án: TM tăng mới · GH giảm hẳn (nghỉ việc) · DC điều chỉnh mức đóng · TS nghỉ thai sản · KL nghỉ không lương từ 14 ngày làm việc trở lên trong tháng. Lấy từ hồ sơ nhân sự, quá trình công tác (thay đổi lương đóng BHXH) và đơn nghỉ đã duyệt. Nộp qua phần mềm kê khai BHXH / VssID theo QĐ 595/QĐ-BHXH.	Plans: TM new hire · GH permanent decrease (resigned) · DC contribution adjustment · TS maternity leave · KL unpaid leave of 14 working days or more in the month. Taken from HR profiles, work history (insurance salary changes) and approved leave. Submit via the social insurance declaration software / VssID per Decision 595/QĐ-BHXH.
+Phải trả người lao động và các khoản trích theo lương	Payables to employees and payroll contributions
+Số HĐ {0}	Invoice no. {0}
+Số liệu lập từ sổ cái (bút toán đã ghi sổ, không gồm bút toán kết chuyển với các chỉ tiêu phát sinh). Phần thuyết minh bằng lời (đặc điểm hoạt động, chính sách) cần kế toán trưởng rà soát, bổ sung trước khi ký.	Figures come from the ledger (posted entries, excluding closing entries for period movements). The narrative parts (business characteristics, policies) must be reviewed and completed by the chief accountant before signing.
+Số liệu từ bảng lương đã hạch toán; mọi người lao động được coi là cá nhân cư trú. TNCT = tổng thu nhập − khoản không chịu thuế − phần làm thêm giờ được miễn. Tệp XML theo bố cục hồ sơ thuế điện tử – nên mở kiểm tra bằng HTKK / eTax trước khi nộp.	Figures come from posted payrolls; all employees are treated as residents. Taxable income = total income − non-taxable items − exempt overtime. The XML follows the e-tax file layout – check it in HTKK / eTax before filing.
+Số ngày / tháng	Days / months
+Số tiền tạm ứng phải lớn hơn 0.	The advance amount must be greater than 0.
+TNCT được miễn giảm theo Hiệp định	Taxable income exempt under tax treaties
+Thai sản (BHXH chi trả)	Maternity (paid by social insurance)
+Thay thế bằng hóa đơn {0} số {1}	Replaced by invoice {0} no. {1}
+Thay thế hóa đơn {0} số {1}	Replaces invoice {0} no. {1}
+Thay thế hóa đơn {0} số {1} ngày {2}	Replaces invoice {0} no. {1} dated {2}
+Thay thế hóa đơn {0} {1}	Replaces invoice {0} {1}
+Theo quý	Quarterly
+Theo tháng	Monthly
+Thiếu số tài khoản:	Missing bank account:
+Thu nhập khác và chi phí khác	Other income and other expenses
+Thuyết minh BCTC	Financial notes
+Thuyết minh báo cáo tài chính (B09-DN)	Notes to the financial statements (B09-DN)
+Tháng {0}/{1} – số tiền là ước tính, cơ quan BHXH xét duyệt	Month {0}/{1} – amounts are estimates, approved by the social insurance agency
+Thông báo 04/SS-HĐĐT	Notice 04/SS-HĐĐT
+Thông báo hóa đơn điện tử có sai sót	Notice of erroneous e-invoice
+Thời gian nghỉ	Leave period
+Tiền gửi ngân hàng không kỳ hạn	Demand deposits
+Tiền hưởng	Benefit amount
+Tiền đang chuyển	Cash in transit
+Trong đó: TNCT từ tiền phí mua bảo hiểm nhân thọ, bảo hiểm không bắt buộc khác	Of which: taxable income from life and other voluntary insurance premiums
+Trong đó: chi phí nhân viên quản lý	Of which: administrative staff costs
+Trong đó: cá nhân cư trú có hợp đồng lao động	Of which: resident individuals with labor contracts
+Trợ cấp một lần	Lump-sum allowance
+Trừ lương T{0}	Deduct in M{0}
+Trừ vào lương năm	Deduct from salary in year
+Tài khoản dịch vụ (VNPT: Account)	Service account (VNPT: Account)
+Tài sản cố định ghi nhận theo nguyên giá, khấu hao theo phương pháp đường thẳng dựa trên thời gian sử dụng ước tính.	Fixed assets are stated at cost and depreciated on a straight-line basis over their estimated useful lives.
+Tên người nhận	Recipient name
+Tăng	Increase
+Tăng mới – vào làm	New hire – joined
+Tăng trong kỳ	Increase in period
+Tăng, giảm tài sản cố định hữu hình	Movements in tangible fixed assets
+Tạm ứng lương	Salary advances
+Tạm ứng lương {0} {1} – trừ lương {2}/{3}	Salary advance {0} {1} – deduct in {2}/{3}
+Tạm ứng đã nhận trong kỳ	Advances received in the period
+Tệp chi lương ngân hàng (Excel)	Bank salary payment file (Excel)
+Tổng TNCT trả cho cá nhân thuộc diện phải khấu trừ thuế [31]=[32]+[33]	Total taxable income paid to individuals subject to withholding [31]=[32]+[33]
+Tổng số cá nhân đã khấu trừ thuế [23]=[24]+[25]	Number of individuals with tax withheld [23]=[24]+[25]
+Tổng số người lao động	Total number of employees
+Tổng số thuế TNCN đã khấu trừ [34]=[35]+[36]	Total PIT withheld [34]=[35]+[36]
+Tổng thu nhập chịu thuế (TNCT) trả cho cá nhân [26]=[27]+[28]	Total taxable income paid to individuals [26]=[27]+[28]
+Tổng tạm ứng trong kỳ vượt {0}% lương cơ bản ({1} đ).	Total advances in the period exceed {0}% of base salary ({1} VND).
+Tổng {0} người · {1} đ	Total {0} people · {1} VND
+TỜ KHAI KHẤU TRỪ THUẾ TNCN (05/KK-TNCN)	PIT WITHHOLDING DECLARATION (05/KK-TNCN)
+Tờ khai 05/KK-TNCN	05/KK-TNCN declaration
+Tờ khai khấu trừ thuế TNCN (05/KK-TNCN)	PIT withholding declaration (05/KK-TNCN)
+Tỷ lệ (%)	Rate (%)
+VNPT trả lỗi {0}: {1}	VNPT returned error {0}: {1}
+Viettel trả lỗi {0}: {1}	Viettel returned error {0}: {1}
+Viettel: templateCode (VD 1/001 hoặc 1C24TAA); VNPT: pattern (VD 1/001). Demo: 1 = HĐ GTGT	Viettel: templateCode (e.g. 1/001 or 1C24TAA); VNPT: pattern (e.g. 1/001). Demo: 1 = VAT invoice
+Xuất Excel 01B-HSB	Export Excel 01B-HSB
+Xuất Excel D02-LT	Export Excel D02-LT
+demo = giả lập cấp mã; Viettel S-Invoice (API REST); VNPT Invoice (dịch vụ SOAP); http = cổng tích hợp riêng (MISA, BKAV... qua trung gian). Chạy thử trên môi trường thử nghiệm của nhà cung cấp trước	demo = simulated code issuance; Viettel S-Invoice (REST API); VNPT Invoice (SOAP service); http = custom gateway (MISA, BKAV... via middleware). Test on the provider's sandbox first
+không đọc được kết quả	could not read the result
+thiếu	missing
+{0} [Bị thay thế bởi {1}]	{0} [Replaced by {1}]
+{0} · MST {1} · {2}. Hình thức sở hữu, lĩnh vực và ngành nghề kinh doanh: theo Giấy chứng nhận đăng ký doanh nghiệp.	{0} · Tax code {1} · {2}. Ownership, business sector and activities: per the business registration certificate.
+{0}% × {1} / 24 ngày × {2} ngày	{0}% × {1} / 24 days × {2} days
+Điều chỉnh mức đóng: {0} → {1}	Contribution adjusted: {0} → {1}
+Đã bị thay thế	Replaced
+Đã bị thay thế bởi hóa đơn {0} {1}	Replaced by invoice {0} {1}
+Đã chi	Paid
+Đã chi (trừ vào lương tháng {0}/{1})	Paid (deducted from salary {0}/{1})
+Đã chi tạm ứng {0} và ghi sổ Nợ 334 / Có tiền.	Paid advance {0} and posted Dr 334 / Cr cash.
+Đã chi tạm ứng {0}.	Paid advance {0}.
+Đã có hóa đơn thay thế nháp {0}.	A draft replacement invoice {0} already exists.
+Đã hủy tạm ứng {0}	Cancelled advance {0}
+Đã lập hóa đơn thay thế nháp {0}. Sửa nội dung sai rồi bấm Phát hành – hóa đơn {1} sẽ tự hủy và đảo bút toán.	Created draft replacement invoice {0}. Fix the errors and click Issue – invoice {1} will be cancelled and its entry reversed automatically.
+Đã lập phiếu tạm ứng {0}.	Created salary advance {0}.
+Đã trừ vào bảng lương đã hạch toán – không hủy được.	Already deducted in a posted payroll – cannot be cancelled.
+Đặc điểm hoạt động của doanh nghiệp	Business characteristics
+Đến tháng	To month
+Ước tính theo Luật BHXH: ốm đau hưởng 75% mức lương đóng BHXH của tháng liền kề trước khi nghỉ, chia 24 ngày, nhân số ngày nghỉ làm việc; thai sản (sinh con) hưởng 100% mức bình quân lương đóng (dùng mức hiện hành) cho thời gian nghỉ và trợ cấp một lần bằng 2 lần mức lương cơ sở (cài đặt Payroll.BaseSalaryGov). Ngày nghỉ hưởng chế độ BHXH doanh nghiệp không trả lương. Cơ quan BHXH xét duyệt và chi trả số tiền chính thức.	Estimated per the Social Insurance Law: sickness pays 75% of the insurance salary of the month before leave, divided by 24 days, times working days off; maternity (childbirth) pays 100% of the average insurance salary (current level used) for the leave plus a lump sum of 2× the statutory base salary (setting Payroll.BaseSalaryGov). The company does not pay salary for days covered by social insurance. The social insurance agency approves and pays the official amounts.
+Ốm đau (BHXH chi trả)	Sickness (paid by social insurance)
+Ốm đau – thai sản	Sickness – maternity
+-- Công cụ dụng cụ --	-- Tool / equipment --
+-- Hoặc tài sản cố định --	-- Or fixed asset --
+-- Không gắn --	-- Not linked --
+-- Phụ trách --	-- Assignee --
+-- Sản phẩm --	-- Product --
+; {0} lệnh dự kiến trễ hạn.	; {0} orders expected to be late.
+BIÊN BẢN BÀN GIAO TÀI SẢN, CÔNG CỤ DỤNG CỤ	ASSET AND TOOL HANDOVER RECORD
+Biên bản bàn giao	Handover record
+Biên bản bàn giao – {0}	Handover record – {0}
+Bàn giao tài sản	Hand over asset
+Báo lỗi / khiếu nại	Defect / complaint
+Bên giao	Handed over by
+Bên nhận	Received by
+Bên nhận có trách nhiệm bảo quản, sử dụng đúng mục đích và hoàn trả khi nghỉ việc hoặc khi công ty yêu cầu.	The recipient must keep the items safe, use them properly and return them on leaving or when the company requests.
+Bảo hành (tháng)	Warranty (months)
+Bắt buộc (an toàn lao động, nghiệp vụ...)	Mandatory (safety, compliance...)
+Bổ sung tồn kho theo điểm đặt hàng	Replenish stock per reorder point
+Chi phí / KH	Cost / lead
+Chi phí thực tế	Actual cost
+Chi thực tế	Actual spend
+Chiến dịch	Campaigns
+Chiến dịch marketing	Marketing campaigns
+Chuyển thưởng & khóa kỳ	Transfer bonuses & close cycle
+Chuyển thưởng hiệu suất của các phiếu đã chốt vào lương và khóa kỳ đánh giá?	Transfer performance bonuses of approved appraisals to payroll and close the cycle?
+Chuyển thưởng vào lương tháng	Transfer bonuses to payroll month
+Chuyển đổi	Converted
+Chưa chọn sản phẩm.	No product selected.
+Chưa có chiến dịch.	No campaigns yet.
+Chưa có khóa đào tạo.	No training courses yet.
+Chưa có kỳ đánh giá.	No appraisal cycles yet.
+Chưa có mã.	No code entered.
+Chưa có phiếu lương.	No payslips yet.
+Chưa có vị trí tuyển dụng.	No job openings yet.
+Chưa có đơn nghỉ.	No leave requests yet.
+Chấm điểm	Score
+Chỉ hàng cần đặt	Only items to order
+Chỉ hủy được đơn đang chờ duyệt.	Only pending requests can be cancelled.
+Chọn công cụ / tài sản hoặc nhập tên.	Select a tool / asset or enter a name.
+Chốt kết quả	Finalize
+Chờ khách phản hồi	Waiting for customer
+Chứng chỉ	Certificate
+Chứng chỉ bắt buộc sắp / đã hết hạn:	Mandatory certificates expiring / expired:
+Còn bảo hành đến {0} (hóa đơn {1}).	Under warranty until {0} (invoice {1}).
+Cơ hội thắng	Won opportunities
+Cấp phát tài sản	Asset issuance
+Cấp phát tài sản cho nhân viên	Assets issued to employees
+Cổng nhân viên	Employee portal
+Doanh số thắng	Won revenue
+Dùng nút "Nhận việc" để tạo hồ sơ nhân viên.	Use the "Hire" button to create the employee profile.
+Dự kiến trễ hạn:	Expected late:
+Ghi lịch dự kiến vào công đoạn	Save planned schedule to operations
+Ghi nhận bàn giao	Record handover
+Ghi điểm đặt hàng / mức tối đa vào danh mục (dòng chọn)	Save reorder point / max level to items (selected rows)
+Ghi đè (không cộng dồn)	Overwrite (do not add up)
+Giao hàng (ngày)	Lead time (days)
+Gần đây	Recent
+Gọi điện / telesales	Phone / telesales
+Gửi tự đánh giá	Submit self-review
+Gửi đơn nghỉ	Submit leave request
+Hiển thị	Show
+Hiện có	On hand
+Hiệu lực chứng chỉ (tháng)	Certificate validity (months)
+Hiệu lực chứng chỉ (tháng, 0 = không hết hạn)	Certificate validity (months, 0 = no expiry)
+Hoàn thành khóa học được ghi vào quá trình công tác của nhân viên.	Course completion is recorded in the employee's work history.
+Hoặc tên tài sản (laptop, đồng phục, thẻ từ...)	Or asset name (laptop, uniform, access card...)
+Hạn SLA	SLA due
+Hạn lệnh	Order due
+Hạn nhận hồ sơ	Application deadline
+Hết bảo hành từ {0} (hóa đơn {1}).	Warranty expired on {0} (invoice {1}).
+Học viên	Attendees
+Học viên – {0}	Attendees – {0}
+Hỏi đáp	Question
+Hồ sơ nhân viên	Employee profile
+Hồ sơ nhân viên (cổng tự phục vụ)	Employee profile (self-service portal)
+Hỗ trợ & bảo hành	Support & warranty
+Hỗ trợ khách hàng & bảo hành	Customer support & warranty
+Hội chợ / sự kiện	Trade fair / event
+Hợp đồng {0} ({1}) {2}	Contract {0} ({1}) {2}
+KH tiềm năng	Leads
+Khi nhân viên nghỉ việc, kiểm tra danh sách “Đang giao” để thu hồi trước khi thanh toán lương cuối.	When an employee leaves, check the “Issued” list and collect items before the final salary payment.
+Khách hàng tiềm năng gắn chiến dịch khi nhập (ô “Chiến dịch”). Doanh số thắng = tổng giá trị cơ hội thắng từ các khách hàng tiềm năng đó; ROI = (doanh số thắng − chi phí thực tế) / chi phí thực tế.	Leads are tied to a campaign when entered (the “Campaign” field). Won revenue = total value of won opportunities from those leads; ROI = (won revenue − actual cost) / actual cost.
+Khóa đào tạo	Training courses
+Không có công đoạn cần làm (lệnh sản xuất đang mở có công đoạn gắn trung tâm sản xuất).	No operations to schedule (open production orders with operations assigned to work centers).
+Không có mặt hàng nào dưới điểm đặt hàng.	No items are below the reorder point.
+Không có mặt hàng phát sinh xuất kho trong kỳ.	No items were issued in the period.
+Không có.	None.
+Không mở được camera:	Could not open the camera:
+Không tìm thấy hàng có mã "{0}".	No item found with code "{0}".
+Không tìm thấy hóa đơn bán sản phẩm này cho khách hàng.	No sales invoice of this product to the customer was found.
+Không tìm thấy kỳ.	Cycle not found.
+Không tìm thấy sản phẩm.	Product not found.
+Không tìm thấy vị trí tuyển dụng.	Job opening not found.
+Không tìm thấy ứng viên.	Candidate not found.
+Không tìm thấy.	Not found.
+Kiểm kê bằng điện thoại –	Mobile stocktake –
+Kênh	Channel
+Kênh tiếp nhận	Received via
+Kết quả công việc, khó khăn, đề xuất...	Results, difficulties, suggestions...
+Kết quả xử lý	Resolution
+Kỳ đánh giá đã chốt.	The appraisal cycle is closed.
+Loại “Bảo hành” tự tra hóa đơn bán sản phẩm cho khách và thời hạn bảo hành khai báo ở danh mục hàng.	The “Warranty” type looks up the customer's sales invoice for the product and the warranty period set on the item.
+Loại yêu cầu	Request type
+Loại {0}:	Grade {0}:
+Lương mong muốn	Expected salary
+Lương từ	Salary from
+Lương đến	Salary to
+Lập lịch	Schedule
+Lập lịch sản xuất theo năng lực	Finite-capacity production scheduling
+Lập lịch theo năng lực	Capacity scheduling
+Lập đề nghị mua hàng cho dòng chọn cần đặt	Create purchase requisition for selected rows to order
+Lắp đặt / bảo trì	Installation / maintenance
+Lịch phỏng vấn	Interview time
+Lịch sử xuất kho	Issue history
+Mã vạch / mã hàng (máy quét hoặc gõ)	Barcode / item code (scanner or typing)
+Mô tả công việc / yêu cầu	Job description / requirements
+Mất kết nối – thử lại.	Connection lost – try again.
+Mở vị trí mới	Open new position
+Mở vị trí tuyển dụng	Open a job position
+Mục tiêu số KH tiềm năng	Target number of leads
+Mục tiêu số khách hàng tiềm năng	Target number of leads
+Mức tối đa	Max level
+Nguồn (TopCV, giới thiệu...)	Source (job board, referral...)
+Nguồn: {0}	Source: {0}
+Ngày kết thúc trước ngày bắt đầu.	The end date is before the start date.
+Ngày thu hồi	Return date
+Ngày {0}. Bên giao: {1}. Bên nhận:	Date {0}. Handed over by: {1}. Received by:
+Ngân sách / chi thực tế	Budget / actual spend
+Người xử lý	Assignee
+Nhu cầu / ngày	Demand / day
+Nhu cầu và độ lệch tính từ phiếu xuất kho đã ghi sổ; thời gian giao hàng = trung bình từ ngày đơn mua đến ngày nhập kho (không có thì dùng Stock.DefaultLeadDays, mặc định 7). Tồn an toàn = z × độ lệch ngày × √thời gian giao; điểm đặt hàng = nhu cầu × thời gian giao + tồn an toàn; mức tối đa = điểm đặt hàng + nhu cầu × chu kỳ đặt hàng. {0} mặt hàng đang dưới điểm đặt hàng (tính cả hàng đang về).	Demand and deviation come from posted issue documents; lead time = average from purchase order date to receipt date (otherwise Stock.DefaultLeadDays, default 7). Safety stock = z × daily deviation × √lead time; reorder point = demand × lead time + safety stock; max level = reorder point + demand × review period. {0} items are below the reorder point (including incoming stock).
+Nhận việc	Hire
+Nhận xét của quản lý	Manager comments
+Nhập họ tên ứng viên.	Enter the candidate's name.
+Nhập kết quả xử lý trước khi đóng phiếu.	Enter the resolution before closing the ticket.
+Nhập mức lương cơ bản.	Enter the base salary.
+Nhập tiêu đề	Enter a subject
+Nhập tiêu đề.	Enter a subject.
+Nhập tên chiến dịch	Enter campaign name
+Nhập tên chiến dịch.	Enter the campaign name.
+Nhập tên khóa học	Enter course name
+Nhập tên khóa đào tạo.	Enter the training course name.
+Nhập tên kỳ đánh giá	Enter cycle name
+Nhập tên kỳ đánh giá.	Enter the appraisal cycle name.
+Nhập tên tài sản	Enter asset name
+Nhập vị trí tuyển dụng	Enter job title
+Nhập vị trí tuyển dụng.	Enter the job title.
+Nhập ít nhất một tiêu chí (mỗi dòng: Tên | trọng số | chỉ tiêu).	Enter at least one criterion (one per line: Name | weight | target).
+Phiếu đánh giá đã chốt.	The appraisal is finalized.
+Phỏng vấn	Interview
+Phỏng vấn: {0}	Interview: {0}
+Quay lại	Back
+Quá hạn SLA	SLA overdue
+Quét bằng camera	Scan with camera
+Quản trị hệ thống gắn hồ sơ tại Người dùng &amp; phân quyền → Sửa → “Hồ sơ nhân viên”, hoặc nhập email trùng với email trong hồ sơ nhân viên.	The administrator links the profile in Users &amp; permissions → Edit → “Employee profile”, or uses the same email as in the employee profile.
+Sàng lọc hồ sơ	Screening
+Sản phẩm không khai báo thời hạn bảo hành (mua theo hóa đơn {0} ngày {1}).	The product has no warranty period set (bought on invoice {0} dated {1}).
+Sản phẩm: {0} {1} {2}	Product: {0} {1} {2}
+Số chứng chỉ	Certificate no.
+Số giờ	Hours
+Số lượng cần tuyển	Positions to fill
+Số serial / lô	Serial / lot no.
+TSCĐ	Fixed asset
+Thêm / sửa vị trí	Add / edit position
+Thêm học viên	Add attendee
+Thêm ứng viên	Add candidate
+Thông tin sai? Liên hệ phòng nhân sự để cập nhật.	Wrong information? Contact HR to update it.
+Thưởng hiệu suất {0}	Performance bonus {0}
+Thưởng theo xếp loại (% lương cơ bản)	Bonus by grade (% of base salary)
+Thời gian xử lý bình quân	Average resolution time
+Tiêu chí / KPI	Criterion / KPI
+Tiêu chí – mỗi dòng: Tên | trọng số (%) | chỉ tiêu	Criteria – one per line: Name | weight (%) | target
+Tiếp nhận	Log request
+Tiếp nhận yêu cầu	Log a request
+Trong hạn SLA	Within SLA
+Trình duyệt không hỗ trợ quét camera – dùng máy quét hoặc gõ mã	The browser cannot scan with the camera – use a scanner or type the code
+Trọng số	Weight
+Trọng số (%)	Weight (%)
+Tuyển dụng qua {0} {1}	Hired via {0} {1}
+Tuyển dụng, KPI, đào tạo, tài sản	Recruitment, KPI, training, assets
+Tài khoản chưa gắn hồ sơ nhân viên.	The account is not linked to an employee profile.
+Tài khoản của bạn chưa gắn với hồ sơ nhân viên	Your account is not linked to an employee profile
+Tài sản / thiết bị	Asset / equipment
+Tài sản đang giao cho người khác – thu hồi trước.	The asset is issued to someone else – return it first.
+Tài sản đang giữ	Assets held
+Tên chiến dịch	Campaign name
+Tên khóa (VD: An toàn vận hành máy cưa)	Course name (e.g. Saw machine safety)
+Tên tài sản / thiết bị	Asset / equipment name
+Tình trạng khi thu hồi	Condition on return
+Tạo chiến dịch	Create campaign
+Tạo khóa đào tạo	Create training course
+Tạo kỳ cho toàn bộ nhân viên	Create cycle for all employees
+Tạo kỳ đánh giá	Create appraisal cycle
+Tối thiểu hiện tại	Current min / max
+Tồn an toàn	Safety stock
+Tồn kho an toàn & điểm đặt hàng	Safety stock & reorder point
+Tồn kho an toàn & đặt hàng	Safety stock & reordering
+Tự đánh giá của nhân viên	Employee self-review
+Tự đánh giá – {0}	Self-review – {0}
+Vào làm {0} · thâm niên {1} năm	Joined {0} · {1} years of service
+Vắng / không đạt	Absent / failed
+Vị trí (VD: Thợ mộc bậc 3)	Position (e.g. Carpenter grade 3)
+Vị trí tuyển dụng	Job openings
+Xem hóa đơn	View invoice
+Xếp loại: A ≥ 90 điểm, B ≥ 75, C ≥ 50, D dưới 50. Điểm tổng = Σ điểm tiêu chí × trọng số.	Grades: A ≥ 90 points, B ≥ 75, C ≥ 50, D below 50. Total = Σ criterion score × weight.
+Xếp lệnh theo hạn hoàn thành; mỗi trung tâm làm một công đoạn một lúc, năng lực ngày = số giờ làm × hiệu suất, bắt đầu 8h, nghỉ Chủ nhật; công đoạn sau bắt đầu khi công đoạn trước của lệnh xong; thời lượng = phút kế hoạch − phút đã làm.	Orders are sequenced by due date; each work center runs one operation at a time, daily capacity = working hours × efficiency, starting at 8:00, Sundays off; an operation starts when the order's previous operation ends; duration = planned minutes − minutes already worked.
+Xử lý đúng hạn (90 ngày)	Resolved on time (90 days)
+Yêu cầu trước của khách	Customer's previous requests
+dòng	rows
+dự báo {0}	forecast {0}
+ngày · mức phục vụ	days · service level
+{0} (hạn {1})	{0} (due {1})
+{0} ({1} giờ)	{0} ({1} h)
+{0} [Bảo hành] {1}	{0} [Warranty] {1}
+{0} giờ	{0} h
+{0} giờ/ngày	{0} h/day
+{0} người	{0} people
+{0} {1}: đếm {2} / sổ {3}	{0} {1}: counted {2} / book {3}
+{0} · cần {1} · hạn {2}	{0} · need {1} · due {2}
+{0} · {1} – {2} · thưởng theo xếp loại: {3} (% lương cơ bản)	{0} · {1} – {2} · bonus by grade: {3} (% of base salary)
+{0} · {1} – {2} đ	{0} · {1} – {2} VND
+{0} điểm – loại {1}	{0} points – grade {1}
+{0} ứng viên	{0} candidates
+{0} – {1} · {2} giờ · {3}	{0} – {1} · {2} h · {3}
+{0}/{1} dòng	{0}/{1} rows
+· chu kỳ đặt hàng	· review period
+· chứng chỉ {0}	· certificate {0}
+· phản hồi đầu {0}	· first response {0}
+Đang chấm	Scoring
+Đang giao	Issued
+Đang tuyển	Open
+Điểm	Score
+Điểm (0–100)	Score (0–100)
+Điểm đánh giá	Rating score
+Điểm đặt hàng	Reorder point
+Điện thoại {0} · Email {1}	Phone {0} · Email {1}
+Đánh giá KPI	KPI appraisal
+Đã chuyển {0} khoản thưởng hiệu suất vào lương tháng {1}/{2} và khóa kỳ đánh giá.	Transferred {0} performance bonuses to payroll {1}/{2} and closed the appraisal cycle.
+Đã chốt	Finalized
+Đã cập nhật phiếu	Ticket updated
+Đã cập nhật tồn tối thiểu / tối đa cho {0} mặt hàng.	Updated min / max stock for {0} items.
+Đã ghi lịch dự kiến cho {0} công đoạn	Saved the planned schedule for {0} operations
+Đã ghi nhận bàn giao.	Handover recorded.
+Đã giải quyết	Resolved
+Đã gửi tự đánh giá.	Self-review submitted.
+Đã gửi đơn nghỉ – chờ quản lý duyệt.	Leave request submitted – awaiting manager approval.
+Đã lưu chiến dịch {0}.	Campaign {0} saved.
+Đã lưu: {0} điểm – xếp loại {1}.	Saved: {0} points – grade {1}.
+Đã lập đề nghị mua hàng {0} ({1} mặt hàng).	Created purchase requisition {0} ({1} items).
+Đã thêm ứng viên.	Candidate added.
+Đã tiếp nhận phiếu {0} – hạn xử lý {1}.	Ticket {0} logged – due {1}.
+Đã tuyển	Hired
+Đã tạo hồ sơ nhân viên {0} – {1}. Lập hợp đồng lao động và bổ sung thông tin cá nhân.	Created employee profile {0} – {1}. Create the labor contract and complete the personal details.
+Đã tạo khóa {0} với {1} học viên.	Created course {0} with {1} attendees.
+Đã tạo kỳ đánh giá "{0}" cho {1} nhân viên.	Created appraisal cycle "{0}" for {1} employees.
+Đã đăng ký	Registered
+Đơn nghỉ của tôi	My leave requests
+Đơn vị đào tạo	Training provider
+Đếm bằng điện thoại / máy quét	Count by phone / scanner
+Đề nghị nhận việc	Offer
+Đề xuất đặt	Suggested order
+Đổi trạng thái {0}	Change status {0}
+Độ lệch / ngày	Deviation / day
+Đợt kiểm kê không còn ở trạng thái đang đếm.	The stocktake is no longer in counting status.
+Đợt kiểm kê đã {0} – không đếm thêm được.	The stocktake is {0} – no more counting.
+Ứng tuyển	Applied
+Ứng viên đã được tuyển.	The candidate is already hired.
+– hết hạn	– expires
+‹ Bảng kiểm kê đầy đủ	‹ Full stocktake sheet

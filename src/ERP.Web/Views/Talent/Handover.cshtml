@@ -1,0 +1,17 @@
+@model List<EmployeeAssetIssue>
+@inject Microsoft.Extensions.Options.IOptions<ErpSettings> Cfg
+@{ Layout = null; var e = (Employee)ViewBag.Employee; }
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8" /><title>Biên bản bàn giao – @e.FullName</title>
+<style>body{font-family:"Times New Roman",serif;font-size:14px;margin:24px;color:#000} table{border-collapse:collapse;width:100%} th,td{border:1px solid #000;padding:4px 6px} .c{text-align:center} .bar{margin-bottom:12px} @@media print{.bar{display:none}}</style></head>
+<body>
+<div class="bar"><button onclick="window.print()">In / Lưu PDF</button></div>
+<div><b>@Cfg.Value.CompanyName</b></div>
+<h3 class="c">BIÊN BẢN BÀN GIAO TÀI SẢN, CÔNG CỤ DỤNG CỤ</h3>
+<p>Ngày @DateTime.Today.ToString("dd/MM/yyyy"). Bên giao: @Cfg.Value.CompanyName. Bên nhận: <b>@e.FullName</b> – mã @e.Code – @e.Position, @e.Department.</p>
+<table><thead><tr><th>STT</th><th>Tên tài sản / thiết bị</th><th>Số serial</th><th>Số lượng</th><th>Ngày giao</th><th>Ghi chú</th></tr></thead><tbody>
+@for (var i = 0; i < Model.Count; i++) { var a = Model[i]; <tr><td class="c">@(i + 1)</td><td>@a.Description</td><td>@a.SerialNo</td><td class="c">@a.Quantity.ToQty()</td><td class="c">@a.IssuedDate.ToDate()</td><td>@a.Note</td></tr> }
+</tbody></table>
+<p>Bên nhận có trách nhiệm bảo quản, sử dụng đúng mục đích và hoàn trả khi nghỉ việc hoặc khi công ty yêu cầu.</p>
+<table style="border:none"><tr><td class="c" style="border:none"><b>Bên giao</b><br /><br /><br /><br /></td><td class="c" style="border:none"><b>Bên nhận</b><br /><br /><br /><br />@e.FullName</td></tr></table>
+</body></html>
