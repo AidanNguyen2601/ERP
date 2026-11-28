@@ -1,0 +1,16 @@
+@model Opportunity
+@{ ViewData["Title"] = Model.Id == 0 ? "Thêm cơ hội" : "Sửa " + Model.Code; }
+<div class="card" style="max-width:860px"><div class="card-body">
+<form asp-action="SaveOpp" method="post" class="row g-2">
+    <input type="hidden" asp-for="Id" /><div asp-validation-summary="All" class="text-danger col-12"></div>
+    <div class="col-12"><label class="form-label">Tên cơ hội</label><input asp-for="Title" class="form-control" /></div>
+    <div class="col-md-6"><label class="form-label">Khách hàng</label><select asp-for="PartnerId" asp-items="ViewBag.Customers" class="form-select"><option value="">--</option></select></div>
+    <div class="col-md-6"><label class="form-label">Khách hàng tiềm năng</label><select asp-for="LeadId" asp-items="ViewBag.LeadList" class="form-select"><option value="">--</option></select></div>
+    <div class="col-md-3"><label class="form-label">Giai đoạn</label><select asp-for="Stage" asp-items="Html.GetEnumSelectList<OppStage>()" class="form-select"></select></div>
+    <div class="col-md-3"><label class="form-label">Giá trị dự kiến</label><input asp-for="Amount" type="number" step="1000" class="form-control" /></div>
+    <div class="col-md-3"><label class="form-label">Xác suất (%)</label><input asp-for="Probability" type="number" min="0" max="100" class="form-control" /></div>
+    <div class="col-md-3"><label class="form-label">Dự kiến chốt</label><input asp-for="ExpectedClose" type="date" class="form-control" /></div>
+    <div class="col-md-4"><label class="form-label">Người phụ trách</label><select asp-for="OwnerId" asp-items="ViewBag.Owners" class="form-select"><option value="">--</option></select></div>
+    <div class="col-12"><label class="form-label">Ghi chú</label><textarea asp-for="Note" rows="2" class="form-control"></textarea></div>
+    <div class="col-12"><button class="btn btn-primary">Lưu</button> <a class="btn btn-light border" asp-action="Pipeline">Hủy</a></div>
+</form></div></div>

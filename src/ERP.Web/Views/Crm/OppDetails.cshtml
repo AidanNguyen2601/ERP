@@ -1,0 +1,29 @@
+@model Opportunity
+@{
+    ViewData["Title"] = Model.Code + " – " + Model.Title; var can = (bool)ViewBag.CanEdit; var acts = (List<CrmActivity>)ViewBag.Acts; var quotes = (List<SalesQuote>)ViewBag.Quotes;
+}
+<div class="d-flex justify-content-between mb-2"><h5 class="mb-0">@Model.Title <span class="badge @(Model.Stage == OppStage.Won ? "bg-success" : Model.Stage == OppStage.Lost ? "bg-secondary" : "bg-info text-dark")">@Model.Stage.GetDisplayName()</span></h5><a class="btn btn-sm btn-light border" asp-action="Pipeline">‹ Pipeline</a></div>
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card mb-3"><div class="card-body small">
+            <div><b>Mã:</b> @Model.Code · <b>Phụ trách:</b> @Model.Owner?.FullName</div>
+            <div><b>Khách hàng:</b> @if (Model.Partner != null) { <a asp-action="Customer" asp-route-id="@Model.PartnerId">@Model.Partner.Name</a> } else if (Model.Lead != null) { <a asp-action="LeadDetails" asp-route-id="@Model.LeadId">@Model.Lead.Name (tiềm năng)</a> }</div>
+            <div><b>Giá trị:</b> @Model.Amount.ToMoney() đ · <b>Xác suất:</b> @Model.Probability% · <b>Có trọng số:</b> @Model.Weighted.ToMoney() đ</div>
+            <div><b>Dự kiến chốt:</b> @Model.ExpectedClose.ToString("dd/MM/yyyy") @if (Model.ClosedAt != null) { <span>· <b>Đóng:</b> @Model.ClosedAt.Value.ToString("dd/MM/yyyy")</span> }</div>
+            @if (Model.Quote != null) { <div><b>Báo giá:</b> <a asp-controller="Quotes" asp-action="Details" asp-route-id="@Model.QuoteId">@Model.Quote.Number</a></div> }
+            @if (Model.LostReason != null) { <div class="text-danger">Lý do thua: @Model.LostReason</div> }
+            @if (Model.Note != null) { <div class="mt-1">@Model.Note</div> }
+        </div>
+        @if (can && Model.IsOpen) { <div class="card-footer d-flex flex-wrap gap-1">
+            <a class="btn btn-sm btn-light border" asp-action="OppForm" asp-route-id="@Model.Id">Sửa</a>
+            @if (Model.PartnerId != null) { <a class="btn btn-sm btn-outline-primary" asp-controller="Quotes" asp-action="Create" asp-route-customerId="@Model.PartnerId" asp-route-opportunityId="@Model.Id">Lập báo giá</a> }
+            @foreach (var s in new[] { OppStage.Qualified, OppStage.Proposal, OppStage.Negotiation }) { if (Model.Stage != s) { <form asp-action="MoveOpp" method="post"><input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="stage" value="@s" /><button class="btn btn-sm btn-outline-secondary">→ @s.GetDisplayName()</button></form> } }
+            <form asp-action="MoveOpp" method="post"><input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="stage" value="@OppStage.Won" /><button class="btn btn-sm btn-success">Thắng</button></form>
+            <form asp-action="MoveOpp" method="post" class="d-flex gap-1"><input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="stage" value="@OppStage.Lost" /><input name="reason" class="form-control form-control-sm" placeholder="Lý do thua" style="width:130px" /><button class="btn btn-sm btn-outline-danger">Thua</button></form>
+        </div> }</div>
+        @if (can && Model.IsOpen && quotes.Any()) {
+        <div class="card"><div class="card-header">Gắn báo giá của khách</div><div class="card-body"><form asp-action="LinkQuote" method="post" class="d-flex gap-1"><input type="hidden" name="id" value="@Model.Id" />
+            <select name="quoteId" class="form-select form-select-sm">@foreach (var q in quotes) { <option value="@q.Id">@q.Number – @q.Date.ToString("dd/MM/yyyy") – @q.Total.ToMoney()</option> }</select><button class="btn btn-sm btn-primary">Gắn</button></form></div></div> }
+    </div>
+    <div class="col-lg-7"><partial name="_ActivityPanel" model="@(new ActivityPanel(acts, can, Model.LeadId, Model.PartnerId, Model.Id, Url.Action("OppDetails", new { id = Model.Id })!))" /></div>
+</div>

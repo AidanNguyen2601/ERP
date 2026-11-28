@@ -1,0 +1,65 @@
+@model Employee
+@{
+    ViewData["Title"] = $"Hồ sơ nhân sự {Model.Code}"; var can = (bool)ViewBag.CanEdit;
+    var contracts = (List<LaborContract>)ViewBag.Contracts; var hist = (List<EmployeeHistory>)ViewBag.History; var bal = (LeaveBalance?)ViewBag.Balance;
+    var leaves = (List<LeaveRequest>)ViewBag.Leaves; var comps = (List<EmployeeSalaryComponent>)ViewBag.Comps; var shift = (Shift?)ViewBag.Shift;
+}
+<partial name="_HrNav" model="@("emp")" />
+<div class="card mb-3"><div class="card-body">
+    <div class="doc-head">
+        <div><div class="fs-5 fw-semibold">@Model.Code – @Model.FullName @if (!Model.IsActive) { <span class="badge bg-secondary">Đã nghỉ việc @Model.ResignDate.ToDate()</span> }</div>
+            <div class="meta">@Model.Position · @Model.Department @(Model.Branch != null ? "· " + Model.Branch.Name : "") · Vào làm @Model.StartDate.ToDate() · Thâm niên @HrService.YearsOfService(Model).ToString("0.#") năm</div></div>
+        <div class="actions"><a class="btn btn-sm btn-light" asp-controller="Payroll" asp-action="Employees">← Danh sách</a>@if (can) { <a class="btn btn-sm btn-outline-primary" asp-controller="Payroll" asp-action="EditEmployee" asp-route-id="@Model.Id">Sửa hồ sơ</a> }</div>
+    </div>
+    <dl class="row info mb-0 mt-2">
+        <dt class="col-sm-2">Ngày sinh</dt><dd class="col-sm-4">@Model.DateOfBirth.ToDate() @(Model.Gender != null ? "· " + Model.Gender.GetDisplayName() : "")</dd>
+        <dt class="col-sm-2">Điện thoại / Email</dt><dd class="col-sm-4">@Model.Phone @Model.Email</dd>
+        <dt class="col-sm-2">CCCD / MST</dt><dd class="col-sm-4">@Model.IdNumber · @Model.PersonalTaxCode</dd>
+        <dt class="col-sm-2">Địa chỉ</dt><dd class="col-sm-4">@Model.Address</dd>
+        <dt class="col-sm-2">Học vấn / Hôn nhân</dt><dd class="col-sm-4">@Model.Education · @Model.MaritalStatus</dd>
+        <dt class="col-sm-2">Liên hệ khẩn cấp</dt><dd class="col-sm-4">@Model.EmergencyContact</dd>
+        <dt class="col-sm-2">Số sổ BHXH</dt><dd class="col-sm-4">@Model.InsuranceBookNo</dd>
+        <dt class="col-sm-2">Ca mặc định</dt><dd class="col-sm-4">@(shift != null ? shift.Name + " (" + shift.Time + ")" : "—")</dd>
+        <dt class="col-sm-2">Lương cơ bản / phụ cấp</dt><dd class="col-sm-4">@Model.BaseSalary.ToMoney() · @Model.Allowance.ToMoney()</dd>
+        <dt class="col-sm-2">Tài khoản ngân hàng</dt><dd class="col-sm-4">@Model.BankName @Model.BankAccountNo</dd>
+    </dl>
+</div></div>
+<div class="row g-3 mb-3">
+    <div class="col-lg-7"><div class="card h-100"><div class="card-header">Hợp đồng lao động</div><div class="card-body p-0"><table class="table table-sm mb-0"><thead><tr><th>Số HĐ</th><th>Loại</th><th>Từ</th><th>Đến</th><th class="num">Mức lương</th><th>Trạng thái</th></tr></thead><tbody>
+        @foreach (var c in contracts) { <tr><td>@c.Number</td><td class="small">@c.Type.GetDisplayName()</td><td>@c.StartDate.ToDate()</td><td class="@(c.DaysLeft is < 30 ? "overdue" : "")">@(c.EndDate.HasValue ? c.EndDate.ToDate() : "Không thời hạn")</td><td class="num">@c.Salary.ToMoney()</td><td>@c.Status.GetDisplayName()</td></tr> }
+        @if (!contracts.Any()) { <tr><td colspan="6" class="text-muted text-center py-3">Chưa có hợp đồng. <a asp-action="Contracts">Lập hợp đồng →</a></td></tr> }
+    </tbody></table></div></div></div>
+    <div class="col-lg-5"><div class="card h-100"><div class="card-header">Phép năm @DateTime.Today.Year</div><div class="card-body">
+        @if (bal != null)
+        {
+            <div class="d-flex justify-content-between"><span>Được hưởng</span><b>@bal.Entitlement.ToQty() ngày</b></div>
+            <div class="d-flex justify-content-between"><span>Đã nghỉ (đã duyệt)</span><b>@bal.Used.ToQty()</b></div>
+            <div class="d-flex justify-content-between"><span>Chờ duyệt</span><b>@bal.Pending.ToQty()</b></div>
+            <div class="d-flex justify-content-between border-top pt-1 mt-1"><span>Còn lại</span><b class="@(bal.Remaining <= 2 ? "warn" : "good")">@bal.Remaining.ToQty() ngày</b></div>
+        }
+        <div class="small text-muted mt-2">Đơn nghỉ gần đây:</div>
+        @foreach (var l in leaves) { <div class="small">@l.FromDate.ToDate() – @l.ToDate.ToDate() · @l.LeaveType?.Name (@l.Days.ToQty() ngày) <span class="badge @(l.Status == LeaveStatus.Approved ? "bg-success" : l.Status == LeaveStatus.Pending ? "bg-warning text-dark" : "bg-secondary")">@l.Status.GetDisplayName()</span></div> }
+    </div></div></div>
+</div>
+<div class="row g-3">
+    <div class="col-lg-7"><div class="card h-100"><div class="card-header">Quá trình công tác</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+        @foreach (var h in hist) { <tr><td style="width:100px">@h.Date.ToDate()</td><td><span class="badge bg-light text-dark border">@h.Kind.GetDisplayName()</span></td><td>@(string.IsNullOrEmpty(h.FromValue) ? "" : h.FromValue + " → ")@h.ToValue <div class="small text-muted">@h.Note</div></td></tr> }
+        @if (!hist.Any()) { <tr><td class="text-muted text-center py-3">Chưa có dữ liệu.</td></tr> }
+    </tbody></table>
+        @if (can)
+        {
+            <form asp-action="AddHistory" asp-route-id="@Model.Id" method="post" class="row g-1 p-2 border-top">
+                <div class="col-md-3"><select name="kind" asp-items="Html.GetEnumSelectList<HistoryKind>()" class="form-select form-select-sm"></select></div>
+                <div class="col-md-2"><input type="date" name="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+                <div class="col-md-2"><input name="from" class="form-control form-control-sm" placeholder="Từ" /></div>
+                <div class="col-md-2"><input name="to" class="form-control form-control-sm" placeholder="Thành" /></div>
+                <div class="col-md-3"><input name="note" class="form-control form-control-sm" placeholder="Ghi chú" /></div>
+                <div class="col-12"><button class="btn btn-sm btn-outline-primary">Ghi nhận</button> <span class="small text-muted">Điều chuyển, chức danh, lương thay đổi khi sửa hồ sơ được ghi tự động; chọn "Nghỉ việc" để đóng hồ sơ.</span></div>
+            </form>
+        }
+    </div></div></div>
+    <div class="col-lg-5"><div class="card h-100"><div class="card-header">Thành phần lương được gán</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+        @foreach (var c in comps) { <tr><td>@c.Component?.Code – @c.Component?.Name</td><td class="small">@(string.IsNullOrEmpty(c.Component?.Formula) ? "Cố định" : c.Component!.Formula)</td><td class="num">@(c.Amount != 0 ? c.Amount.ToMoney() : "")</td></tr> }
+        @if (!comps.Any()) { <tr><td class="text-muted text-center py-3">Chưa gán khoản nào. <a asp-action="Components">Cấu hình →</a></td></tr> }
+    </tbody></table></div></div></div>
+</div>

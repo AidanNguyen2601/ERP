@@ -156,7 +156,7 @@ public class SystemSetting
 // =====================================================================
 //  NHÂN VIÊN, CHẤM CÔNG, LƯƠNG
 // =====================================================================
-public class Employee : IBranchOwned
+public partial class Employee : IBranchOwned
 {
     public int Id { get; set; }
     [Required(ErrorMessage = "Nhập mã"), StringLength(20)][Display(Name = "Mã nhân viên")] public string Code { get; set; } = string.Empty;
@@ -212,7 +212,7 @@ public class PayrollRun : IBranchOwned
     [NotMapped] public decimal TotalCost => Lines.Sum(l => l.Gross + l.ErTotal);
 }
 
-public class PayrollLine
+public partial class PayrollLine
 {
     public int Id { get; set; }
     public int PayrollRunId { get; set; }

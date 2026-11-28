@@ -36,8 +36,15 @@ public static class DbSeeder
         await QcAdvancedDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("QcAdvancedDemoSeeder"));
 
         await MaintenanceDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("MaintenanceDemoSeeder"));
+
+
+        await HrDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("HrDemoSeeder"));
+        await CrmDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("CrmDemoSeeder"));
             await QcAdvancedDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("QcAdvancedDemoSeeder"));
             await MaintenanceDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("MaintenanceDemoSeeder"));
+
+            await HrDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("HrDemoSeeder"));
+            await CrmDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("CrmDemoSeeder"));
             await BackfillPurchaseReturnsAsync(sp, db);
             return;
         }
@@ -128,7 +135,7 @@ public static class DbSeeder
     /// <summary>Giá trị mặc định cho cột mới NOT NULL thêm vào bảng đã có dữ liệu</summary>
     private static readonly Dictionary<string, string> ColumnDefaults = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["AllBranches"] = "1", ["ExchangeRate"] = "1", ["CurrencyCode"] = "N'VND'", ["ExpiryAlertDays"] = "30", ["VersionNo"] = "1", ["OrderType"] = "1", ["SamplingMethod"] = "1",
+        ["AllBranches"] = "1", ["ExchangeRate"] = "1", ["CurrencyCode"] = "N'VND'", ["ExpiryAlertDays"] = "30", ["VersionNo"] = "1", ["OrderType"] = "1", ["SamplingMethod"] = "1", ["AnnualLeaveDays"] = "12",
     };
 
     /// <summary>Thêm các cột có trong model nhưng chưa có trong bảng (dựa trên lệnh CREATE TABLE do EF sinh). Không sửa / xóa cột cũ.</summary>

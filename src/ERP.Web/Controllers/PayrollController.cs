@@ -13,8 +13,8 @@ namespace ERP.Web.Controllers;
 [Authorize(Roles = AppRoles.Admin + "," + AppRoles.Accountant + "," + AppRoles.Director)]
 public class PayrollController : ErpControllerBase
 {
-    private readonly PayrollService _payroll; private readonly CodeService _codes; private readonly DuplicateService _dup;
-    public PayrollController(ErpDbContext db, PayrollService payroll, CodeService codes, DuplicateService dup) : base(db) { _payroll = payroll; _codes = codes; _dup = dup; }
+    private readonly PayrollService _payroll; private readonly CodeService _codes; private readonly DuplicateService _dup; private readonly HrService _hr;
+    public PayrollController(ErpDbContext db, PayrollService payroll, CodeService codes, DuplicateService dup, HrService hr) : base(db) { _payroll = payroll; _codes = codes; _dup = dup; _hr = hr; }
 
     // ------------------------------------------------------------------ nhân viên
     public async Task<IActionResult> Employees(string? q, bool inactive = false)
@@ -30,6 +30,7 @@ public class PayrollController : ErpControllerBase
     {
         ViewBag.Branches = new SelectList(await Db.Branches.OrderBy(b => b.Code).ToListAsync(), "Id", "Name");
         ViewBag.Depts = await Db.CatalogItems.Where(c => c.Type == CatalogType.Department).OrderBy(c => c.Name).Select(c => c.Name).ToListAsync();
+        ViewBag.Shifts = new SelectList(await Db.Shifts.Where(s => s.IsActive).OrderBy(s => s.StartMinute).Select(s => new { s.Id, Name = s.Name + " (" + s.Code + ")" }).ToListAsync(), "Id", "Name");
         ViewBag.ExpenseAccounts = (await PostableAccountsAsync()).Where(a => new[] { "622", "627", "641", "642", "154", "241" }.Any(p => a.Code.StartsWith(p))).ToList();
     }
 
@@ -59,7 +60,16 @@ public class PayrollController : ErpControllerBase
         }
         if (!ModelState.IsValid) { await FormBagAsync(); return View(m); }
         if (m.InsuranceSalary == 0) m.InsuranceSalary = m.BaseSalary;
-        if (m.Id == 0) Db.Employees.Add(m); else Db.Employees.Update(m);
+        if (m.Id == 0) { Db.Employees.Add(m); await Db.SaveChangesAsync(); _hr.LogHistory(m.Id, HistoryKind.Hired, null, $"{m.Position} – {m.Department}", "Tuyển dụng", m.StartDate); }
+        else
+        {
+            var old = await Db.Employees.AsNoTracking().FirstAsync(x => x.Id == m.Id);
+            if (old.Department != m.Department) _hr.LogHistory(m.Id, HistoryKind.Transfer, old.Department, m.Department, null);
+            if (old.Position != m.Position) _hr.LogHistory(m.Id, HistoryKind.Promotion, old.Position, m.Position, null);
+            if (old.BaseSalary != m.BaseSalary) _hr.LogHistory(m.Id, HistoryKind.SalaryChange, old.BaseSalary.ToMoney(), m.BaseSalary.ToMoney(), null);
+            if (old.IsActive && !m.IsActive && m.ResignDate == null) m.ResignDate = DateTime.Today;
+            Db.Employees.Update(m);
+        }
         await Db.SaveChangesAsync();
         Success($"Đã lưu nhân viên {m.Code} – {m.FullName}.");
         return RedirectToAction(nameof(Employees));

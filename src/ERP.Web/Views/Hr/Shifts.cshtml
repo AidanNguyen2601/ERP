@@ -1,0 +1,26 @@
+@model List<Shift>
+@{ ViewData["Title"] = "Ca làm việc"; var e = (Shift)ViewBag.Edit; var can = (bool)ViewBag.CanEdit; var users = (Dictionary<int, int>)ViewBag.Users; }
+<partial name="_HrNav" model="@("shift")" />
+<div class="row g-3">
+    <div class="col-lg-8"><div class="card"><div class="card-body p-0"><table class="table table-sm table-hover mb-0">
+        <thead><tr><th>Mã</th><th>Tên ca</th><th>Giờ</th><th class="num">Nghỉ giữa ca</th><th class="num">Số giờ công</th><th class="num">Cho phép trễ</th><th class="num">Hệ số làm thêm</th><th class="num">Người dùng</th><th></th></tr></thead><tbody>
+        @foreach (var s in Model) { <tr class="@(s.IsActive ? "" : "text-muted")"><td>@s.Code</td><td>@s.Name @if (s.IsNight) { <span class="badge bg-dark">Đêm</span> }</td><td>@s.Time</td><td class="num">@s.BreakMinutes phút</td><td class="num">@s.PaidHours.ToQty()</td><td class="num">@s.GraceMinutes phút</td><td class="num">@s.OtRate.ToQty()</td><td class="num">@users.GetValueOrDefault(s.Id)</td><td>@if (can) { <a class="small" asp-action="Shifts" asp-route-edit="@s.Id">Sửa</a> }</td></tr> }
+    </tbody></table></div></div></div>
+    @if (can)
+    {
+        <div class="col-lg-4"><div class="card"><div class="card-header">@(e.Id == 0 ? "Thêm ca" : "Sửa ca " + e.Code)</div><div class="card-body">
+            <form asp-action="SaveShift" method="post" class="row g-2"><input type="hidden" name="Id" value="@e.Id" />
+                <div class="col-4"><label class="form-label small">Mã</label><input name="Code" value="@e.Code" class="form-control form-control-sm" /></div>
+                <div class="col-8"><label class="form-label small">Tên ca</label><input name="Name" value="@e.Name" class="form-control form-control-sm" /></div>
+                <div class="col-6"><label class="form-label small">Giờ vào</label><input type="time" name="startTime" value="@($"{e.StartMinute / 60:00}:{e.StartMinute % 60:00}")" class="form-control form-control-sm" /></div>
+                <div class="col-6"><label class="form-label small">Giờ ra</label><input type="time" name="endTime" value="@($"{e.EndMinute / 60:00}:{e.EndMinute % 60:00}")" class="form-control form-control-sm" /></div>
+                <div class="col-4"><label class="form-label small">Nghỉ (phút)</label><input type="number" name="BreakMinutes" value="@e.BreakMinutes" class="form-control form-control-sm" /></div>
+                <div class="col-4"><label class="form-label small">Trễ cho phép</label><input type="number" name="GraceMinutes" value="@e.GraceMinutes" class="form-control form-control-sm" /></div>
+                <div class="col-4"><label class="form-label small">Hệ số OT</label><input type="number" step="0.1" name="OtRate" value="@e.OtRate.Raw()" class="form-control form-control-sm" /></div>
+                <div class="col-12"><div class="form-check"><input type="checkbox" class="form-check-input" name="IsActive" value="true" @(e.IsActive ? "checked" : "") /><input type="hidden" name="IsActive" value="false" /><label class="form-check-label small">Đang sử dụng</label></div></div>
+                <div class="col-12"><button class="btn btn-sm btn-primary">Lưu</button> @if (e.Id != 0) { <a class="btn btn-sm btn-light" asp-action="Shifts">Hủy</a> }</div>
+            </form>
+            <div class="small text-muted mt-2">Giờ ra nhỏ hơn giờ vào là ca đêm (qua ngày). Giờ làm thêm = giờ làm thực tế vượt số giờ công của ca, làm tròn xuống nửa giờ. Gán ca mặc định cho nhân viên ở hồ sơ.</div>
+        </div></div></div>
+    }
+</div>

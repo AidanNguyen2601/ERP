@@ -1,0 +1,29 @@
+@model List<PayrollBonus>
+@{
+    ViewData["Title"] = "Thưởng & lương sản phẩm"; int y = ViewBag.Year, m = ViewBag.Month; var can = (bool)ViewBag.CanEdit; var pieces = (List<PieceRateEntry>)ViewBag.Pieces;
+}
+<partial name="_HrNav" model="@("bonus")" />
+<form class="toolbar" method="get"><select name="month" class="form-select form-select-sm" style="width:auto">@for (var i = 1; i <= 12; i++) { <option value="@i" selected="@(i == m)">Tháng @i</option> }</select>
+    <input name="year" type="number" value="@y" class="form-control form-control-sm" style="width:100px" /><button class="btn btn-sm btn-outline-primary">Xem</button></form>
+<div class="alert alert-info small py-2">Thưởng và lương sản phẩm của tháng được cộng vào thu nhập khi lập / tính lại bảng lương nháp (thưởng chịu thuế tính vào thu nhập chịu thuế TNCN).</div>
+<div class="row g-3">
+    <div class="col-lg-6"><div class="card"><div class="card-header">Thưởng tháng @m/@y · tổng @Model.Sum(b => b.Amount).ToMoney()</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+        @foreach (var b in Model) { <tr><td>@b.Employee?.Code <span class="small text-muted">@b.Employee?.FullName</span></td><td>@b.Description</td><td class="num">@b.Amount.ToMoney()</td><td class="small">@(b.Taxable ? "Chịu thuế" : "Miễn thuế")</td><td>@if (can) { <form asp-action="DeleteBonus" asp-route-id="@b.Id" asp-route-year="@y" asp-route-month="@m" method="post"><button class="btn btn-sm btn-link text-danger py-0">✕</button></form> }</td></tr> }
+        @if (!Model.Any()) { <tr><td class="text-muted text-center py-3">Chưa có khoản thưởng.</td></tr> }
+    </tbody></table>
+    @if (can) { <form asp-action="AddBonus" method="post" class="row g-1 p-2 border-top"><input type="hidden" name="year" value="@y" /><input type="hidden" name="month" value="@m" />
+        <div class="col-md-4"><select name="employeeId" asp-items="ViewBag.Emps" class="form-select form-select-sm"></select></div><div class="col-md-3"><input name="description" class="form-control form-control-sm" placeholder="Nội dung" required /></div>
+        <div class="col-md-2"><input type="number" step="1000" name="amount" class="form-control form-control-sm" placeholder="Số tiền" required /></div>
+        <div class="col-md-2"><select name="taxable" class="form-select form-select-sm"><option value="true">Chịu thuế</option><option value="false">Miễn thuế</option></select></div><div class="col-md-1"><button class="btn btn-sm btn-outline-primary">+</button></div></form> }
+    </div></div></div>
+    <div class="col-lg-6"><div class="card"><div class="card-header">Lương sản phẩm tháng @m/@y · tổng @pieces.Sum(p => p.Amount).ToMoney()</div><div class="card-body p-0"><table class="table table-sm mb-0"><thead><tr><th>Ngày</th><th>Nhân viên</th><th>Sản phẩm</th><th class="num">SL</th><th class="num">Đơn giá</th><th class="num">Thành tiền</th><th></th></tr></thead><tbody>
+        @foreach (var p in pieces) { <tr><td>@p.Date.ToDate()</td><td>@p.Employee?.Code</td><td class="small">@(p.Item?.Name ?? p.Description)</td><td class="num">@p.Quantity.ToQty()</td><td class="num">@p.Rate.ToMoney()</td><td class="num">@p.Amount.ToMoney()</td><td>@if (can) { <form asp-action="DeletePiece" asp-route-id="@p.Id" asp-route-year="@y" asp-route-month="@m" method="post"><button class="btn btn-sm btn-link text-danger py-0">✕</button></form> }</td></tr> }
+        @if (!pieces.Any()) { <tr><td colspan="7" class="text-muted text-center py-3">Chưa có.</td></tr> }
+    </tbody></table>
+    @if (can) { <form asp-action="AddPiece" method="post" class="row g-1 p-2 border-top">
+        <div class="col-md-3"><select name="employeeId" asp-items="ViewBag.Emps" class="form-select form-select-sm"></select></div><div class="col-md-2"><input type="date" name="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+        <div class="col-md-3"><select name="itemId" asp-items="ViewBag.Items" class="form-select form-select-sm"><option value="">-- Công việc khác --</option></select></div>
+        <div class="col-md-2"><input type="number" step="0.001" min="0.001" name="quantity" class="form-control form-control-sm" placeholder="SL" required /></div><div class="col-md-2"><input type="number" step="100" min="0" name="rate" class="form-control form-control-sm" placeholder="Đơn giá" required /></div>
+        <div class="col-md-9"><input name="description" class="form-control form-control-sm" placeholder="Mô tả (nếu không chọn sản phẩm)" /></div><div class="col-md-3"><button class="btn btn-sm btn-outline-primary w-100">Ghi nhận</button></div></form> }
+    </div></div></div>
+</div>

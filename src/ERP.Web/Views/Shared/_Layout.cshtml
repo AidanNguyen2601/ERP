@@ -95,6 +95,7 @@
                 }
                 <a class="icon-btn position-relative" asp-controller="Approvals" asp-action="Index" title="@Lang.T(Context, "Chờ duyệt")"><i class="bi bi-check2-circle"></i>
                     @if (pendingCount > 0) { <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:.6rem">@pendingCount</span> }</a>
+                <a class="icon-btn position-relative" asp-controller="Alerts" asp-action="Index" title="@Lang.T(Context, "Cảnh báo")"><i class="bi bi-bell"></i><span id="alertBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark d-none" style="font-size:.6rem"></span></a>
                 <form asp-controller="Org" asp-action="Language" method="post" class="d-inline"><input type="hidden" name="returnUrl" value="@currentUrl" /><input type="hidden" name="lang" value="@(isEn ? "vi" : "en")" />
                     <button class="icon-btn" title="@(isEn ? "Tiếng Việt" : "English")" style="font-size:.75rem;font-weight:600">@(isEn ? "VI" : "EN")</button></form>
                 <a class="icon-btn" asp-controller="Preferences" asp-action="Index" title="Cấu hình giao diện"><i class="bi bi-palette"></i></a>
@@ -130,5 +131,6 @@
 <script src="~/js/ui.js" asp-append-version="true"></script>
 <script src="~/js/grid.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
+<script>fetch("@Url.Action("Count", "Alerts")",{credentials:"same-origin"}).then(function(r){return r.ok?r.json():null}).then(function(d){if(!d||!d.total)return;var b=document.getElementById("alertBadge");if(b){b.textContent=d.total;b.classList.remove("d-none");if(d.danger)b.className=b.className.replace("bg-warning text-dark","bg-danger");}}).catch(function(){});</script>
 </body>
 </html>

@@ -41,10 +41,11 @@ public class QuotesController : ErpControllerBase
         ViewBag.Items = await ItemsAsync(i => i.Type != ItemType.Material);
     }
 
-    public async Task<IActionResult> Create()
+    public async Task<IActionResult> Create(int? customerId, int? opportunityId)
     {
         if (!CanEdit) return Denied();
-        var q = new SalesQuote { SalespersonId = Me, Lines = { new SalesQuoteLine { Quantity = 1, VatRate = 10 } } };
+        ViewBag.OpportunityId = opportunityId;
+        var q = new SalesQuote { CustomerId = customerId, SalespersonId = Me, Lines = { new SalesQuoteLine { Quantity = 1, VatRate = 10 } } };
         await BagAsync(q); return View("Form", q);
     }
 

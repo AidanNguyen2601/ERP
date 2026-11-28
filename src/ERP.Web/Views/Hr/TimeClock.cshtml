@@ -1,0 +1,61 @@
+@{
+    ViewData["Title"] = "Chấm công ngày & máy chấm công"; int y = ViewBag.Year, m = ViewBag.Month; var can = (bool)ViewBag.CanEdit;
+    var emps = (List<Employee>)ViewBag.Emps; var days = (Dictionary<int, Dictionary<int, AttendanceDay>>)ViewBag.Days; var att = (Dictionary<int, Attendance>)ViewBag.Att;
+    var punches = (List<TimeClockPunch>)ViewBag.Punches; var pending = (int)ViewBag.Pending; var dim = DateTime.DaysInMonth(y, m);
+    string Cell(AttendanceDay? d) => d == null ? "" : d.Kind switch { AttendanceKind.Leave => "P", AttendanceKind.Absent => "V", AttendanceKind.Off => "-", _ => d.CheckOut == null ? "?" : d.WorkedHours.ToString("0.#") };
+    string Css(AttendanceDay? d) => d == null ? "" : d.Kind == AttendanceKind.Absent ? "table-danger" : d.Kind == AttendanceKind.Leave ? "table-info" : d.CheckOut == null ? "table-warning" : d.LateMinutes > 0 ? "text-warning fw-bold" : d.OvertimeHours > 0 ? "text-primary fw-bold" : "";
+}
+<partial name="_HrNav" model="@("clock")" />
+<form class="toolbar" method="get">
+    <select name="month" class="form-select form-select-sm" style="width:auto">@for (var i = 1; i <= 12; i++) { <option value="@i" selected="@(i == m)">Tháng @i</option> }</select>
+    <input name="year" type="number" value="@y" class="form-control form-control-sm" style="width:100px" /><button class="btn btn-sm btn-outline-primary">Xem</button>
+    @if (can) { <span class="ms-auto d-flex gap-2"><button class="btn btn-sm btn-outline-secondary" formaction="@Url.Action("ProcessPunches")" formmethod="post">Xử lý lượt quẹt chưa xử lý (@pending)</button>
+        <button class="btn btn-sm btn-primary" formaction="@Url.Action("RollUp")" formmethod="post">Tổng hợp công tháng @m/@y → bảng công tháng</button></span> }
+    @Html.AntiForgeryToken()
+</form>
+<div class="card mb-3"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-bordered mb-0 text-center" style="font-size:12px" data-grid="off">
+    <thead><tr><th class="text-start">Nhân viên</th>@for (var d = 1; d <= dim; d++) { var dt = new DateTime(y, m, d); <th class="@(dt.DayOfWeek == DayOfWeek.Sunday ? "table-secondary" : "")">@d</th> }<th>Công</th><th>OT</th></tr></thead><tbody>
+    @foreach (var e in emps)
+    {
+        var row = days.GetValueOrDefault(e.Id) ?? new Dictionary<int, AttendanceDay>(); var a = att.GetValueOrDefault(e.Id);
+        <tr><td class="text-start text-nowrap">@e.Code <span class="text-muted">@e.FullName</span></td>
+            @for (var d = 1; d <= dim; d++)
+            {
+                row.TryGetValue(d, out var cell);
+                <td class="@Css(cell) @(new DateTime(y, m, d).DayOfWeek == DayOfWeek.Sunday ? "table-secondary" : "")" title="@(cell == null ? "" : $"{cell.CheckIn:HH:mm}–{cell.CheckOut:HH:mm} · {cell.Source} · {cell.Note}")">@Cell(cell)</td>
+            }
+            <td class="fw-bold">@(a != null ? a.WorkDays.ToQty() : "")</td><td>@(a != null && a.OvertimeHours > 0 ? a.OvertimeHours.ToQty() : "")</td></tr>
+    }
+    </tbody></table></div></div>
+    <div class="card-footer small text-muted">Số = giờ làm thực tế · <span class="text-warning fw-bold">vàng đậm</span> đi trễ · <span class="text-primary fw-bold">xanh đậm</span> có làm thêm · P nghỉ phép · V vắng · ? thiếu lượt quẹt ra. Cột "Công" là bảng công tháng đã tổng hợp.</div></div>
+<div class="row g-3">
+    @if (can)
+    {
+        <div class="col-lg-6"><div class="card h-100"><div class="card-header">Kết nối máy chấm công</div><div class="card-body">
+            <div class="small mb-2">Máy chấm công đẩy lượt quẹt qua API <code>POST /api/v1/timeclock</code> (khóa API quyền <code>attendance.write</code>): <code>[{"employeeCode":"NV0001","punchTime":"2026-11-28T07:58:00","device":"Máy cổng chính"}]</code>. Hoặc nhập file xuất từ máy (mỗi dòng: <code>Mã NV, dd/MM/yyyy HH:mm[, thiết bị]</code>).</div>
+            <form asp-action="ImportPunches" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" class="form-control form-control-sm mb-2" accept=".csv,.txt" />
+                <textarea name="text" rows="4" class="form-control form-control-sm mb-2" placeholder="NV0001, 28/11/2026 07:55&#10;NV0001, 28/11/2026 17:10"></textarea>
+                <button class="btn btn-sm btn-primary">Nhập & xử lý thành công theo ca</button>
+            </form>
+        </div></div></div>
+        <div class="col-lg-6"><div class="card h-100"><div class="card-header">Chấm công thủ công một ngày</div><div class="card-body">
+            <form asp-action="SaveDay" method="post" class="row g-2">
+                <div class="col-md-6"><select name="employeeId" class="form-select form-select-sm">@foreach (var e in emps) { <option value="@e.Id">@e.Code – @e.FullName</option> }</select></div>
+                <div class="col-md-3"><input type="date" name="date" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+                <div class="col-md-3"><select name="kind" asp-items="Html.GetEnumSelectList<AttendanceKind>()" class="form-select form-select-sm"></select></div>
+                <div class="col-md-4"><select name="shiftId" asp-items="ViewBag.Shifts" class="form-select form-select-sm"><option value="">-- Ca --</option></select></div>
+                <div class="col-md-2"><input type="time" name="checkIn" class="form-control form-control-sm" title="Giờ vào" /></div>
+                <div class="col-md-2"><input type="time" name="checkOut" class="form-control form-control-sm" title="Giờ ra" /></div>
+                <div class="col-md-2"><input type="number" step="0.5" min="0" name="overtime" value="0" class="form-control form-control-sm" title="Giờ làm thêm" /></div>
+                <div class="col-md-2"><button class="btn btn-sm btn-outline-primary w-100">Lưu</button></div>
+                <div class="col-12"><input name="note" class="form-control form-control-sm" placeholder="Ghi chú" /></div>
+            </form>
+            <div class="small text-muted mt-2">Dữ liệu nhập tay không bị lượt quẹt của máy ghi đè.</div>
+        </div></div></div>
+    }
+    <div class="col-12"><div class="card"><div class="card-header">Lượt quẹt gần nhất</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+        @foreach (var p in punches) { <tr><td>@p.PunchTime.ToDateTime()</td><td>@p.EmployeeCode</td><td class="small">@p.Device</td><td>@(p.Processed ? "Đã xử lý" : "Chờ xử lý")</td></tr> }
+        @if (!punches.Any()) { <tr><td class="text-muted text-center py-3">Chưa có lượt quẹt.</td></tr> }
+    </tbody></table></div></div></div>
+</div>

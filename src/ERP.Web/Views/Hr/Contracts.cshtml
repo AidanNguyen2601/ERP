@@ -1,0 +1,43 @@
+@model List<LaborContract>
+@{
+    ViewData["Title"] = "Hợp đồng lao động"; var can = (bool)ViewBag.CanEdit; var exp = (List<LaborContract>)ViewBag.Expiring; var noC = (List<Employee>)ViewBag.NoContract; var days = (int)ViewBag.Days;
+}
+<partial name="_HrNav" model="@("contract")" />
+@if (exp.Any())
+{
+    <div class="alert alert-warning py-2"><b>Hợp đồng sắp hết hạn trong @days ngày:</b>
+        @foreach (var c in exp) { <div class="small">@c.Employee?.Code – @c.Employee?.FullName · @c.Number · hết hạn <b>@c.EndDate.ToDate()</b> (@(c.DaysLeft < 0 ? "quá hạn " + (-c.DaysLeft) : "còn " + c.DaysLeft) ngày)</div> }</div>
+}
+@if (noC.Any()) { <div class="alert alert-info py-2 small">Nhân viên chưa có hợp đồng đang hiệu lực: @string.Join(", ", noC.Select(e => e.Code + " " + e.FullName))</div> }
+<div class="toolbar"><a class="btn btn-sm @(!(bool)ViewBag.All ? "btn-secondary" : "btn-light border")" asp-action="Contracts">Đang hiệu lực</a><a class="btn btn-sm @((bool)ViewBag.All ? "btn-secondary" : "btn-light border")" asp-action="Contracts" asp-route-all="true">Tất cả</a></div>
+<div class="row g-3">
+    <div class="col-lg-8"><div class="card"><div class="card-body p-0"><table class="table table-sm table-hover mb-0">
+        <thead><tr><th>Số HĐ</th><th>Nhân viên</th><th>Loại</th><th>Từ</th><th>Đến</th><th class="num">Mức lương</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+        @foreach (var c in Model)
+        {
+            <tr><td>@c.Number</td><td><a asp-action="Profile" asp-route-id="@c.EmployeeId">@c.Employee?.Code</a> @c.Employee?.FullName</td><td class="small">@c.Type.GetDisplayName()</td><td>@c.StartDate.ToDate()</td>
+                <td class="@(c.DaysLeft is < 30 ? "overdue fw-bold" : "")">@(c.EndDate.HasValue ? c.EndDate.ToDate() : "Không thời hạn")</td><td class="num">@c.Salary.ToMoney()</td><td>@c.Status.GetDisplayName()</td>
+                <td>@if (can && c.Status == LaborContractStatus.Active) { <form asp-action="TerminateContract" asp-route-id="@c.Id" method="post" class="d-inline-flex gap-1"><input name="reason" class="form-control form-control-sm" placeholder="Lý do" style="width:110px" required /><button class="btn btn-sm btn-outline-danger py-0">Chấm dứt</button></form> }</td></tr>
+        }
+        @if (!Model.Any()) { <tr><td colspan="8" class="text-center text-muted py-4">Chưa có hợp đồng.</td></tr> }
+    </tbody></table></div></div></div>
+    @if (can)
+    {
+        <div class="col-lg-4"><div class="card"><div class="card-header">Lập hợp đồng mới</div><div class="card-body">
+            <form asp-action="SaveContract" method="post" class="row g-2">
+                <div class="col-12"><label class="form-label small">Nhân viên</label><select name="EmployeeId" asp-items="ViewBag.Emps" class="form-select form-select-sm"></select></div>
+                <div class="col-6"><label class="form-label small">Số hợp đồng</label><input name="Number" class="form-control form-control-sm" required /></div>
+                <div class="col-6"><label class="form-label small">Loại</label><select name="Type" asp-items="Html.GetEnumSelectList<LaborContractType>()" class="form-select form-select-sm"></select></div>
+                <div class="col-4"><label class="form-label small">Ngày ký</label><input type="date" name="SignedDate" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+                <div class="col-4"><label class="form-label small">Hiệu lực từ</label><input type="date" name="StartDate" value="@DateTime.Today.Iso()" class="form-control form-control-sm" /></div>
+                <div class="col-4"><label class="form-label small">Hết hạn</label><input type="date" name="EndDate" class="form-control form-control-sm" /></div>
+                <div class="col-6"><label class="form-label small">Chức danh</label><input name="Position" class="form-control form-control-sm" /></div>
+                <div class="col-6"><label class="form-label small">Mức lương</label><input type="number" step="1000" name="Salary" class="form-control form-control-sm" /></div>
+                <div class="col-12"><div class="form-check"><input type="checkbox" class="form-check-input" name="updateSalary" value="true" id="us" /><label class="form-check-label small" for="us">Cập nhật lương cơ bản trong hồ sơ theo hợp đồng</label></div></div>
+                <div class="col-12"><input name="Note" class="form-control form-control-sm" placeholder="Ghi chú" /></div>
+                <div class="col-12"><button class="btn btn-sm btn-primary">Lưu hợp đồng</button></div>
+            </form>
+            <div class="small text-muted mt-2">Hợp đồng mới thay thế hợp đồng đang hiệu lực; hợp đồng có thời hạn phải nhập ngày hết hạn và được cảnh báo trước khi hết hạn.</div>
+        </div></div></div>
+    }
+</div>

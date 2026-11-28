@@ -1,0 +1,36 @@
+@using ERP.Web.Services.Reporting
+@model ReportResult
+@{
+    Layout = null; var title = (string)ViewBag.Title2; var sub = (IEnumerable<string>)ViewBag.Sub;
+    string Cell(object? v, FieldKind k) => v switch
+    {
+        null => "",
+        DateTime d => d.ToString("dd/MM/yyyy"),
+        decimal m when k == FieldKind.Money || k == FieldKind.Number => m.ToMoney(),
+        decimal q when k == FieldKind.Qty => q.ToQty(),
+        decimal p when k == FieldKind.Percent => p.ToString("0.##") + "%",
+        decimal x => x.ToString("#,##0.##"),
+        _ => v.ToString() ?? ""
+    };
+}
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8" /><title>@title</title>
+<style>
+ body{font-family:"Segoe UI",Arial,sans-serif;font-size:12px;margin:18px;color:#111}
+ h1{font-size:18px;margin:0 0 4px} .sub{color:#555;margin-bottom:10px}
+ table{border-collapse:collapse;width:100%} th,td{border:1px solid #999;padding:3px 6px} th{background:#eee;text-align:left} td.n{text-align:right;white-space:nowrap}
+ tfoot td{font-weight:bold;background:#f5f5f5}
+ .bar{margin-bottom:10px} @@media print{.bar{display:none} body{margin:8mm} @@page{size:A4 landscape;margin:8mm}}
+</style></head>
+<body>
+<div class="bar"><button onclick="window.print()">In / Lưu PDF</button> <span style="color:#666">Chọn "Lưu dưới dạng PDF" trong hộp thoại in.</span></div>
+<h1>@title</h1><div class="sub">@foreach (var s in sub) { <div>@s</div> }</div>
+<table>
+<thead><tr>@foreach (var c in Model.Columns) { <th>@c.Title</th> }</tr></thead>
+<tbody>
+@foreach (var r in Model.Rows) { <tr>@for (var i = 0; i < Model.Columns.Count; i++) { var k = Model.Columns[i].Kind; <td class="@(k is FieldKind.Money or FieldKind.Number or FieldKind.Qty or FieldKind.Percent ? "n" : "")">@Cell(r[i], k)</td> }</tr> }
+</tbody>
+@if (Model.Totals != null) { <tfoot><tr>@for (var i = 0; i < Model.Columns.Count; i++) { var k = Model.Columns[i].Kind; <td class="@(k is FieldKind.Money or FieldKind.Number or FieldKind.Qty or FieldKind.Percent ? "n" : "")">@(i == 0 && Model.Totals[0] == null ? "Tổng cộng" : Cell(Model.Totals[i], k))</td> }</tr></tfoot> }
+</table>
+<script>if (location.search.indexOf('auto') >= 0) window.print();</script>
+</body></html>

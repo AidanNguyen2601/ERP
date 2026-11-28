@@ -97,6 +97,7 @@ public class DynamicReportsController : ErpControllerBase
         var name = string.IsNullOrWhiteSpace(title) ? ds.Title : title!.Trim();
         var file = new string(name.Select(c => char.IsLetterOrDigit(c) || c is ' ' or '-' or '_' ? c : '_').ToArray()).Trim().Replace(' ', '_');
         var (cols, rows, totals) = ReportExport.From(result);
+        if (format == "pdf") { ViewBag.Title2 = name; ViewBag.Sub = Subtitle(result, User.GetFullName()).ToList(); return View("Print", result); }
         if (format == "csv") return File(ReportExport.Csv(cols, rows, totals), "text/csv; charset=utf-8", $"{file}.csv");
         return File(ReportExport.Xlsx(name, name, Subtitle(result, User.GetFullName()), cols, rows, totals), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"{file}.xlsx");
     }

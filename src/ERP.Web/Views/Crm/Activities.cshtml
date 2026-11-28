@@ -1,0 +1,35 @@
+@model List<CrmActivity>
+@{
+    ViewData["Title"] = "Tương tác & công việc"; var can = (bool)ViewBag.CanEdit; var kind = ViewBag.Kind as ActivityKind?; var openTasks = (bool)ViewBag.OpenTasks;
+}
+<partial name="_CrmNav" model="@("act")" />
+<div class="toolbar">
+    <a class="btn btn-sm @(kind == null && !openTasks ? "btn-secondary" : "btn-light border")" asp-action="Activities">Tất cả</a>
+    <a class="btn btn-sm @(openTasks ? "btn-secondary" : "btn-light border")" asp-action="Activities" asp-route-openTasks="true">Công việc chưa xong</a>
+    @foreach (ActivityKind k in Enum.GetValues<ActivityKind>()) { <a class="btn btn-sm @(kind == k ? "btn-secondary" : "btn-light border")" asp-action="Activities" asp-route-kind="@k">@k.GetDisplayName()</a> }
+</div>
+<div class="row g-3">
+    <div class="col-lg-8"><div class="card"><div class="card-body p-0"><table class="table table-sm mb-0">
+        <thead><tr><th>Thời điểm</th><th>Loại</th><th>Nội dung</th><th>Đối tượng</th><th>Người thực hiện</th><th></th></tr></thead><tbody>
+        @foreach (var a in Model)
+        {
+            <tr class="@(a.IsOverdue ? "table-danger" : "")"><td class="text-nowrap small">@a.Date.ToString("dd/MM/yy HH:mm")</td><td class="small">@a.Kind.GetDisplayName()</td>
+                <td>@a.Subject @if (!string.IsNullOrEmpty(a.Outcome)) { <div class="small text-muted">@a.Outcome</div> }</td>
+                <td class="small">@if (a.PartnerId != null) { <a asp-action="Customer" asp-route-id="@a.PartnerId">@a.Partner?.Name</a> } else if (a.LeadId != null) { <a asp-action="LeadDetails" asp-route-id="@a.LeadId">@a.Lead?.Name</a> } @if (a.OpportunityId != null) { <div><a asp-action="OppDetails" asp-route-id="@a.OpportunityId">@a.Opportunity?.Code</a></div> }</td>
+                <td class="small">@a.Owner?.FullName</td>
+                <td>@if (a.Kind == ActivityKind.Task && !a.Done && can) { <form asp-action="CompleteTask" asp-route-id="@a.Id" method="post"><button class="btn btn-sm btn-outline-success py-0">Xong</button></form> } else if (a.Kind == ActivityKind.Task) { <span class="badge bg-success">Đã xong</span> }</td></tr>
+        }
+        @if (!Model.Any()) { <tr><td colspan="6" class="text-center text-muted py-3">Không có dữ liệu.</td></tr> }
+    </tbody></table></div></div></div>
+    @if (can) {
+    <div class="col-lg-4"><div class="card"><div class="card-header">Ghi nhận tương tác / giao việc</div><div class="card-body">
+        <form asp-action="AddActivity" method="post" class="row g-2">
+            <div class="col-6"><select name="Kind" asp-items="Html.GetEnumSelectList<ActivityKind>()" class="form-select form-select-sm"></select></div>
+            <div class="col-6"><input name="Date" type="datetime-local" value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" class="form-control form-control-sm" /></div>
+            <div class="col-12"><input name="Subject" class="form-control form-control-sm" placeholder="Nội dung" required /></div>
+            <div class="col-12"><select name="PartnerId" asp-items="ViewBag.Customers" class="form-select form-select-sm"><option value="">-- Khách hàng --</option></select></div>
+            <div class="col-12"><select name="LeadId" asp-items="ViewBag.LeadList" class="form-select form-select-sm"><option value="">-- Hoặc khách hàng tiềm năng --</option></select></div>
+            <div class="col-12"><input name="Outcome" class="form-control form-control-sm" placeholder="Kết quả / ghi chú" /></div>
+            <div class="col-12"><button class="btn btn-sm btn-primary">Lưu</button></div>
+        </form></div></div></div> }
+</div>

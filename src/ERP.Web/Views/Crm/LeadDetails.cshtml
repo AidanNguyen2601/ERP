@@ -1,0 +1,33 @@
+@model Lead
+@{
+    ViewData["Title"] = Model.Code + " – " + Model.Name; var can = (bool)ViewBag.CanEdit; var acts = (List<CrmActivity>)ViewBag.Acts; var opps = (List<Opportunity>)ViewBag.Opps; var closed = Model.Stage is LeadStage.Converted;
+}
+<div class="d-flex justify-content-between mb-2"><h5 class="mb-0">@Model.Name <span class="badge bg-light text-dark border">@Model.Stage.GetDisplayName()</span></h5><a class="btn btn-sm btn-light border" asp-action="Leads">‹ Danh sách</a></div>
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card mb-3"><div class="card-body small">
+            <div><b>Mã:</b> @Model.Code · <b>Nguồn:</b> @Model.Source.GetDisplayName()</div>
+            <div><b>Liên hệ:</b> @Model.ContactName @(Model.ContactTitle != null ? "(" + Model.ContactTitle + ")" : "")</div>
+            <div><b>Điện thoại:</b> @Model.Phone · <b>Email:</b> @Model.Email</div><div><b>Địa chỉ:</b> @Model.Address</div>
+            <div><b>Phụ trách:</b> @Model.Owner?.FullName · <b>Giá trị dự kiến:</b> @Model.EstimatedValue.ToMoney() đ</div>
+            @if (Model.Note != null) { <div class="mt-1">@Model.Note</div> }
+            @if (Model.LostReason != null) { <div class="text-danger">Lý do không phù hợp: @Model.LostReason</div> }
+            @if (Model.Partner != null) { <div class="mt-1"><a asp-action="Customer" asp-route-id="@Model.PartnerId">Khách hàng @Model.Partner.Code – @Model.Partner.Name</a></div> }
+        </div>
+        @if (can && !closed) { <div class="card-footer d-flex flex-wrap gap-1">
+            <a class="btn btn-sm btn-light border" asp-action="LeadForm" asp-route-id="@Model.Id">Sửa</a>
+            @foreach (var s in new[] { LeadStage.Contacted, LeadStage.Qualified }) { if (Model.Stage != s) { <form asp-action="SetLeadStage" method="post"><input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="stage" value="@s" /><button class="btn btn-sm btn-outline-secondary">→ @s.GetDisplayName()</button></form> } }
+            <form asp-action="SetLeadStage" method="post" class="d-flex gap-1"><input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="stage" value="@LeadStage.Lost" /><input name="reason" class="form-control form-control-sm" placeholder="Lý do không phù hợp" style="width:160px" /><button class="btn btn-sm btn-outline-danger">Loại</button></form>
+        </div> }</div>
+        @if (can && !closed && Model.Stage != LeadStage.Lost) {
+        <div class="card mb-3"><div class="card-header">Chuyển thành khách hàng</div><div class="card-body"><form asp-action="ConvertLead" method="post" class="row g-2">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="col-12"><input name="oppTitle" class="form-control form-control-sm" placeholder="Tên cơ hội (tùy chọn)" /></div>
+            <div class="col-12"><input name="amount" type="number" class="form-control form-control-sm" value="@Model.EstimatedValue.ToString("0")" /></div>
+            <div class="col-12"><button class="btn btn-sm btn-success">Chuyển đổi và tạo cơ hội</button></div></form></div></div> }
+    </div>
+    <div class="col-lg-7">
+        @if (opps.Any()) { <div class="card mb-3"><div class="card-header">Cơ hội</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>@foreach (var o in opps) { <tr><td><a asp-action="OppDetails" asp-route-id="@o.Id">@o.Code</a></td><td>@o.Title</td><td>@o.Stage.GetDisplayName()</td><td class="num">@o.Amount.ToMoney()</td></tr> }</tbody></table></div></div> }
+        <partial name="_ActivityPanel" model="@(new ActivityPanel(acts, can && Model.Stage != LeadStage.Lost, Model.Id, Model.PartnerId, null, Url.Action("LeadDetails", new { id = Model.Id })!))" />
+    </div>
+</div>

@@ -1,0 +1,55 @@
+@{
+    ViewData["Title"] = "Lịch gửi báo cáo"; var schedules = (List<ReportSchedule>)ViewBag.Schedules; var reports = (List<SavedReport>)ViewBag.Reports; var outbox = (List<EmailOutbox>)ViewBag.Outbox; var smtp = (bool)ViewBag.Smtp; var admin = (bool)ViewBag.IsAdmin;
+}
+@if (!smtp) { <div class="alert alert-warning py-2 small">Chưa cấu hình máy chủ SMTP – email sẽ được tạo và giữ trong hộp thư đi bên dưới (có thể tải tệp đính kèm), chưa gửi ra ngoài.</div> }
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card mb-3"><div class="card-header">Lịch đã đặt</div><div class="card-body p-0"><table class="table table-sm mb-0">
+            <thead><tr><th>Báo cáo</th><th>Tần suất</th><th>Người nhận</th><th>Lần tới</th><th>Lần gần nhất</th><th></th></tr></thead><tbody>
+            @foreach (var s in schedules)
+            {
+                <tr class="@(s.IsActive ? "" : "text-muted")"><td>@s.SavedReport?.Name <span class="badge bg-light text-dark border">@s.Format.ToUpper()</span></td><td class="small">@s.Frequency.GetDisplayName() · @s.Hour:00</td><td class="small">@s.Recipients</td>
+                    <td class="small">@(s.IsActive ? s.NextRunAt.ToString("dd/MM HH:mm") : "Tạm dừng")</td><td class="small">@s.LastRunAt?.ToString("dd/MM HH:mm") <div class="text-muted">@s.LastResult</div></td>
+                    <td class="text-nowrap">
+                        <form asp-action="RunNow" asp-route-id="@s.Id" method="post" class="d-inline"><button class="btn btn-sm btn-outline-primary py-0">Chạy ngay</button></form>
+                        <form asp-action="Toggle" asp-route-id="@s.Id" method="post" class="d-inline"><button class="btn btn-sm btn-light border py-0">@(s.IsActive ? "Tạm dừng" : "Bật")</button></form>
+                        <form asp-action="Delete" asp-route-id="@s.Id" method="post" class="d-inline" onsubmit="return confirm('Xóa lịch này?')"><button class="btn btn-sm btn-outline-danger py-0">Xóa</button></form></td></tr>
+            }
+            @if (!schedules.Any()) { <tr><td colspan="6" class="text-center text-muted py-3">Chưa có lịch nào.</td></tr> }
+        </tbody></table></div></div>
+        <div class="card"><div class="card-header">Hộp thư đi (30 email gần nhất)</div><div class="card-body p-0"><table class="table table-sm mb-0">
+            <thead><tr><th>Thời gian</th><th>Tới</th><th>Tiêu đề</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+            @foreach (var m in outbox)
+            {
+                <tr><td class="small text-nowrap">@m.CreatedAt.ToString("dd/MM HH:mm")</td><td class="small">@m.ToAddresses</td><td class="small">@m.Subject @if (m.AttachmentName != null) { <a asp-action="Attachment" asp-route-id="@m.Id"><i class="bi bi-paperclip"></i>@m.AttachmentName</a> }</td>
+                    <td><span class="badge @(m.Status == MailStatus.Sent ? "bg-success" : m.Status == MailStatus.Failed ? "bg-danger" : "bg-warning text-dark")">@m.Status.GetDisplayName()</span> @if (m.Error != null) { <div class="small text-muted">@m.Error</div> }</td>
+                    <td>@if (m.Status != MailStatus.Sent) { <form asp-action="Resend" asp-route-id="@m.Id" method="post"><button class="btn btn-sm btn-light border py-0">Gửi lại</button></form> }</td></tr>
+            }
+            @if (!outbox.Any()) { <tr><td colspan="5" class="text-center text-muted py-3">Chưa có email.</td></tr> }
+        </tbody></table></div></div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card mb-3"><div class="card-header">Đặt lịch gửi báo cáo</div><div class="card-body">
+            <form asp-action="Save" method="post" class="row g-2">
+                <div class="col-12"><select name="savedReportId" class="form-select form-select-sm">@foreach (var r in reports) { <option value="@r.Id">@r.Name</option> }</select>@if (!reports.Any()) { <div class="small text-muted">Chưa có báo cáo đã lưu – tạo ở <a asp-controller="DynamicReports" asp-action="Index">Báo cáo tự thiết kế</a>.</div> }</div>
+                <div class="col-7"><select name="frequency" asp-items="Html.GetEnumSelectList<ScheduleFrequency>()" class="form-select form-select-sm"></select></div>
+                <div class="col-5"><div class="input-group input-group-sm"><input name="hour" type="number" min="0" max="23" value="7" class="form-control" /><span class="input-group-text">giờ</span></div></div>
+                <div class="col-12"><input name="recipients" class="form-control form-control-sm" placeholder="Email người nhận (cách nhau dấu phẩy)" required /></div>
+                <div class="col-12"><select name="format" class="form-select form-select-sm"><option value="xlsx">Excel (.xlsx)</option><option value="csv">CSV</option></select></div>
+                <div class="col-12"><button class="btn btn-sm btn-primary" disabled="@(!reports.Any())">Đặt lịch</button></div>
+            </form></div></div>
+        @if (admin)
+        {
+            <div class="card"><div class="card-header">Cấu hình SMTP</div><div class="card-body">
+                <form asp-action="SaveSmtp" method="post" class="row g-2">
+                    <div class="col-8"><input name="host" value="@ViewBag.SmtpHost" class="form-control form-control-sm" placeholder="Máy chủ (smtp.example.com)" /></div>
+                    <div class="col-4"><input name="port" type="number" value="@ViewBag.SmtpPort" class="form-control form-control-sm" /></div>
+                    <div class="col-12"><input name="user" value="@ViewBag.SmtpUser" class="form-control form-control-sm" placeholder="Tài khoản" autocomplete="off" /></div>
+                    <div class="col-12"><input name="password" type="password" class="form-control form-control-sm" placeholder="Mật khẩu (để trống nếu không đổi)" autocomplete="new-password" /></div>
+                    <div class="col-12"><input name="from" value="@ViewBag.SmtpFrom" class="form-control form-control-sm" placeholder="Email người gửi" /></div>
+                    <div class="col-12"><div class="form-check"><input class="form-check-input" type="checkbox" name="ssl" value="true" checked="@((bool)ViewBag.SmtpSsl)" /><input type="hidden" name="ssl" value="false" /><label class="form-check-label small">Dùng SSL/TLS</label></div></div>
+                    <div class="col-12"><button class="btn btn-sm btn-primary">Lưu</button></div>
+                </form></div></div>
+        }
+    </div>
+</div>

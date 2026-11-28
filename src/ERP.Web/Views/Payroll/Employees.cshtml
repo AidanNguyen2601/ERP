@@ -16,7 +16,7 @@
     {
         <tr class="@(e.IsActive ? "" : "text-muted")"><td><b>@e.Code</b></td><td>@e.FullName</td><td class="small">@e.Department</td><td class="small">@e.Position</td><td class="small">@e.Branch?.Name</td>
             <td class="num">@e.BaseSalary.ToMoney()</td><td class="num">@((e.Allowance + e.NonTaxAllowance).ToMoney())</td><td class="num">@e.InsuranceSalary.ToMoney()</td><td class="num">@e.Dependents</td><td>@e.ExpenseAccount</td>
-            <td class="text-end"><a class="btn btn-sm btn-light" asp-action="EditEmployee" asp-route-id="@e.Id"><i class="bi bi-pencil"></i></a></td></tr>
+            <td class="text-end"><a class="btn btn-sm btn-light" asp-controller="Hr" asp-action="Profile" asp-route-id="@e.Id" title="Hồ sơ nhân sự"><i class="bi bi-person-vcard"></i></a> <a class="btn btn-sm btn-light" asp-action="EditEmployee" asp-route-id="@e.Id"><i class="bi bi-pencil"></i></a></td></tr>
     }
     @if (!Model.Any()) { <tr><td colspan="11" class="text-center text-muted py-3">Chưa có nhân viên.</td></tr> }
     </tbody>

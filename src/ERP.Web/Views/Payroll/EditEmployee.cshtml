@@ -30,6 +30,19 @@
         <div class="col-md-4"><label class="form-label">Số tài khoản</label><input asp-for="BankAccountNo" class="form-control" /></div>
         <div class="col-md-5"><label class="form-label">Ngân hàng</label><input asp-for="BankName" class="form-control" /></div>
         <div class="col-md-3 d-flex align-items-end"><div class="form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label">Đang làm việc</label></div></div>
+        <div class="col-12"><hr class="my-1" /><div class="fw-semibold small text-muted">Hồ sơ cá nhân</div></div>
+        <div class="col-md-3"><label class="form-label">Ngày sinh</label><input asp-for="DateOfBirth" type="date" class="form-control" /></div>
+        <div class="col-md-2"><label class="form-label">Giới tính</label><select asp-for="Gender" asp-items="Html.GetEnumSelectList<Gender>()" class="form-select"><option value="">--</option></select></div>
+        <div class="col-md-3"><label class="form-label">Điện thoại</label><input asp-for="Phone" class="form-control" /></div>
+        <div class="col-md-4"><label class="form-label">Email</label><input asp-for="Email" class="form-control" /></div>
+        <div class="col-md-8"><label class="form-label">Địa chỉ thường trú</label><input asp-for="Address" class="form-control" /></div>
+        <div class="col-md-4"><label class="form-label">Trình độ học vấn</label><input asp-for="Education" class="form-control" /></div>
+        <div class="col-md-3"><label class="form-label">Tình trạng hôn nhân</label><input asp-for="MaritalStatus" class="form-control" /></div>
+        <div class="col-md-5"><label class="form-label">Người liên hệ khẩn cấp</label><input asp-for="EmergencyContact" class="form-control" /></div>
+        <div class="col-md-2"><label class="form-label">Số sổ BHXH</label><input asp-for="InsuranceBookNo" class="form-control" /></div>
+        <div class="col-md-2"><label class="form-label">Phép năm (ngày)</label><input asp-for="AnnualLeaveDays" type="number" step="0.5" min="0" class="form-control" /></div>
+        <div class="col-md-4"><label class="form-label">Ca làm việc mặc định</label><select asp-for="DefaultShiftId" asp-items="ViewBag.Shifts" class="form-select"><option value="">-- Theo giờ quẹt --</option></select></div>
+        <div class="col-md-3"><label class="form-label">Ngày nghỉ việc</label><input asp-for="ResignDate" type="date" class="form-control" /></div>
         @if (dups?.Any() == true && DuplicateService.CanOverride(User))
         {
             <div class="col-12"><div class="form-check"><input class="form-check-input" type="checkbox" name="confirmDuplicate" value="true" id="cd" /><label class="form-check-label text-danger" for="cd">Vẫn lưu dù trùng</label></div></div>

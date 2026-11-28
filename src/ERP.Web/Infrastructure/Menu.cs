@@ -117,6 +117,7 @@ public static class Menu
         }},
         new() { Key = "sales", Title = "Bán hàng", Icon = "bi-bag-check", Tint = "#fdf4ff", Items = new MenuItem[]
         {
+            new() { Key = "crm", Title = "CRM – khách hàng & cơ hội", Icon = "bi-bullseye", Controller = "Crm", Visible = u => u.InAny(AppRoles.SalesTeam + "," + AppRoles.Accountant + "," + AppRoles.Director), Active = m => m.Is("Crm") },
             new() { Key = "quotes", Title = "Báo giá bán hàng", Icon = "bi-file-earmark-text", Controller = "Quotes", Visible = u => u.InAny(AppRoles.SalesTeam + "," + AppRoles.Accountant + "," + AppRoles.Director), Active = m => m.Is("Quotes") },
             new() { Key = "so", Title = "Đơn bán hàng", Icon = "bi-bag-check", Controller = "SalesOrders", Active = m => m.Is("SalesOrders") },
             new() { Key = "shipments", Title = "Giao hàng & vận chuyển", Icon = "bi-truck-flatbed", Controller = "Shipments", Visible = u => u.InAny(AppRoles.SalesTeam + "," + AppRoles.WarehouseTeam + "," + AppRoles.Accountant + "," + AppRoles.Director), Active = m => m.Is("Shipments") },
@@ -151,6 +152,11 @@ public static class Menu
             new() { Key = "employees", Title = "Nhân viên", Icon = "bi-person-vcard", Controller = "Payroll", Action = "Employees", Visible = Fin, Active = m => m.Is("Payroll", "Employees") || m.Is("Payroll", "EditEmployee") },
             new() { Key = "attendance", Title = "Chấm công", Icon = "bi-calendar-check", Controller = "Payroll", Action = "Attendance", Visible = Fin, Active = m => m.Is("Payroll", "Attendance") },
             new() { Key = "payroll", Title = "Bảng lương", Icon = "bi-cash-coin", Controller = "Payroll", Visible = Fin, Active = m => m.Is("Payroll") && m.Action is "Index" or "Details" or "Payslip" },
+            new() { Key = "hr-contracts", Title = "Hợp đồng lao động", Icon = "bi-file-earmark-person", Controller = "Hr", Action = "Contracts", Visible = Fin, Active = m => m.Is("Hr", "Contracts") || m.Is("Hr", "Profile") },
+            new() { Key = "hr-timeclock", Title = "Ca & chấm công ngày", Icon = "bi-fingerprint", Controller = "Hr", Action = "TimeClock", Visible = Fin, Active = m => m.Is("Hr", "TimeClock") || m.Is("Hr", "Shifts") },
+            new() { Key = "hr-leave", Title = "Nghỉ phép", Icon = "bi-calendar-x", Controller = "Hr", Action = "Leave", Visible = Fin, Active = m => m.Is("Hr", "Leave") },
+            new() { Key = "hr-comp", Title = "Thành phần lương & thưởng", Icon = "bi-sliders", Controller = "Hr", Action = "Components", Visible = Fin, Active = m => m.Is("Hr") && m.Action is "Components" or "Bonuses" },
+            new() { Key = "hr-ins", Title = "Bảo hiểm & quyết toán TNCN", Icon = "bi-shield-check", Controller = "Hr", Action = "Insurance", Visible = Fin, Active = m => m.Is("Hr") && m.Action is "Insurance" or "PitFinalization" },
         }},
         new() { Key = "quality", Title = "Quản lý chất lượng", Icon = "bi-patch-check", Tint = "#ecfeff", Items = new MenuItem[]
         {
@@ -163,6 +169,9 @@ public static class Menu
         {
             new() { Key = "report-center", Title = "Trung tâm báo cáo", Icon = "bi-grid-1x2", Controller = "ReportCenter", Active = m => m.Is("ReportCenter") },
             new() { Key = "report-dynamic", Title = "Báo cáo động", Icon = "bi-magic", Controller = "DynamicReports", Active = m => m.Is("DynamicReports") },
+            new() { Key = "report-exec", Title = "Dashboard điều hành", Icon = "bi-speedometer2", Controller = "Executive", Visible = Fin, Active = m => m.Is("Executive") },
+            new() { Key = "report-sched", Title = "Lịch gửi báo cáo email", Icon = "bi-envelope-paper", Controller = "ReportSchedules", Visible = Fin, Active = m => m.Is("ReportSchedules") },
+            new() { Key = "report-alerts", Title = "Cảnh báo tự động", Icon = "bi-bell", Controller = "Alerts", Active = m => m.Is("Alerts") },
             new() { Key = "report-gj", Title = "Sổ nhật ký chung", Icon = "bi-journal-text", Controller = "StandardReports", Action = "GeneralJournal", Visible = Fin, Active = m => m.Is("StandardReports", "GeneralJournal") },
             new() { Key = "report-cf", Title = "Lưu chuyển tiền tệ", Icon = "bi-cash-stack", Controller = "StandardReports", Action = "CashFlowStatement", Visible = Fin, Active = m => m.Is("StandardReports", "CashFlowStatement") },
             new() { Key = "report-nxt", Title = "Nhập – xuất – tồn kho", Icon = "bi-arrow-left-right", Controller = "StandardReports", Action = "StockSummary",

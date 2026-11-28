@@ -28,12 +28,12 @@
     @foreach (var l in Model.Lines.OrderBy(x => x.Employee?.Code))
     {
         <tr><td>@l.Employee?.Code</td><td>@l.Employee?.FullName</td><td class="small">@l.Department (@l.ExpenseAccount)</td><td class="num">@l.BaseSalary.ToMoney()</td><td class="num">@l.WorkDays.ToQty()</td>
-            <td class="num">@l.SalaryByDays.ToMoney()</td><td class="num">@l.Overtime.ToMoney()</td><td class="num">@((l.Allowance + l.NonTaxAllowance).ToMoney())</td><td class="num"><b>@l.Gross.ToMoney()</b></td>
+            <td class="num">@l.SalaryByDays.ToMoney()</td><td class="num">@l.Overtime.ToMoney()</td><td class="num">@((l.Allowance + l.NonTaxAllowance + l.ExtraTaxable + l.ExtraNonTax).ToMoney())</td><td class="num"><b>@l.Gross.ToMoney()</b></td>
             <td class="num">@l.EmpTotal.ToMoney()</td><td class="num">@l.FamilyDeduction.ToMoney()</td><td class="num">@l.TaxableIncome.ToMoney()</td><td class="num">@l.Pit.ToMoney()</td><td class="num"><b>@l.Net.ToMoney()</b></td><td class="num">@l.ErTotal.ToMoney()</td>
             <td><a asp-action="Payslip" asp-route-id="@Model.Id" asp-route-lineId="@l.Id" title="Phiếu lương" target="_blank"><i class="bi bi-printer"></i></a></td></tr>
     }
     </tbody>
-    <tfoot><tr class="fw-bold"><td colspan="5">Cộng</td><td class="num">@S(l => l.SalaryByDays).ToMoney()</td><td class="num">@S(l => l.Overtime).ToMoney()</td><td class="num">@S(l => l.Allowance + l.NonTaxAllowance).ToMoney()</td><td class="num">@S(l => l.Gross).ToMoney()</td>
+    <tfoot><tr class="fw-bold"><td colspan="5">Cộng</td><td class="num">@S(l => l.SalaryByDays).ToMoney()</td><td class="num">@S(l => l.Overtime).ToMoney()</td><td class="num">@S(l => l.Allowance + l.NonTaxAllowance + l.ExtraTaxable + l.ExtraNonTax).ToMoney()</td><td class="num">@S(l => l.Gross).ToMoney()</td>
         <td class="num">@S(l => l.EmpTotal).ToMoney()</td><td></td><td class="num">@S(l => l.TaxableIncome).ToMoney()</td><td class="num">@S(l => l.Pit).ToMoney()</td><td class="num">@S(l => l.Net).ToMoney()</td><td class="num">@S(l => l.ErTotal).ToMoney()</td><td></td></tr></tfoot>
 </table></div></div></div>
 <div class="row g-3 mt-1">

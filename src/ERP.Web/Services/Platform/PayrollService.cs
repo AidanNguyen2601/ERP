@@ -48,13 +48,15 @@ public class PayrollService
         return Math.Round(tax, 0);
     }
 
-    public static void Compute(PayrollLine l, Employee e, decimal workDays, decimal otHours, decimal stdDays, Rates r)
+    public static void Compute(PayrollLine l, Employee e, decimal workDays, decimal otHours, decimal stdDays, Rates r, HrService.Extras? x = null)
     {
         l.EmployeeId = e.Id; l.Department = e.Department; l.ExpenseAccount = e.ExpenseAccount; l.BaseSalary = e.BaseSalary; l.WorkDays = workDays;
         l.SalaryByDays = Math.Round(e.BaseSalary * Math.Min(workDays, stdDays) / stdDays, 0);
         l.Overtime = Math.Round(e.BaseSalary / stdDays / 8m * 1.5m * otHours, 0);
         l.Allowance = e.Allowance; l.NonTaxAllowance = e.NonTaxAllowance;
-        l.Gross = l.SalaryByDays + l.Overtime + l.Allowance + l.NonTaxAllowance;
+        x ??= new HrService.Extras(0, 0, 0, 0, 0, "");
+        l.ExtraTaxable = x.Taxable; l.ExtraNonTax = x.NonTax; l.Bonus = x.Bonus; l.PieceRate = x.Piece; l.OtherDeduction = x.Deduction; l.ExtraNote = x.Note.Length > 600 ? x.Note[..600] : x.Note;
+        l.Gross = l.SalaryByDays + l.Overtime + l.Allowance + l.NonTaxAllowance + l.ExtraTaxable + l.ExtraNonTax;
         l.InsuranceBase = Math.Min(e.InsuranceSalary, r.Cap);
         l.EmpBhxh = Math.Round(l.InsuranceBase * r.EmpBhxh / 100, 0); l.EmpBhyt = Math.Round(l.InsuranceBase * r.EmpBhyt / 100, 0); l.EmpBhtn = Math.Round(l.InsuranceBase * r.EmpBhtn / 100, 0);
         l.ErBhxh = Math.Round(l.InsuranceBase * r.ErBhxh / 100, 0); l.ErBhyt = Math.Round(l.InsuranceBase * r.ErBhyt / 100, 0); l.ErBhtn = Math.Round(l.InsuranceBase * r.ErBhtn / 100, 0);
@@ -62,9 +64,9 @@ public class PayrollService
         l.FamilyDeduction = r.Personal + e.Dependents * r.Dependent;
         // Phần lương làm thêm giờ trả cao hơn ngày thường được miễn thuế: chỉ tính phần lương giờ bình thường (1/1.5)
         var otExempt = Math.Round(l.Overtime / 1.5m * 0.5m, 0);
-        l.TaxableIncome = Math.Max(0, l.Gross - l.NonTaxAllowance - otExempt - l.EmpTotal - l.FamilyDeduction);
+        l.TaxableIncome = Math.Max(0, l.Gross - l.NonTaxAllowance - l.ExtraNonTax - otExempt - l.EmpTotal - l.FamilyDeduction);
         l.Pit = Pit(l.TaxableIncome, r.Brackets);
-        l.Net = l.Gross - l.EmpTotal - l.Pit;
+        l.Net = l.Gross - l.EmpTotal - l.Pit - l.OtherDeduction;
     }
 
     public async Task<PayrollRun> CreateAsync(int year, int month, int? branchId)
@@ -84,11 +86,18 @@ public class PayrollService
     {
         var emps = await _db.Employees.Where(e => e.IsActive && (run.BranchId == null || e.BranchId == run.BranchId)).OrderBy(e => e.Code).ToListAsync();
         var att = await _db.Attendances.Where(a => a.Year == run.Year && a.Month == run.Month).ToDictionaryAsync(a => a.EmployeeId);
+        var comps = (await _db.EmployeeSalaryComponents.Include(x => x.Component).ToListAsync()).GroupBy(x => x.EmployeeId).ToDictionary(g => g.Key, g => g.ToList());
+        var bonuses = (await _db.PayrollBonuses.Where(b => b.Year == run.Year && b.Month == run.Month).ToListAsync()).GroupBy(x => x.EmployeeId).ToDictionary(g => g.Key, g => g.ToList());
+        var from = new DateTime(run.Year, run.Month, 1); var to = from.AddMonths(1);
+        var pieces = (await _db.PieceRateEntries.Where(p => p.Date >= from && p.Date < to).ToListAsync()).GroupBy(x => x.EmployeeId).ToDictionary(g => g.Key, g => g.ToList());
         foreach (var e in emps)
         {
             var a = att.GetValueOrDefault(e.Id);
             var l = new PayrollLine();
-            Compute(l, e, a?.WorkDays ?? run.StandardDays, a?.OvertimeHours ?? 0, run.StandardDays, r);
+            var wd = a?.WorkDays ?? run.StandardDays; var oth = a?.OvertimeHours ?? 0;
+            var byDays = Math.Round(e.BaseSalary * Math.Min(wd, run.StandardDays) / run.StandardDays, 0);
+            var x = HrService.ExtrasFor(e, wd, oth, run.StandardDays, byDays, run.Year, run.Month, comps.GetValueOrDefault(e.Id) ?? new(), bonuses.GetValueOrDefault(e.Id) ?? new(), pieces.GetValueOrDefault(e.Id) ?? new());
+            Compute(l, e, wd, oth, run.StandardDays, r, x);
             run.Lines.Add(l);
         }
     }
@@ -127,7 +136,7 @@ public class PayrollService
             if (!a.IsPostable) throw new BusinessException($"TK {code} là tài khoản tổng hợp – chọn TK chi tiết cho nhân viên / cài đặt lương.");
             return a.Id;
         }
-        int a334 = await A("3341"), a3383 = await A("3383"), a3384 = await A("3384"), a3386 = await A("3386"), a3382 = await A("3382"), a3335 = await A("3335");
+        int a3388 = await A("3388"), a334 = await A("3341"), a3383 = await A("3383"), a3384 = await A("3384"), a3386 = await A("3386"), a3382 = await A("3382"), a3335 = await A("3335");
         var lines = new List<JLine>();
         foreach (var g in run.Lines.GroupBy(l => (l.ExpenseAccount, l.Department)))
         {
@@ -137,7 +146,8 @@ public class PayrollService
         }
         decimal S(Func<PayrollLine, decimal> f) => run.Lines.Sum(f);
         lines.Add(new JLine(a334, 0, S(l => l.Gross), null, "Phải trả người lao động"));
-        lines.Add(new JLine(a334, S(l => l.EmpTotal) + S(l => l.Pit), 0, null, "Khấu trừ bảo hiểm, thuế TNCN vào lương"));
+        lines.Add(new JLine(a334, S(l => l.EmpTotal) + S(l => l.Pit) + S(l => l.OtherDeduction), 0, null, "Khấu trừ bảo hiểm, thuế TNCN, khoản khấu trừ khác vào lương"));
+        if (S(l => l.OtherDeduction) > 0) lines.Add(new JLine(a3388, 0, S(l => l.OtherDeduction), null, "Khoản khấu trừ khác (tạm ứng, đoàn phí…)"));
         lines.Add(new JLine(a3383, 0, S(l => l.ErBhxh + l.EmpBhxh), null, "BHXH"));
         lines.Add(new JLine(a3384, 0, S(l => l.ErBhyt + l.EmpBhyt), null, "BHYT"));
         lines.Add(new JLine(a3386, 0, S(l => l.ErBhtn + l.EmpBhtn), null, "BHTN"));

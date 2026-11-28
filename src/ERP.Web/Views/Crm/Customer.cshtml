@@ -1,0 +1,28 @@
+@model Partner
+@{
+    ViewData["Title"] = "Khách hàng 360° – " + Model.Name; var can = (bool)ViewBag.CanEdit; var acts = (List<CrmActivity>)ViewBag.Acts; var opps = (List<Opportunity>)ViewBag.Opps;
+    var quotes = (List<SalesQuote>)ViewBag.Quotes; var orders = (List<SalesOrder>)ViewBag.Orders;
+}
+<div class="d-flex justify-content-between mb-2"><h5 class="mb-0">@Model.Code – @Model.Name</h5><a class="btn btn-sm btn-light border" asp-action="Index">‹ CRM</a></div>
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="small text-muted">Doanh thu 12 tháng</div><div class="fs-5 fw-bold">@(((decimal)ViewBag.Revenue12).ToMoney())</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="small text-muted">Công nợ phải thu</div><div class="fs-5 fw-bold">@(((decimal)ViewBag.Outstanding).ToMoney())</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="small text-muted">Quá hạn</div><div class="fs-5 fw-bold @((decimal)ViewBag.Overdue > 0 ? "text-danger" : "")">@(((decimal)ViewBag.Overdue).ToMoney())</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="small text-muted">Mua hàng gần nhất</div><div class="fs-5 fw-bold">@(((DateTime?)ViewBag.LastInvoice)?.ToString("dd/MM/yyyy") ?? "—")</div></div></div></div>
+</div>
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card mb-3"><div class="card-body small"><div><b>Liên hệ:</b> @Model.ContactPerson · @Model.Phone · @Model.Email</div><div><b>Địa chỉ:</b> @Model.Address</div><div><b>Mã số thuế:</b> @Model.TaxCode · <b>Hạn thanh toán:</b> @Model.PaymentTermDays ngày</div></div></div>
+        <div class="card mb-3"><div class="card-header d-flex justify-content-between">Cơ hội @if (can) { <a class="small" asp-action="OppForm" asp-route-partnerId="@Model.Id">+ Thêm</a> }</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+            @foreach (var o in opps) { <tr><td><a asp-action="OppDetails" asp-route-id="@o.Id">@o.Code</a></td><td>@o.Title</td><td class="small">@o.Stage.GetDisplayName()</td><td class="num">@o.Amount.ToMoney()</td></tr> }
+            @if (!opps.Any()) { <tr><td class="text-center text-muted py-2">Chưa có cơ hội.</td></tr> }
+        </tbody></table></div></div>
+        <div class="card mb-3"><div class="card-header">Báo giá gần đây</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+            @foreach (var q in quotes) { <tr><td><a asp-controller="Quotes" asp-action="Details" asp-route-id="@q.Id">@q.Number</a></td><td class="small">@q.Date.ToString("dd/MM/yyyy")</td><td class="num">@q.Total.ToMoney()</td></tr> }
+        </tbody></table></div></div>
+        <div class="card"><div class="card-header">Đơn bán hàng gần đây</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+            @foreach (var s in orders) { <tr><td><a asp-controller="SalesOrders" asp-action="Details" asp-route-id="@s.Id">@s.Number</a></td><td class="small">@s.Date.ToString("dd/MM/yyyy")</td><td class="num">@s.Total.ToMoney()</td></tr> }
+        </tbody></table></div></div>
+    </div>
+    <div class="col-lg-7"><partial name="_ActivityPanel" model="@(new ActivityPanel(acts, can, null, Model.Id, null, Url.Action("Customer", new { id = Model.Id })!))" /></div>
+</div>
