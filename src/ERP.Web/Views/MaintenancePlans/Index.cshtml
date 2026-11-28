@@ -1,0 +1,31 @@
+@model List<MaintenancePlan>
+@{
+    ViewData["Title"] = "Kế hoạch bảo dưỡng"; var can = (bool)ViewBag.CanEdit; var counts = (Dictionary<MaintenancePlanStatus, int>)ViewBag.Counts;
+    var open = (Dictionary<int, MaintenanceOrder>)ViewBag.Open; var appr = (Dictionary<int, ApprovalRequest>)ViewBag.Approval; var st = ViewBag.Status as MaintenancePlanStatus?;
+}
+<partial name="_MtNav" model="@("plans")" />
+<div class="toolbar">
+    <a class="btn btn-sm @(st == null ? "btn-secondary" : "btn-light border")" asp-action="Index">Tất cả</a>
+    @foreach (MaintenancePlanStatus s in Enum.GetValues<MaintenancePlanStatus>()) { if (counts.ContainsKey(s)) { <a class="btn btn-sm @(st == s ? "btn-secondary" : "btn-light border")" asp-action="Index" asp-route-status="@s">@s.GetDisplayName() (@counts[s])</a> } }
+    @if (can)
+    {
+        <form asp-action="Generate" method="post" class="ms-auto d-inline" data-confirm="Tạo phiếu bảo dưỡng cho các kế hoạch đã đến hạn?"><button class="btn btn-sm btn-outline-success">Tạo phiếu đến hạn</button></form>
+        <a class="btn btn-sm btn-primary" asp-action="Create">+ Kế hoạch</a>
+    }
+</div>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover table-sm mb-0">
+    <thead><tr><th>Mã</th><th>Thiết bị</th><th>Nội dung</th><th>Hình thức</th><th class="num">Chu kỳ</th><th>Gần nhất</th><th>Kế tiếp</th><th class="num">Dự kiến</th><th>Phụ trách</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+    @foreach (var p in Model)
+    {
+        <tr><td>@p.Code</td><td><a asp-controller="Equipment" asp-action="Details" asp-route-id="@p.EquipmentId">@p.Equipment?.Code</a> <span class="small text-muted">@p.Equipment?.Name</span></td><td>@p.Title</td><td class="small">@p.Kind.GetDisplayName()</td><td class="num">@p.IntervalDays ngày</td>
+            <td>@p.LastDoneDate.ToDate()</td><td class="@(p.IsOverdue ? "overdue fw-bold" : "")">@p.NextDueDate.ToDate()</td><td class="num">@p.EstimatedCost.ToMoney()</td><td>@p.Responsible</td>
+            <td>@p.Status.GetDisplayName() @if (appr.TryGetValue(p.Id, out var r)) { <div class="small text-muted">@WorkflowService.Describe(r)</div> }@if (open.TryGetValue(p.Id, out var o)) { <div class="small"><a asp-controller="MaintenanceOrders" asp-action="Details" asp-route-id="@o.Id">@o.Number</a></div> }</td>
+            <td class="text-nowrap">@if (can)
+            {
+                <a class="small me-1" asp-action="Edit" asp-route-id="@p.Id">Sửa</a>
+                @if (p.Status == MaintenancePlanStatus.Draft) { <form asp-action="Submit" asp-route-id="@p.Id" method="post" class="d-inline"><button class="btn btn-sm btn-link py-0">Gửi duyệt</button></form> }
+                @if (p.Status is MaintenancePlanStatus.Active or MaintenancePlanStatus.Suspended) { <form asp-action="Toggle" asp-route-id="@p.Id" method="post" class="d-inline"><button class="btn btn-sm btn-link py-0">@(p.Status == MaintenancePlanStatus.Active ? "Tạm ngưng" : "Áp dụng")</button></form> }
+            }</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="11" class="text-center text-muted py-4">Chưa có kế hoạch.</td></tr> }
+</tbody></table></div></div></div>

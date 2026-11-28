@@ -46,7 +46,7 @@ public class InventoryService
         // Nạp tồn kho mọi kho của các mặt hàng liên quan (xử lý trong bộ nhớ để tránh trùng dòng khi chưa lưu)
         var tracker = new StockTracker(_db, doc.Date, doc.Number, doc.Type.GetDisplayName(), doc.PartnerId, doc.OriginRef);
         await tracker.LoadAsync(itemIds);
-        var allowExpired = !(doc.Type == InvDocType.Issue && doc.Origin is DocOrigin.Sales or DocOrigin.Production or DocOrigin.Outsource);
+        var allowExpired = !(doc.Type == InvDocType.Issue && doc.Origin is DocOrigin.Sales or DocOrigin.Production or DocOrigin.Outsource or DocOrigin.Maintenance);
         foreach (var b in doc.Lines.Where(x => x.BinId != null || x.ToBinId != null))
         {
             var ids = new[] { b.BinId, b.ToBinId }.Where(x => x != null).Select(x => x!.Value).ToList();
@@ -201,6 +201,7 @@ public class InventoryService
     {
         DocOrigin.Production => "Phiếu phát sinh từ lệnh sản xuất: không hủy trực tiếp (lệnh đã xuất NVL / hoàn thành không hủy được).",
         DocOrigin.Outsource => "Phiếu phát sinh từ gia công ngoài: không hủy trực tiếp.",
+        DocOrigin.Maintenance => "Phiếu phát sinh từ phiếu bảo dưỡng: không hủy trực tiếp.",
         DocOrigin.Quality => "Phiếu phát sinh từ xử lý hàng không đạt (NCR): không hủy trực tiếp.",
         DocOrigin.SalesReturn => "Phiếu nhập hàng bán bị trả lại: hủy từ hóa đơn điều chỉnh giảm tương ứng.",
         _ => null

@@ -34,7 +34,10 @@ public static class DbSeeder
             await ProcessDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("ProcessDemoSeeder"));
             await ManufacturingDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("ManufacturingDemoSeeder"));
         await QcAdvancedDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("QcAdvancedDemoSeeder"));
+
+        await MaintenanceDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("MaintenanceDemoSeeder"));
             await QcAdvancedDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("QcAdvancedDemoSeeder"));
+            await MaintenanceDemoSeeder.SeedAsync(sp, db, sp.GetRequiredService<ILoggerFactory>().CreateLogger("MaintenanceDemoSeeder"));
             await BackfillPurchaseReturnsAsync(sp, db);
             return;
         }

@@ -1,0 +1,30 @@
+@model List<Equipment>
+@{
+    ViewData["Title"] = "Danh mục thiết bị"; var can = (bool)ViewBag.CanEdit; var depts = (List<string>)ViewBag.Depts;
+    var nextDue = (Dictionary<int, DateTime>)ViewBag.NextDue; var open = (Dictionary<int, int>)ViewBag.Open; var assets = (List<FixedAsset>)ViewBag.AssetsWithout;
+}
+<partial name="_MtNav" model="@("eq")" />
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Trạng thái</label><select name="status" class="form-select form-select-sm"><option value="">-- Tất cả --</option>@foreach (EquipmentStatus s in Enum.GetValues<EquipmentStatus>()) { <option value="@s" selected="@(ViewBag.Status is EquipmentStatus x && x == s)">@s.GetDisplayName()</option> }</select></div>
+    <div><label class="form-label small mb-0">Bộ phận</label><select name="dept" class="form-select form-select-sm"><option value="">-- Tất cả --</option>@foreach (var d in depts) { <option selected="@(ViewBag.Dept == d)">@d</option> }</select></div>
+    <div><label class="form-label small mb-0">Tìm</label><input name="q" value="@ViewBag.Q" class="form-control form-control-sm" /></div>
+    <button class="btn btn-sm btn-outline-primary">Lọc</button>
+    @if (can) { <a class="btn btn-sm btn-primary ms-auto" asp-action="Create">+ Thiết bị</a> }
+</form>
+<div class="card mb-3"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover table-sm mb-0">
+    <thead><tr><th>Mã</th><th>Tên thiết bị</th><th>Bộ phận</th><th>Vị trí</th><th>Mức độ</th><th>Trạng thái</th><th>Bảo dưỡng kế tiếp</th><th class="num">Phiếu đang mở</th><th>Bảo hành đến</th></tr></thead><tbody>
+    @foreach (var e in Model)
+    {
+        <tr><td><a asp-action="Details" asp-route-id="@e.Id">@e.Code</a></td><td>@e.Name <span class="small text-muted">@e.Model</span></td><td>@e.Department</td><td>@e.Location</td><td>@e.Criticality.ToString()</td>
+            <td><span class="badge @(e.Status == EquipmentStatus.Running ? "bg-success" : e.Status == EquipmentStatus.Down ? "bg-danger" : e.Status == EquipmentStatus.UnderMaintenance ? "bg-warning text-dark" : "bg-secondary")">@e.Status.GetDisplayName()</span></td>
+            <td class="@(nextDue.TryGetValue(e.Id, out var nd) && nd < DateTime.Today ? "overdue" : "")">@(nextDue.TryGetValue(e.Id, out var nd2) ? nd2.ToDate() : "")</td><td class="num">@(open.GetValueOrDefault(e.Id) > 0 ? open[e.Id].ToString() : "")</td>
+            <td class="@(e.WarrantyUntil < DateTime.Today ? "text-muted" : "")">@e.WarrantyUntil.ToDate()</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="9" class="text-center text-muted py-4">Chưa có thiết bị.</td></tr> }
+</tbody></table></div></div></div>
+@if (assets.Any())
+{
+    <div class="card"><div class="card-header">Tài sản cố định chưa có hồ sơ thiết bị</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+        @foreach (var a in assets) { <tr><td>@a.Code</td><td>@a.Name</td><td>@a.Category?.Name</td><td>@a.Department</td><td class="text-end"><a class="btn btn-sm btn-outline-primary py-0" asp-action="Create" asp-route-assetId="@a.Id">Lập hồ sơ thiết bị</a></td></tr> }
+    </tbody></table></div></div>
+}

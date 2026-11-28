@@ -1,0 +1,28 @@
+@model List<MaintenanceOrder>
+@{
+    ViewData["Title"] = "Phiếu bảo dưỡng & sửa chữa"; var counts = (Dictionary<MaintenanceStatus, int>)ViewBag.Counts; var st = ViewBag.Status as MaintenanceStatus?; var kind = ViewBag.Kind as MaintenanceKind?;
+}
+<partial name="_MtNav" model="@("orders")" />
+<div class="toolbar">
+    <a class="btn btn-sm @(st == null && !(bool)ViewBag.Open ? "btn-secondary" : "btn-light border")" asp-action="Index">Tất cả</a>
+    <a class="btn btn-sm @((bool)ViewBag.Open ? "btn-secondary" : "btn-light border")" asp-action="Index" asp-route-open="true">Đang mở</a>
+    @foreach (MaintenanceStatus s in Enum.GetValues<MaintenanceStatus>()) { if (counts.ContainsKey(s)) { <a class="btn btn-sm @(st == s ? "btn-secondary" : "btn-light border")" asp-action="Index" asp-route-status="@s">@s.GetDisplayName() (@counts[s])</a> } }
+    <span class="ms-auto d-flex gap-2"><a class="btn btn-sm btn-danger" asp-action="Create" asp-route-kind="Breakdown">+ Yêu cầu sửa chữa</a><a class="btn btn-sm btn-primary" asp-action="Create" asp-route-kind="Preventive">+ Phiếu bảo dưỡng</a></span>
+</div>
+<form class="toolbar" method="get">
+    <div><select name="kind" class="form-select form-select-sm"><option value="">-- Mọi hình thức --</option>@foreach (MaintenanceKind k in Enum.GetValues<MaintenanceKind>()) { <option value="@k" selected="@(kind == k)">@k.GetDisplayName()</option> }</select></div>
+    <div><select name="equipmentId" asp-items="ViewBag.Equipments" class="form-select form-select-sm"><option value="">-- Mọi thiết bị --</option></select></div>
+    <div><input name="q" value="@ViewBag.Q" class="form-control form-control-sm" placeholder="Tìm số phiếu, nội dung" /></div>
+    <button class="btn btn-sm btn-outline-primary">Lọc</button>
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover table-sm mb-0">
+    <thead><tr><th>Số phiếu</th><th>Hình thức</th><th>Thiết bị</th><th>Nội dung</th><th>Ưu tiên</th><th>Hạn</th><th class="num">Dừng máy (giờ)</th><th class="num">Chi phí</th><th>Trạng thái</th></tr></thead><tbody>
+    @foreach (var o in Model)
+    {
+        <tr><td><a asp-action="Details" asp-route-id="@o.Id">@o.Number</a></td><td class="small">@o.Kind.GetDisplayName()</td><td>@o.Equipment?.Code <span class="small text-muted">@o.Equipment?.Name</span></td><td>@o.Title</td>
+            <td><span class="badge @(o.Priority == MaintenancePriority.Urgent ? "bg-danger" : o.Priority == MaintenancePriority.Low ? "bg-secondary" : "bg-light text-dark border")">@o.Priority.GetDisplayName()</span></td>
+            <td class="@(o.IsOpen && o.DueDate < DateTime.Today ? "overdue" : "")">@o.DueDate.ToDate()</td><td class="num">@(o.DowntimeHours > 0 ? o.DowntimeHours.ToQty() : "")</td><td class="num">@(o.TotalCost > 0 ? o.TotalCost.ToMoney() : "")</td>
+            <td><span class="badge @(o.Status == MaintenanceStatus.Accepted ? "bg-success" : o.Status == MaintenanceStatus.Cancelled ? "bg-dark" : o.Status == MaintenanceStatus.InProgress ? "bg-primary" : o.Status == MaintenanceStatus.PendingApproval ? "bg-warning text-dark" : o.Status == MaintenanceStatus.Completed ? "bg-teal" : "bg-secondary")">@o.Status.GetDisplayName()</span></td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="9" class="text-center text-muted py-4">Không có phiếu.</td></tr> }
+</tbody></table></div></div></div>

@@ -59,6 +59,7 @@ builder.Services.AddScoped<ERP.Web.Services.BomService>();
 builder.Services.AddScoped<ERP.Web.Services.ManufacturingService>();
 builder.Services.AddScoped<ERP.Web.Services.MpsService>();
 builder.Services.AddScoped<ERP.Web.Services.OutsourceService>();
+builder.Services.AddScoped<ERP.Web.Services.MaintenanceService>();
 builder.Services.AddScoped<ERP.Web.Services.PeriodService>();
 builder.Services.AddScoped<ERP.Web.Services.ReportService>();
 builder.Services.AddScoped<ERP.Web.Services.PreferenceService>();

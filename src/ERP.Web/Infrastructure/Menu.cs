@@ -135,6 +135,17 @@ public static class Menu
             new() { Key = "outsource", Title = "Gia công ngoài", Icon = "bi-box-arrow-up-right", Controller = "Outsource", Active = m => m.Is("Outsource") },
             new() { Key = "costing", Title = "Giá thành sản phẩm", Icon = "bi-calculator", Controller = "Costing", Visible = u => u.InAny(AppRoles.FinanceView + "," + AppRoles.Production), Active = m => m.Is("Costing") },
         }},
+        new() { Key = "maint", Title = "Bảo dưỡng thiết bị", Icon = "bi-wrench-adjustable", Tint = "#fff7ed", Items = new MenuItem[]
+        {
+            new() { Key = "mt-dash", Title = "Tổng quan bảo dưỡng", Icon = "bi-speedometer2", Controller = "MaintenanceReports", Action = "Index", Active = m => m.Is("MaintenanceReports", "Index") },
+            new() { Key = "mt-eq", Title = "Danh mục thiết bị", Icon = "bi-hdd-rack", Controller = "Equipment", Active = m => m.Is("Equipment") && m.Action is not "Types" },
+            new() { Key = "mt-types", Title = "Loại bảo dưỡng", Icon = "bi-tags", Controller = "Equipment", Action = "Types", Active = m => m.Is("Equipment", "Types") },
+            new() { Key = "mt-plans", Title = "Kế hoạch bảo dưỡng", Icon = "bi-calendar2-check", Controller = "MaintenancePlans", Active = m => m.Is("MaintenancePlans") && m.Action is not "Calendar" },
+            new() { Key = "mt-cal", Title = "Lịch bảo dưỡng", Icon = "bi-calendar3", Controller = "MaintenancePlans", Action = "Calendar", Active = m => m.Is("MaintenancePlans", "Calendar") },
+            new() { Key = "mt-orders", Title = "Phiếu bảo dưỡng & sửa chữa", Icon = "bi-tools", Controller = "MaintenanceOrders", Active = m => m.Is("MaintenanceOrders") },
+            new() { Key = "mt-history", Title = "Lịch sử & chi phí", Icon = "bi-clock-history", Controller = "MaintenanceReports", Action = "History", Active = m => m.Is("MaintenanceReports") && m.Action is "History" or "Costs" },
+            new() { Key = "mt-kpi", Title = "MTBF / MTTR", Icon = "bi-graph-up-arrow", Controller = "MaintenanceReports", Action = "Kpi", Active = m => m.Is("MaintenanceReports", "Kpi") },
+        }},
         new() { Key = "hr", Title = "Nhân sự · Tiền lương", Icon = "bi-people", Tint = "#fef3c7", Items = new MenuItem[]
         {
             new() { Key = "employees", Title = "Nhân viên", Icon = "bi-person-vcard", Controller = "Payroll", Action = "Employees", Visible = Fin, Active = m => m.Is("Payroll", "Employees") || m.Is("Payroll", "EditEmployee") },

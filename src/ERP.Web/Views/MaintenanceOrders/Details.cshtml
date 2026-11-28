@@ -1,0 +1,110 @@
+@model MaintenanceOrder
+@{
+    ViewData["Title"] = $"{Model.Kind.GetDisplayName()} {Model.Number}"; var can = (bool)ViewBag.CanEdit; var canStock = (bool)ViewBag.CanStock;
+    var approval = (ApprovalRequest?)ViewBag.Approval; var docs = (List<InventoryDoc>)ViewBag.Docs; var stock = (Dictionary<int, decimal>)ViewBag.Stock;
+    var steps = new[] { MaintenanceStatus.Draft, MaintenanceStatus.Approved, MaintenanceStatus.InProgress, MaintenanceStatus.Completed, MaintenanceStatus.Accepted };
+    var cur = Model.Status == MaintenanceStatus.PendingApproval ? 1 : Array.IndexOf(steps, Model.Status);
+    var live = Model.Status is MaintenanceStatus.Approved or MaintenanceStatus.InProgress; var editable = Model.Status is not (MaintenanceStatus.Completed or MaintenanceStatus.Accepted or MaintenanceStatus.Cancelled);
+    var allDone = Model.Tasks.All(t => t.Done);
+}
+<partial name="_MtNav" model="@("orders")" />
+<div class="flow mb-3">@for (var i = 0; i < steps.Length; i++) { if (i > 0) { <span class="arrow">›</span> } <span class="step @(Model.Status == MaintenanceStatus.Cancelled ? "" : i < cur ? "done" : i == cur ? "current" : "")">@(i == 1 && Model.Status == MaintenanceStatus.PendingApproval ? "Chờ duyệt" : steps[i].GetDisplayName())</span> }
+    @if (Model.Status == MaintenanceStatus.Cancelled) { <span class="badge bg-dark ms-2">Đã hủy</span> }</div>
+@if (Model.Status == MaintenanceStatus.PendingApproval && approval != null) { <div class="alert alert-warning py-2">@WorkflowService.Describe(approval) <a asp-controller="Approvals" asp-action="Index">Mở hộp duyệt →</a></div> }
+<div class="card mb-3"><div class="card-body">
+    <div class="doc-head">
+        <div><div class="fs-5 fw-semibold">@Model.Number – @Model.Title <span class="badge bg-light text-dark border">@Model.Kind.GetDisplayName()</span> @if (Model.Priority == MaintenancePriority.Urgent) { <span class="badge bg-danger">Khẩn cấp</span> }</div>
+            <div class="meta">Thiết bị <a asp-controller="Equipment" asp-action="Details" asp-route-id="@Model.EquipmentId">@Model.Equipment?.Code – @Model.Equipment?.Name</a> <span class="badge @(Model.Equipment?.Status == EquipmentStatus.Running ? "bg-success" : "bg-danger")">@Model.Equipment?.Status.GetDisplayName()</span>
+                · Hạn @Model.DueDate.ToDate() · Yêu cầu bởi @Model.RequestedBy lúc @Model.ReportedAt.ToDateTime() @(Model.Plan != null ? "· Kế hoạch " + Model.Plan.Code : "") @(Model.Technician != null ? "· Thực hiện: " + Model.Technician : "")</div>
+            @if (!string.IsNullOrWhiteSpace(Model.Symptom)) { <div class="mt-1"><b>Hiện tượng:</b> @Model.Symptom</div> }
+            @if (!string.IsNullOrWhiteSpace(Model.Cause)) { <div><b>Nguyên nhân:</b> @Model.Cause</div> }
+            @if (!string.IsNullOrWhiteSpace(Model.Resolution)) { <div><b>Xử lý:</b> @Model.Resolution</div> }
+            @if (Model.AcceptedBy != null) { <div class="text-success"><b>Nghiệm thu:</b> @Model.AcceptedBy ngày @Model.AcceptedAt.ToDate() @Model.AcceptanceNote</div> }</div>
+        <div class="actions">
+            @if (can && Model.Status == MaintenanceStatus.Draft) { <form asp-action="Submit" asp-route-id="@Model.Id" method="post"><button class="btn btn-sm btn-primary">Gửi duyệt</button></form> }
+            @if (can && Model.Status == MaintenanceStatus.Approved) { <form asp-action="Start" asp-route-id="@Model.Id" method="post"><button class="btn btn-sm btn-primary">Bắt đầu thực hiện</button></form> }
+            @if (can && Model.Status is MaintenanceStatus.Draft or MaintenanceStatus.PendingApproval or MaintenanceStatus.Approved) { <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" data-confirm="Hủy phiếu?"><button class="btn btn-sm btn-outline-danger">Hủy phiếu</button></form> }
+        </div>
+    </div>
+    <div class="row g-2 mt-1">
+        <div class="col-6 col-md-3"><div class="card kpi"><div class="label">Phụ tùng</div><div class="value">@Model.PartsCost.ToMoney()</div></div></div>
+        <div class="col-6 col-md-3"><div class="card kpi"><div class="label">Nhân công (@Model.LaborHours.ToQty() giờ)</div><div class="value">@Model.LaborCost.ToMoney()</div></div></div>
+        <div class="col-6 col-md-3"><div class="card kpi"><div class="label">Thuê ngoài</div><div class="value">@Model.OutsideCost.ToMoney()</div></div></div>
+        <div class="col-6 col-md-3"><div class="card kpi"><div class="label">Tổng chi phí · dừng máy @Model.DowntimeHours.ToQty() giờ</div><div class="value">@Model.TotalCost.ToMoney()</div><div class="sub">Dự kiến @Model.EstimatedCost.ToMoney()</div></div></div>
+    </div>
+</div></div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-5"><div class="card h-100"><div class="card-header">Danh mục công việc</div><div class="card-body p-0"><table class="table table-sm mb-0" data-grid="off"><tbody>
+        @foreach (var t in Model.Tasks.OrderBy(x => x.Seq))
+        {
+            <tr><td style="width:36px">@t.Seq</td><td class="@(t.Done ? "text-decoration-line-through text-muted" : "")">@t.Description @if (!string.IsNullOrEmpty(t.Result)) { <div class="small text-muted">@t.Result</div> }</td>
+                <td class="text-end" style="width:230px">@if (can && Model.Status == MaintenanceStatus.InProgress)
+                {
+                    <form asp-action="ToggleTask" asp-route-id="@Model.Id" method="post" class="d-flex gap-1"><input type="hidden" name="taskId" value="@t.Id" /><input type="hidden" name="done" value="@((!t.Done).ToString().ToLowerInvariant())" /><input name="result" value="@t.Result" class="form-control form-control-sm" placeholder="Kết quả" /><button class="btn btn-sm @(t.Done ? "btn-outline-secondary" : "btn-outline-success")">@(t.Done ? "Mở lại" : "Xong")</button></form>
+                }
+                else if (t.Done) { <span class="badge bg-success">Xong</span> }</td></tr>
+        }
+        @if (!Model.Tasks.Any()) { <tr><td class="text-muted text-center py-3">Chưa có hạng mục.</td></tr> }
+        </tbody></table>
+        @if (can && editable) { <form asp-action="AddTask" asp-route-id="@Model.Id" method="post" class="d-flex gap-1 p-2 border-top"><input name="description" class="form-control form-control-sm" placeholder="Thêm hạng mục công việc" /><button class="btn btn-sm btn-outline-primary">Thêm</button></form> }
+    </div></div></div>
+    <div class="col-lg-7"><div class="card h-100"><div class="card-header">Phụ tùng thay thế @(Model.Warehouse != null ? "· kho " + Model.Warehouse.Name : "")</div><div class="card-body p-0"><table class="table table-sm mb-0">
+        <thead><tr><th>Phụ tùng</th><th class="num">Dự kiến</th><th class="num">Đã xuất</th><th class="num">Trả lại</th><th class="num">Tồn kho</th><th class="num">Giá trị</th><th class="num">Cũ thu hồi</th><th></th></tr></thead><tbody>
+        @foreach (var p in Model.Parts)
+        {
+            <tr><td>@p.Item?.Code – @p.Item?.Name</td><td class="num">@p.PlannedQty.ToQty()</td><td class="num">@p.IssuedQty.ToQty()</td><td class="num">@(p.ReturnedQty > 0 ? p.ReturnedQty.ToQty() : "")</td><td class="num">@stock.GetValueOrDefault(p.ItemId).ToQty()</td><td class="num">@p.Cost.ToMoney()</td><td class="num">@p.RecoveredOldQty.ToQty()</td>
+                <td class="text-nowrap">@if (canStock && live)
+                {
+                    <form asp-action="IssuePart" asp-route-id="@Model.Id" method="post" class="d-inline-flex gap-1"><input type="hidden" name="partId" value="@p.Id" /><input type="number" step="0.001" min="0.001" name="qty" value="@Math.Max(0, p.PlannedQty - p.IssuedQty).Raw()" class="form-control form-control-sm" style="width:80px" /><button class="btn btn-sm btn-outline-primary" @(Model.WarehouseId == null ? "disabled title='Chọn kho xuất'" : "")>Xuất</button></form>
+                }
+                @if (canStock && p.UsedQty > 0 && Model.Status is not (MaintenanceStatus.Accepted or MaintenanceStatus.Cancelled))
+                {
+                    <form asp-action="ReturnPart" asp-route-id="@Model.Id" method="post" class="d-inline-flex gap-1"><input type="hidden" name="partId" value="@p.Id" /><input type="number" step="0.001" min="0.001" max="@p.UsedQty.Raw()" name="qty" class="form-control form-control-sm" style="width:70px" placeholder="SL" /><button class="btn btn-sm btn-outline-secondary">Trả</button></form>
+                }
+                @if (can && editable && p.IssuedQty > 0)
+                {
+                    <form asp-action="RecoverPart" asp-route-id="@Model.Id" method="post" class="d-inline-flex gap-1"><input type="hidden" name="partId" value="@p.Id" /><input type="number" step="0.001" min="0" name="qty" value="@p.RecoveredOldQty.Raw()" class="form-control form-control-sm" style="width:70px" title="Phụ tùng cũ thu hồi" /><button class="btn btn-sm btn-outline-secondary" title="Ghi nhận phụ tùng cũ thu hồi">Cũ</button></form>
+                }</td></tr>
+        }
+        @if (!Model.Parts.Any()) { <tr><td colspan="8" class="text-muted text-center py-3">Chưa có phụ tùng.</td></tr> }
+        </tbody></table>
+        @if (can && editable)
+        {
+            <form asp-action="AddPart" asp-route-id="@Model.Id" method="post" class="row g-1 p-2 border-top">
+                <div class="col-md-6"><select name="itemId" asp-items="ViewBag.Items" class="form-select form-select-sm" required><option value="">-- Phụ tùng / vật tư --</option></select></div>
+                <div class="col-md-2"><input type="number" step="0.001" min="0.001" name="qty" class="form-control form-control-sm" placeholder="SL" required /></div>
+                <div class="col-md-2"><button class="btn btn-sm btn-outline-primary w-100">Thêm</button></div>
+            </form>
+        }
+        <div class="small text-muted px-3 py-2">Xuất phụ tùng: Nợ TK chi phí bảo dưỡng / Có kho theo giá vốn bình quân; hoàn trả chưa dùng ghi giảm chi phí. Nhân công và thuê ngoài là chi phí theo dõi của phiếu (nhân công hạch toán qua bảng lương, thuê ngoài qua hóa đơn mua).</div>
+    </div></div></div>
+</div>
+
+@if (can && Model.Status == MaintenanceStatus.InProgress)
+{
+    <div class="card mb-3"><div class="card-header">Hoàn thành @(allDone ? "" : "(còn hạng mục chưa xong)")</div><div class="card-body">
+        <form asp-action="Complete" asp-route-id="@Model.Id" method="post" class="row g-2" data-confirm="Hoàn thành phiếu và chuyển chờ nghiệm thu?">
+            @if (Model.Kind == MaintenanceKind.Breakdown) { <div class="col-md-6"><label class="form-label small">Nguyên nhân hỏng</label><textarea name="cause" rows="2" class="form-control form-control-sm" required>@Model.Cause</textarea></div> }
+            <div class="col-md-@(Model.Kind == MaintenanceKind.Breakdown ? 6 : 12)"><label class="form-label small">Biện pháp xử lý / kết quả</label><textarea name="resolution" rows="2" class="form-control form-control-sm">@Model.Resolution</textarea></div>
+            <div class="col-md-2"><label class="form-label small">Người thực hiện</label><input name="technician" value="@Model.Technician" class="form-control form-control-sm" /></div>
+            <div class="col-md-2"><label class="form-label small">Giờ công</label><input type="number" step="0.5" min="0" name="laborHours" value="@Model.Plan?.EstimatedHours.Raw()" class="form-control form-control-sm" /></div>
+            <div class="col-md-2"><label class="form-label small">Đơn giá giờ công</label><input type="number" step="1000" min="0" name="laborRate" value="60000" class="form-control form-control-sm" /></div>
+            <div class="col-md-2"><label class="form-label small">Thuê ngoài</label><input type="number" step="1000" min="0" name="outsideCost" value="0" class="form-control form-control-sm" /></div>
+            <div class="col-md-2"><label class="form-label small">Dừng máy (giờ)</label><input type="number" step="0.5" min="0" name="downtimeHours" class="form-control form-control-sm" placeholder="@(Model.Kind == MaintenanceKind.Breakdown ? "Tự tính từ lúc báo hỏng" : "0")" /></div>
+            <div class="col-md-2 d-flex align-items-end"><button class="btn btn-sm btn-success w-100" @(allDone ? "" : "disabled")>Hoàn thành</button></div>
+        </form></div></div>
+}
+@if (Model.Status == MaintenanceStatus.Completed)
+{
+    <div class="card mb-3"><div class="card-header">Nghiệm thu</div><div class="card-body">
+        <form asp-action="Accept" asp-route-id="@Model.Id" method="post" class="row g-2" data-confirm="Xác nhận nghiệm thu?">
+            <div class="col-md-3"><label class="form-label small">Người nghiệm thu</label><input name="by" value="@User.GetFullName()" class="form-control form-control-sm" required /></div>
+            <div class="col-md-7"><label class="form-label small">Ý kiến nghiệm thu</label><input name="note" class="form-control form-control-sm" placeholder="Thiết bị chạy thử đạt, bàn giao lại sản xuất" /></div>
+            <div class="col-md-2 d-flex align-items-end"><button class="btn btn-sm btn-success w-100">Nghiệm thu</button></div>
+        </form></div></div>
+}
+<div class="card"><div class="card-header">Phiếu kho của phiếu bảo dưỡng</div><div class="card-body p-0"><table class="table table-sm mb-0"><tbody>
+    @foreach (var d in docs) { <tr><td>@d.Date.ToDate()</td><td><a asp-controller="Inventory" asp-action="Details" asp-route-id="@d.Id">@d.Number</a></td><td><partial name="_Badge" model="d.Type" /></td><td class="small">@d.Reason</td><td class="num">@d.TotalAmount.ToMoney()</td></tr> }
+    @if (!docs.Any()) { <tr><td class="text-muted text-center py-3">Chưa có phiếu kho.</td></tr> }
+</tbody></table></div></div>

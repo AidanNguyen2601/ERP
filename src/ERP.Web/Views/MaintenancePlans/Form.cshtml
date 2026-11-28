@@ -1,0 +1,31 @@
+@model MaintenancePlan
+@{ ViewData["Title"] = Model.Id == 0 ? "Thêm kế hoạch bảo dưỡng" : $"Sửa kế hoạch {Model.Code}"; var types = (List<MaintenanceType>)ViewBag.Types; var kinds = Html.GetEnumSelectList<MaintenanceKind>().Where(x => x.Value != "2").ToList(); }
+<partial name="_MtNav" model="@("plans")" />
+<div class="card" style="max-width:1000px"><div class="card-body">
+<form asp-action="Save" method="post">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="All" class="alert alert-danger py-2 empty-hide"></div>
+    <div class="row g-3">
+        <div class="col-md-5"><label asp-for="EquipmentId" class="form-label"></label><select asp-for="EquipmentId" asp-items="ViewBag.Equipments" class="form-select"><option value="">-- Chọn --</option></select><span asp-validation-for="EquipmentId" class="text-danger small"></span></div>
+        <div class="col-md-4"><label asp-for="MaintenanceTypeId" class="form-label"></label>
+            <select asp-for="MaintenanceTypeId" class="form-select" id="mtType"><option value="" data-days="" data-kind="">--</option>
+            @foreach (var t in types) { <option value="@t.Id" data-days="@t.DefaultIntervalDays" data-kind="@((int)t.Kind)" selected="@(Model.MaintenanceTypeId == t.Id)">@t.Code – @t.Name</option> }</select></div>
+        <div class="col-md-3"><label asp-for="Kind" class="form-label"></label><select asp-for="Kind" asp-items="kinds" class="form-select" id="mtKind"></select></div>
+        <div class="col-md-8"><label asp-for="Title" class="form-label"></label><input asp-for="Title" class="form-control" placeholder="VD: Thay dầu, kiểm tra dây curoa, vệ sinh lọc gió" /><span asp-validation-for="Title" class="text-danger small"></span></div>
+        <div class="col-md-2"><label asp-for="IntervalDays" class="form-label"></label><input asp-for="IntervalDays" type="number" min="1" class="form-control" id="mtDays" /></div>
+        <div class="col-md-2"><label asp-for="NextDueDate" class="form-label"></label><input asp-for="NextDueDate" type="date" class="form-control" /></div>
+        <div class="col-md-2"><label asp-for="EstimatedHours" class="form-label"></label><input asp-for="EstimatedHours" type="number" step="0.5" min="0" class="form-control" /></div>
+        <div class="col-md-3"><label asp-for="EstimatedCost" class="form-label"></label><input asp-for="EstimatedCost" type="number" step="1000" min="0" class="form-control" /></div>
+        <div class="col-md-2"><label asp-for="LeadDays" class="form-label"></label><input asp-for="LeadDays" type="number" min="0" class="form-control" /></div>
+        <div class="col-md-5"><label asp-for="Responsible" class="form-label"></label><input asp-for="Responsible" class="form-control" /></div>
+        <div class="col-12"><label asp-for="Checklist" class="form-label"></label><textarea asp-for="Checklist" rows="5" class="form-control" placeholder="Kiểm tra mức dầu&#10;Vệ sinh lọc gió&#10;Siết lại bu lông"></textarea><div class="form-text">Mỗi dòng là một hạng mục, được sao vào phiếu bảo dưỡng để tích hoàn thành (TPM: dùng cho kiểm tra hằng ngày / tuần của vận hành viên).</div></div>
+        <div class="col-12"><label asp-for="Note" class="form-label"></label><input asp-for="Note" class="form-control" /></div>
+    </div>
+    <div class="small text-muted mt-2">Kế hoạch cần được duyệt theo quy tắc phê duyệt (theo chi phí dự kiến cả năm) trước khi áp dụng; khi đến hạn hệ thống tạo phiếu bảo dưỡng. Sửa nội dung / chu kỳ kế hoạch đang áp dụng phải duyệt lại.</div>
+    <div class="mt-4 d-flex gap-2"><button class="btn btn-light border" name="submit" value="false">Lưu nháp</button><button class="btn btn-primary" name="submit" value="true">Lưu & gửi duyệt</button><a class="btn btn-light" asp-action="Index">Hủy</a></div>
+</form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" />
+<script>
+document.getElementById('mtType').addEventListener('change', function () { const o = this.selectedOptions[0]; if (o.dataset.days) document.getElementById('mtDays').value = o.dataset.days; if (o.dataset.kind) document.getElementById('mtKind').value = o.dataset.kind; });
+</script> }

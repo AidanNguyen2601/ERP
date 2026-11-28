@@ -1,0 +1,23 @@
+@model List<EquipmentKpi>
+@{ ViewData["Title"] = "MTBF / MTTR và chi phí theo thiết bị"; }
+<partial name="_MtNav" model="@("kpi")" />
+<form class="toolbar" method="get">
+    <div><label class="form-label small mb-0">Từ ngày</label><input type="date" name="from" value="@(((DateTime)ViewBag.From).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Đến ngày</label><input type="date" name="to" value="@(((DateTime)ViewBag.To).Iso())" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-0">Giờ làm việc / ngày</label><input type="number" step="0.5" min="1" max="24" name="hours" value="@(((decimal)ViewBag.Hours).Raw())" class="form-control form-control-sm" style="width:90px" /></div>
+    <button class="btn btn-sm btn-outline-primary">Xem</button>
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-hover mb-0">
+    <thead><tr><th>Thiết bị</th><th>Mức độ</th><th class="num">Số lần hỏng</th><th class="num">Dừng máy (giờ)</th><th class="num">MTBF (giờ)</th><th class="num">MTTR (giờ)</th><th class="num">Độ sẵn sàng</th><th class="num">BD định kỳ đúng hạn</th><th class="num">Phụ tùng</th><th class="num">Nhân công</th><th class="num">Thuê ngoài</th><th class="num">Tổng chi phí</th></tr></thead><tbody>
+    @foreach (var k in Model)
+    {
+        <tr><td><a asp-controller="Equipment" asp-action="Details" asp-route-id="@k.Equipment.Id">@k.Equipment.Code</a> <span class="small text-muted">@k.Equipment.Name</span></td><td>@k.Equipment.Criticality</td><td class="num">@k.Breakdowns</td><td class="num">@k.DowntimeHours.ToQty()</td>
+            <td class="num">@(k.Breakdowns == 0 ? "—" : k.Mtbf.ToQty())</td><td class="num">@(k.Breakdowns == 0 ? "—" : k.Mttr.ToQty())</td><td class="num @(k.Availability < 90 ? "bad" : "good")">@k.Availability.ToPct()</td>
+            <td class="num @(k.PmDue > 0 && k.PmCompliance < 80 ? "warn" : "")">@(k.PmDue == 0 ? "—" : $"{k.PmOnTime}/{k.PmDue} ({k.PmCompliance:0}%)")</td>
+            <td class="num">@k.PartsCost.ToMoney()</td><td class="num">@k.LaborCost.ToMoney()</td><td class="num">@k.OutsideCost.ToMoney()</td><td class="num fw-bold">@k.TotalCost.ToMoney()</td></tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="12" class="text-center text-muted py-4">Chưa có dữ liệu.</td></tr> }
+    </tbody>
+    @if (Model.Any()) { <tfoot><tr class="fw-bold"><td colspan="2" class="text-end">Cộng</td><td class="num">@Model.Sum(k => k.Breakdowns)</td><td class="num">@Model.Sum(k => k.DowntimeHours).ToQty()</td><td colspan="4"></td><td class="num">@Model.Sum(k => k.PartsCost).ToMoney()</td><td class="num">@Model.Sum(k => k.LaborCost).ToMoney()</td><td class="num">@Model.Sum(k => k.OutsideCost).ToMoney()</td><td class="num">@Model.Sum(k => k.TotalCost).ToMoney()</td></tr></tfoot> }
+</table></div></div></div>
+<div class="small text-muted mt-2">Giờ kế hoạch = số ngày làm việc (T2–T7) trong kỳ × giờ làm việc / ngày. MTBF = (giờ kế hoạch − giờ dừng máy) / số lần hỏng; MTTR = giờ sửa chữa / số lần hỏng; độ sẵn sàng = (giờ kế hoạch − dừng máy) / giờ kế hoạch; bảo dưỡng định kỳ đúng hạn = hoàn thành không quá 3 ngày sau hạn.</div>

@@ -125,6 +125,13 @@ public class ErpDbContext : DbContext
     public DbSet<ProductionOrder> ProductionOrders => Set<ProductionOrder>();
     public DbSet<ProductionOrderLine> ProductionOrderLines => Set<ProductionOrderLine>();
     public DbSet<WorkCenter> WorkCenters => Set<WorkCenter>();
+    public DbSet<MaintenanceType> MaintenanceTypes => Set<MaintenanceType>();
+    public DbSet<Equipment> Equipments => Set<Equipment>();
+    public DbSet<EquipmentDocument> EquipmentDocuments => Set<EquipmentDocument>();
+    public DbSet<MaintenancePlan> MaintenancePlans => Set<MaintenancePlan>();
+    public DbSet<MaintenanceOrder> MaintenanceOrders => Set<MaintenanceOrder>();
+    public DbSet<MaintenancePart> MaintenanceParts => Set<MaintenancePart>();
+    public DbSet<MaintenanceTask> MaintenanceTasks => Set<MaintenanceTask>();
     public DbSet<BomOperation> BomOperations => Set<BomOperation>();
     public DbSet<ProductionOperation> ProductionOperations => Set<ProductionOperation>();
     public DbSet<ProductionOutput> ProductionOutputs => Set<ProductionOutput>();
@@ -250,6 +257,10 @@ public class ErpDbContext : DbContext
         modelBuilder.Entity<Bom>().HasIndex(x => x.Code).IsUnique();
         modelBuilder.Entity<ProductionOrder>().HasIndex(x => x.Number).IsUnique();
         modelBuilder.Entity<WorkCenter>().HasIndex(x => x.Code).IsUnique();
+        modelBuilder.Entity<MaintenanceType>().HasIndex(x => x.Code).IsUnique();
+        modelBuilder.Entity<Equipment>().HasIndex(x => x.Code).IsUnique();
+        modelBuilder.Entity<MaintenanceOrder>().HasIndex(x => x.Number).IsUnique();
+        modelBuilder.Entity<MaintenanceOrder>().HasIndex(x => new { x.EquipmentId, x.Status });
         modelBuilder.Entity<MpsPlan>().HasIndex(x => x.Code).IsUnique();
         modelBuilder.Entity<OutsourceOrder>().HasIndex(x => x.Number).IsUnique();
         modelBuilder.Entity<ProductionOutput>().HasIndex(x => new { x.Date, x.WorkCenterId });

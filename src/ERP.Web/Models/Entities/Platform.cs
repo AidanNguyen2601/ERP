@@ -71,6 +71,8 @@ public enum ApprovalDocType
     [Display(Name = "Bảng lương")] Payroll = 4,
     [Display(Name = "Đề nghị mua hàng")] PurchaseRequisition = 5,
     [Display(Name = "Lệnh sản xuất")] ProductionOrder = 6,
+    [Display(Name = "Phiếu bảo dưỡng / sửa chữa")] MaintenanceOrder = 7,
+    [Display(Name = "Kế hoạch bảo dưỡng")] MaintenancePlan = 8,
 }
 
 public enum ApprovalStatus

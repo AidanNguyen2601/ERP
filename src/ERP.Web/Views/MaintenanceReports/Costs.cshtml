@@ -1,0 +1,19 @@
+@model List<MaintenanceOrder>
+@{
+    ViewData["Title"] = "Chi phí bảo dưỡng theo tháng"; var y = (int)ViewBag.Year; var lines = (List<BudgetLine>)ViewBag.BudgetLines;
+    decimal Plan(int m) => lines.Sum(l => l.Month(m));
+}
+<partial name="_MtNav" model="@("history")" />
+<div class="toolbar"><a class="btn btn-sm btn-light border" asp-action="Costs" asp-route-year="@(y - 1)">‹</a><b class="px-2">Năm @y</b><a class="btn btn-sm btn-light border" asp-action="Costs" asp-route-year="@(y + 1)">›</a><a class="btn btn-sm btn-light border ms-auto" asp-action="History">← Lịch sử</a></div>
+<div class="card"><div class="card-body p-0"><table class="table table-sm mb-0">
+    <thead><tr><th>Tháng</th><th class="num">Phiếu</th><th class="num">Dừng máy (giờ)</th><th class="num">Phụ tùng</th><th class="num">Nhân công</th><th class="num">Thuê ngoài</th><th class="num">Tổng chi phí</th><th class="num">Ngân sách</th><th class="num">Chênh lệch</th></tr></thead><tbody>
+    @for (var m = 1; m <= 12; m++)
+    {
+        var os = Model.Where(o => o.CompletedAt!.Value.Month == m).ToList(); var tot = os.Sum(o => o.TotalCost); var plan = Plan(m);
+        <tr><td>Tháng @m</td><td class="num">@(os.Count == 0 ? "" : os.Count.ToString())</td><td class="num">@(os.Sum(o => o.DowntimeHours) == 0 ? "" : os.Sum(o => o.DowntimeHours).ToQty())</td><td class="num">@os.Sum(o => o.PartsCost).ToMoney()</td><td class="num">@os.Sum(o => o.LaborCost).ToMoney()</td><td class="num">@os.Sum(o => o.OutsideCost).ToMoney()</td>
+            <td class="num fw-bold">@tot.ToMoney()</td><td class="num">@(plan == 0 ? "" : plan.ToMoney())</td><td class="num @(plan > 0 && tot > plan ? "bad" : "")">@(plan == 0 ? "" : (tot - plan).ToMoney())</td></tr>
+    }
+    </tbody>
+    <tfoot><tr class="fw-bold"><td>Cả năm</td><td class="num">@Model.Count</td><td class="num">@Model.Sum(o => o.DowntimeHours).ToQty()</td><td class="num">@Model.Sum(o => o.PartsCost).ToMoney()</td><td class="num">@Model.Sum(o => o.LaborCost).ToMoney()</td><td class="num">@Model.Sum(o => o.OutsideCost).ToMoney()</td><td class="num">@Model.Sum(o => o.TotalCost).ToMoney()</td><td class="num">@lines.Sum(l => l.Year).ToMoney()</td><td></td></tr></tfoot>
+</table></div></div>
+<div class="small text-muted mt-2">Ngân sách lấy từ các dòng <a asp-controller="Budgets" asp-action="Index">ngân sách</a> năm @y có khoản mục 6272 hoặc ghi chú chứa "bảo dưỡng". Phụ tùng xuất cho phiếu bảo dưỡng ghi vào TK chi phí bảo dưỡng nên cũng được kiểm soát ngân sách khi ghi sổ.</div>
